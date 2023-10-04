@@ -1,0 +1,400 @@
+settings
+{
+	main
+	{
+		Description: "WIP v.20230831"
+		Mode Name: "GigaMercy Parkour Editor"
+	}
+
+	lobby
+	{
+		Allow Players Who Are In Queue: Yes
+		Map Rotation: Paused
+		Match Voice Chat: Enabled
+		Max Spectators: 12
+		Max Team 1 Players: 7
+		Max Team 2 Players: 0
+		Return To Lobby: After A Game
+		Swap Teams After Match: No
+	}
+
+	modes
+	{
+		Capture the Flag
+		{
+			Flag Dropped Lock Time: 5.0
+			Flag Return Time: 4.0
+			Flag Score Respawn Time: 15.0
+
+			disabled maps
+			{
+				Ilios Lighthouse
+				Ilios Ruins
+				Ilios Well
+				Lijiang Control Center
+				Lijiang Control Center Lunar New Year
+				Lijiang Garden
+				Lijiang Garden Lunar New Year
+				Lijiang Night Market
+				Lijiang Night Market Lunar New Year
+			}
+		}
+
+		Hybrid
+
+		Practice Range
+
+		Skirmish
+
+		Team Deathmatch
+		{
+			Game Length In Minutes: 15
+
+			disabled maps
+			{
+				Ilios Lighthouse
+				Ilios Ruins
+				Ilios Well
+				Lijiang Control Center
+				Lijiang Control Center Lunar New Year
+				Lijiang Garden
+				Lijiang Garden Lunar New Year
+				Lijiang Night Market
+				Lijiang Night Market Lunar New Year
+			}
+		}
+
+		General
+		{
+			Hero Limit: Off
+			Kill Cam: Off
+			Kill Feed: Off
+			Respawn Time Scalar: 0%
+			Spawn Health Packs: Disabled
+		}
+	}
+
+	heroes
+	{
+		General
+		{
+			Mercy
+			{
+				Guardian Angel Cooldown Time: 0%
+				Ultimate Generation - Combat Valkyrie: 0%
+				Ultimate Generation - Passive Valkyrie: 0%
+				Ultimate Generation Valkyrie: 10%
+			}
+
+			enabled heroes
+			{
+				Mercy
+			}
+		}
+	}
+
+	extensions
+	{
+		Beam Effects
+		Beam Sounds
+		Buff Status Effects
+		Buff and Debuff Sounds
+		Explosion Sounds
+		Play More Effects
+		Spawn More Dummy Bots
+		Projectiles
+	}
+}
+
+variables
+{
+	global:
+        0: MapData
+		1: DebugMode
+        2: Colors
+        3: HintText
+		4: Config
+		5: WorkshopColorList
+		6: CheckpointCoords
+		7: BotCoords
+		8: OrbCoords
+		9: CloudCoords
+		10: AntiOrbCoodrs
+	player:
+		0: Checkpoint
+		1: Finished
+		2: FreeMode
+		3: CurrentRunTime
+		4: OrbEffects
+		5: OrbIcons
+		6: BotEffects
+		7: BotIcons
+		8: CloudEffects
+		9: SphereEffects
+		10: CheckpointEffects
+		11: CheckpointIcons
+}
+
+subroutines
+{
+	0: InitializeGlobalVariables
+	1: InitializePlayerVariables
+	2: DecompressMapData
+	3: CreateGlobalHUD
+	4: CreatePlayerHUD
+	5: CreateCurrentLevel
+	6: TeleportToCurrentCheckpoint
+}
+
+
+rule("Put your data here")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		"0: Checkpoint, 1: Bot, 2: Orbs, 3: Antiorbs, 4: Cloud, 5: Teleport"
+		Global.MapData = Array(Array(Vector(0.100, 0, 0.100), 4), Array(Vector(10, 5, 0), 1.500),Array(1, Vector(20, 5, 0), 1.500), Array(2, Vector(10, 5, 0), 1.500));
+	}
+}
+rule("Effect Color List")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		"Checkpoint Ring Color"
+		Global.Config[0] = Color(Blue);
+		"Orb color"
+		Global.Config[1] = Color(Red);
+		"Anti-Orb Color"
+		Global.Config[2] = Color(Yellow);
+		"Jump Cloud Color"
+		Global.Config[3] = Color(Red);
+	}
+}
+
+rule("--------------------------Initialization Settings------------------------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+rule("Decompress Data")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		Global.CheckpointCoords = Global.MapData[0]
+	}
+}
+
+rule("1. Global Initialization")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		Enable Inspector Recording;
+		Call Subroutine(InitializeGlobalVariables);
+		Disable Built-In Game Mode Announcer;
+		Disable Built-In Game Mode Completion;
+		Disable Built-In Game Mode Music;
+		Disable Built-In Game Mode Scoring;
+		If(Current Game Mode != Game Mode(Skirmish));
+			Set Match Time(1);
+		End;
+		Pause Match Time;
+	}
+}
+
+rule("2. Player Initialization")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Has Spawned(Event Player) == True;
+	}
+
+	actions
+	{
+		Small Message(Event Player, Custom String("Initializing player..."));
+		"Disable gamemode stuff"
+		Disable Built-In Game Mode Respawning(Event Player);
+		If(Current Game Mode != Game Mode(Skirmish));
+			Disable Game Mode HUD(Event Player);
+		End;
+		Enable Death Spectate All Players(Event Player);
+		Enable Death Spectate Target HUD(Event Player);
+		
+		Call Subroutine(InitializePlayerVariables);
+		Call Subroutine(CreatePlayerHUD);
+		Call Subroutine(CreateCurrentLevel);
+		Call Subroutine(TeleportToCurrentCheckpoint);
+	}
+}
+rule("-----------------------------Effects-------------------------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+rule("CreateOrbEffects")
+
+rule("--------------------------Subroutines------------------------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Subroutine InitializeGlobalVariables")
+{
+	event
+	{
+		Subroutine;
+		InitializeGlobalVariables;
+	}
+
+	actions
+	{
+		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"),
+			False, 0);
+		If(!Global.MapData);
+			Global.MapData = Null;
+			Call Subroutine(CreateGlobalHUD);
+	}
+}
+
+rule("Subroutine InitializePlayerVariables")
+{
+	event
+	{
+		Subroutine;
+		InitializePlayerVariables;
+	}
+
+	actions
+	{
+		Small Message(Event Player, Custom String("Welcome"));
+		Event Player.Checkpoint = 0;
+		Event Player.Finished = False;
+		Event Player.FreeMode = False;
+		Event Player.CurrentRunTime = 0;
+	}
+}
+
+rule("Subroutine DecompressMapData")
+{
+	event
+	{
+		Subroutine;
+		DecompressMapData;
+	}
+}
+
+rule("Subroutine CreateGlobalHUD")
+{
+	event
+	{
+		Subroutine;
+		CreateGlobalHUD;
+	}
+
+	actions
+	{
+		"Map Creator and code"
+		Create HUD Text(All Players(All Teams), Custom String("Giga's Parkour Editor"), Custom String("Subheader"), Custom String("Text"),
+			Left, 0, Color(Green), Color(White), Color(Red), Visible To and String, Default Visibility);
+		"Leaderboard"
+		Create HUD Text(All Players(All Teams), Null, Custom String("Leaderboard:"), Null,
+			Left, 0, Null, Color(White), Null, Visible To and String, Default Visibility);
+		"Instructions"
+		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
+			Right, 0, Null, Color(Gray), Null, Visible To and String, Default Visibility);
+		
+		
+	}
+}
+
+rule("Subroutine CreatePlayerHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerHUD;
+	}
+
+	actions
+	{
+		Small Message(Event Player, Custom String("Player HUD"));
+	}
+}
+
+rule("Subroutine CreateCurrentLevel")
+{
+	event
+	{
+		Subroutine;
+		CreateCurrentLevel;
+	}
+
+	actions
+	{
+		
+		"Create Start Checkpoint"
+		Create Effect(Event Player, Ring, Global.Config[0], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
+		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
+		Create In-World Text(Event Player, Custom String("Checkpoint"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
+		Modify Player Variable(Event Player, CheckpointText , Append To Array, Last Created Entity);
+
+
+		"Create Orbs"
+		Filtered Array(Global.MapData, Global.MapData[Event.Player.Checkpoint] == 0)Create Effect(Event Player, Orb, Global.Config[1], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
+		
+		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
+		Create In-World Text(Event Player, Custom String("Orb"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
+
+		"Create Bot"
+		Create Effect(Event Player, Ring, Global.Config[0], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
+		Create In-World Text(Event Player, Custom String("Checkpoint"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
+
+	}
+}
+
+rule("Subroutine TeleportToCurrentCheckpoint")
+{
+	event
+	{
+		Subroutine;
+		TeleportToCurrentCheckpoint;
+	}
+
+	actions
+	{
+		Teleport(Event Player, Global.MapData[Event Player.Checkpoint][0]);
+	}
+}
