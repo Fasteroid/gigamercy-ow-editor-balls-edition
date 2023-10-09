@@ -116,10 +116,12 @@ variables
 		4: Config
 		5: WorkshopColorList
 		6: CheckpointCoords
-		7: BotCoords
-		8: OrbCoords
-		9: CloudCoords
-		10: AntiOrbCoodrs
+		7: CheckpointRadius
+		8: BotCoords
+		9: OrbCoords
+		10: CloudCoords
+		11: AntiOrbCoords
+
 	player:
 		0: Checkpoint
 		1: Finished
@@ -133,6 +135,7 @@ variables
 		9: SphereEffects
 		10: CheckpointEffects
 		11: CheckpointIcons
+		12: CheckpointText
 }
 
 subroutines
@@ -144,6 +147,7 @@ subroutines
 	4: CreatePlayerHUD
 	5: CreateCurrentLevel
 	6: TeleportToCurrentCheckpoint
+	7: TawsDecompressData
 }
 
 
@@ -157,7 +161,7 @@ rule("Put your data here")
 	actions
 	{
 		"0: Checkpoint, 1: Bot, 2: Orbs, 3: Antiorbs, 4: Cloud, 5: Teleport"
-		Global.MapData = Array(Array(Vector(0.100, 0, 0.100), 4), Array(Vector(10, 5, 0), 1.500),Array(1, Vector(20, 5, 0), 1.500), Array(2, Vector(10, 5, 0), 1.500));
+		Global.MapData = Array(Array(Vector(0.100, 0, 0.100), 4), Array(Vector(10, 5, 0), 1.500),Array(1, Vector(20, 5, 0), 1.500), Array(2, Vector(10, 5, 0), 1.500), Array(Vector(5,0,5)));
 	}
 }
 rule("Effect Color List")
@@ -196,7 +200,7 @@ rule("Decompress Data")
 
 	actions
 	{
-		Global.CheckpointCoords = Global.MapData[0]
+		Global.CheckpointCoords = Global.MapData[0];
 	}
 }
 
@@ -219,6 +223,7 @@ rule("1. Global Initialization")
 			Set Match Time(1);
 		End;
 		Pause Match Time;
+
 	}
 }
 
@@ -261,7 +266,7 @@ rule("-----------------------------Effects-------------------------------")
 		Ongoing - Global;
 	}
 }
-rule("CreateOrbEffects")
+
 
 rule("--------------------------Subroutines------------------------------")
 {
@@ -369,11 +374,11 @@ rule("Subroutine CreateCurrentLevel")
 		Create Effect(Event Player, Ring, Global.Config[0], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
 		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
 		Create In-World Text(Event Player, Custom String("Checkpoint"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
-		Modify Player Variable(Event Player, CheckpointText , Append To Array, Last Created Entity);
+		Modify Player Variable(Event Player, CheckpointText, Append To Array, Last Created Entity);
 
 
 		"Create Orbs"
-		Filtered Array(Global.MapData, Global.MapData[Event.Player.Checkpoint] == 0)Create Effect(Event Player, Orb, Global.Config[1], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
+		Create Effect(Event Player, Orb, Global.Config[1], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
 		
 		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
 		Create In-World Text(Event Player, Custom String("Orb"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
@@ -385,7 +390,7 @@ rule("Subroutine CreateCurrentLevel")
 	}
 }
 
-rule("Subroutine TeleportToCurrentCheckpoint")
+rule("Subroutine Taw's Editor Decompression")
 {
 	event
 	{
@@ -396,5 +401,129 @@ rule("Subroutine TeleportToCurrentCheckpoint")
 	actions
 	{
 		Teleport(Event Player, Global.MapData[Event Player.Checkpoint][0]);
+	}
+}
+
+rule("Taw's Editor DecompressData()")
+{
+	event
+	{
+		Subroutine;
+		TawsDecompressData;
+	}
+
+	actions
+	{
+		If(Global.CompressedData == 0);
+			Global.CheckpointCoords = Empty Array;
+			Global.CheckpointBotCoords = Empty Array;
+			Global.CheckpointOrbCoords = Empty Array;
+			Global.CheckpointOrbRadius = Empty Array;
+			Global.CheckpointGARefreshRadius = Empty Array;
+			Global.CheckpointFlags = Empty Array;
+			Global.CheckpointTeleport = Empty Array;
+			Global.CheckpointGACoords = Empty Array;
+			Abort;
+		End;
+		If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 2);
+			"Compression V2"
+			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
+			Global.CheckpointRadius = Mapped Array(Global.CompressedData,
+				Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1]);
+			Global.CheckpointFacingDirection = Mapped Array(Global.CompressedData, Current Array Element[0][2]);
+			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Current Array Element[0][3]);
+			Global.CheckpointFlags = Mapped Array(Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 8, Round To Integer((
+				Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, Round To Integer(
+				Current Array Element[4] / 1000, Down) / 10)), Array(Current Array Element[0] % 2 != 0, 0, (
+				Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0, (Current Array Element[0] - Current Array Element[0] % 4)
+				% 8 != 0, 0, Current Array Element[2], Current Array Element[1]));
+			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
+				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), Current Array Element % 2 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 1), Current Array Element);
+				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 1), Current Array Element);
+				Wait(0.016, Ignore Condition);
+			End;
+		Else If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 1);
+			"Compression V1"
+			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
+			Global.CheckpointRadius = Mapped Array(Global.CompressedData, Global.DefaultCheckpointRadius);
+			Global.CheckpointFacingDirection = Mapped Array(Global.CompressedData, Current Array Element[0][1]);
+			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Array(Current Array Element[0][2], Global.DefaultCheckpointRadius,
+				Global.DefaultCheckpointRadius, Global.DefaultCheckpointRadius, False));
+			Global.CheckpointFlags = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
+			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
+				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), Current Array Element % 2 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 1), Current Array Element);
+				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 1), Current Array Element);
+				Wait(0.016, Ignore Condition);
+			End;
+		Else;
+			"Compression V0"
+			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
+			Global.CheckpointRadius = Mapped Array(Global.CompressedData, Global.DefaultCheckpointRadius);
+			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.DefaultCheckpointRadius,
+				Global.DefaultCheckpointRadius, Global.DefaultCheckpointRadius, False));
+			Global.CheckpointFlags = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
+			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
+				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), Current Array Element % 2 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.temp = Global.CheckpointFlags[Global.ctemp];
+				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
+					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
+				Global.CheckpointFlags[Global.ctemp] = Global.temp;
+				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
+					Current Array Index % 2 == 1), Current Array Element);
+				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 0), Current Array Element);
+				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
+					Current Array Index % 2 == 1), Current Array Element);
+				Wait(0.016, Ignore Condition);
+			End;
+		End;
+		Global.CompressedData = 0;
 	}
 }
