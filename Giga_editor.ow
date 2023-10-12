@@ -26,41 +26,40 @@ settings
 			Flag Return Time: 4.0
 			Flag Score Respawn Time: 15.0
 
-			disabled maps
+			
+			enabled maps
 			{
-				Ilios Lighthouse
-				Ilios Ruins
-				Ilios Well
-				Lijiang Control Center
-				Lijiang Control Center Lunar New Year
-				Lijiang Garden
-				Lijiang Garden Lunar New Year
-				Lijiang Night Market
-				Lijiang Night Market Lunar New Year
 			}
 		}
 
 		Hybrid
+		{
+			enabled maps
+			{
+			}
+		}
 
 		Practice Range
+		{
+			enabled maps
+			{
+			}
+		}
 
 		Skirmish
+		{
+			enabled maps
+			{
+				Workshop Chamber 972777519512064577
+			}
+		}
 
 		Team Deathmatch
 		{
 			Game Length In Minutes: 15
 
-			disabled maps
+			enabled maps
 			{
-				Ilios Lighthouse
-				Ilios Ruins
-				Ilios Well
-				Lijiang Control Center
-				Lijiang Control Center Lunar New Year
-				Lijiang Garden
-				Lijiang Garden Lunar New Year
-				Lijiang Night Market
-				Lijiang Night Market Lunar New Year
 			}
 		}
 
@@ -115,12 +114,21 @@ variables
         3: HintText
 		4: Config
 		5: WorkshopColorList
-		6: CheckpointCoords
-		7: CheckpointRadius
-		8: BotCoords
-		9: OrbCoords
-		10: CloudCoords
-		11: AntiOrbCoords
+		6: Checkpoints
+		8: Orbs
+		9: AntiOrbs
+		10: RefreshOrbs
+		11: Bots
+		12: Clouds
+		13: Teleports
+		14: CompressedData
+		15: TawsEditorVariables
+		16: DefaultCheckpointRadius
+		17: DefaultOrbRadius
+		18: DefaultRefreshOrbRadius
+		19: i
+		20: j
+		21: TempArray
 
 	player:
 		0: Checkpoint
@@ -160,8 +168,7 @@ rule("Put your data here")
 
 	actions
 	{
-		"0: Checkpoint, 1: Bot, 2: Orbs, 3: Antiorbs, 4: Cloud, 5: Teleport"
-		Global.MapData = Array(Array(Vector(0.100, 0, 0.100), 4), Array(Vector(10, 5, 0), 1.500),Array(1, Vector(20, 5, 0), 1.500), Array(2, Vector(10, 5, 0), 1.500), Array(Vector(5,0,5)));
+		
 	}
 }
 rule("Effect Color List")
@@ -191,18 +198,6 @@ rule("--------------------------Initialization Settings-------------------------
 		Ongoing - Global;
 	}
 }
-rule("Decompress Data")
-{
-	event
-	{
-		Ongoing - Global;
-	}
-
-	actions
-	{
-		Global.CheckpointCoords = Global.MapData[0];
-	}
-}
 
 rule("1. Global Initialization")
 {
@@ -214,7 +209,6 @@ rule("1. Global Initialization")
 	actions
 	{
 		Enable Inspector Recording;
-		Call Subroutine(InitializeGlobalVariables);
 		Disable Built-In Game Mode Announcer;
 		Disable Built-In Game Mode Completion;
 		Disable Built-In Game Mode Music;
@@ -224,6 +218,8 @@ rule("1. Global Initialization")
 		End;
 		Pause Match Time;
 
+		"TEMPORAL, JUST FOR TAWS COMPATIBILITY"
+		Global.DefaultCheckpointRadius = 2;
 	}
 }
 
@@ -259,6 +255,27 @@ rule("2. Player Initialization")
 		Call Subroutine(TeleportToCurrentCheckpoint);
 	}
 }
+
+rule("3. Decompress Data")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		CallSubroutine(InitializeGlobalVariables);
+		"Detect GigaEditor data"
+		If (Global.MapData);
+			Call Subroutine(DecompressMapData);
+			
+		"Detect Taw's Editor data"
+		Else If (Global.CompressedData);
+			Call Subroutine(TawsDecompressData);
+		End;
+	}
+}
 rule("-----------------------------Effects-------------------------------")
 {
 	event
@@ -288,9 +305,13 @@ rule("Subroutine InitializeGlobalVariables")
 	{
 		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"),
 			False, 0);
-		If(!Global.MapData);
-			Global.MapData = Null;
-			Call Subroutine(CreateGlobalHUD);
+		Call Subroutine(CreateGlobalHUD);
+		Global.Checkpoints = Empty Array;
+		Global.Bots = Empty Array;
+		Global.Orbs = Empty Array;
+		Global.AntiOrbs = Empty Array;
+		Global.RefreshOrbs = Empty Array;
+		Global.Teleports = Empty Array;
 	}
 }
 
@@ -414,116 +435,109 @@ rule("Taw's Editor DecompressData()")
 
 	actions
 	{
-		If(Global.CompressedData == 0);
-			Global.CheckpointCoords = Empty Array;
-			Global.CheckpointBotCoords = Empty Array;
-			Global.CheckpointOrbCoords = Empty Array;
-			Global.CheckpointOrbRadius = Empty Array;
-			Global.CheckpointGARefreshRadius = Empty Array;
-			Global.CheckpointFlags = Empty Array;
-			Global.CheckpointTeleport = Empty Array;
-			Global.CheckpointGACoords = Empty Array;
-			Abort;
-		End;
+		Global.TawsEditorVariables = Empty Array;
+		"ctemp"
+		Global.i = 0;
+		"temp"
+		Global.TawsEditorVariables[1] = Empty Array;
+		"CheckpointFlags"
+		Global.TawsEditorVariables[2] = Empty Array;
+		"Orb/Refresh Orb index"
+		Global.j = 0;
+		"Orb/Antiorb data"
+		Global.TawsEditorVariables[4] = Empty Array;
+
+		"Compression V2"
 		If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 2);
-			"Compression V2"
 			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
-			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
-			Global.CheckpointRadius = Mapped Array(Global.CompressedData,
-				Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1]);
-			Global.CheckpointFacingDirection = Mapped Array(Global.CompressedData, Current Array Element[0][2]);
-			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Current Array Element[0][3]);
-			Global.CheckpointFlags = Mapped Array(Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 8, Round To Integer((
+			"Extract Teleport pads"
+			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
+			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
+			"//TODO: Extraer estas flags"
+			Global.TawsEditorVariables[2] = Mapped Array(Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 8, Round To Integer((
 				Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, Round To Integer(
 				Current Array Element[4] / 1000, Down) / 10)), Array(Current Array Element[0] % 2 != 0, 0, (
 				Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0, (Current Array Element[0] - Current Array Element[0] % 4)
 				% 8 != 0, 0, Current Array Element[2], Current Array Element[1]));
-			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
-				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), Current Array Element % 2 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 1), Current Array Element);
-				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 1), Current Array Element);
-				Wait(0.016, Ignore Condition);
-			End;
+		
+		"Compression V1"
 		Else If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 1);
-			"Compression V1"
 			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
-			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
-			Global.CheckpointRadius = Mapped Array(Global.CompressedData, Global.DefaultCheckpointRadius);
-			Global.CheckpointFacingDirection = Mapped Array(Global.CompressedData, Current Array Element[0][1]);
-			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Array(Current Array Element[0][2], Global.DefaultCheckpointRadius,
-				Global.DefaultCheckpointRadius, Global.DefaultCheckpointRadius, False));
-			Global.CheckpointFlags = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+			"Extract Teleport pads"
+			Global.Teleports = Mapped Array(Global.CompressedData, 
+				Array(Current Array Element[0][2],
+				Global.DefaultCheckpointRadius, 
+				False, 
+				Global.DefaultCheckpointRadius, 
+				Global.DefaultCheckpointRadius));
+
+			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
-			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
-				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), Current Array Element % 2 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 1), Current Array Element);
-				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 1), Current Array Element);
-				Wait(0.016, Ignore Condition);
-			End;
-		Else;
-			"Compression V0"
-			Global.CheckpointCoords = Mapped Array(Global.CompressedData, Current Array Element[0][0]);
-			Global.CheckpointRadius = Mapped Array(Global.CompressedData, Global.DefaultCheckpointRadius);
-			Global.CheckpointTeleport = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.DefaultCheckpointRadius,
+		"Compression V0"
+		Else;	
+			"Extract Teleports"
+			Global.Teleports = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.DefaultCheckpointRadius,
 				Global.DefaultCheckpointRadius, Global.DefaultCheckpointRadius, False));
-			Global.CheckpointFlags = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
-			For Global Variable(ctemp, 0, Count Of(Global.CheckpointCoords), 1);
-				Global.CheckpointBotCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[1] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), Current Array Element % 2 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.temp = Global.CheckpointFlags[Global.ctemp];
-				Global.temp[4] = Mapped Array(Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][1], Current Array Index % 2 == 1),
-					Current Array Element), (Current Array Element - Current Array Element % 2) % 4 != 0);
-				Global.CheckpointFlags[Global.ctemp] = Global.temp;
-				Global.CheckpointOrbCoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointOrbRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][2],
-					Current Array Index % 2 == 1), Current Array Element);
-				Global.CheckpointGACoords[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 0), Current Array Element);
-				Global.CheckpointGARefreshRadius[Global.ctemp] = Mapped Array(Filtered Array(Global.CompressedData[Global.ctemp][3],
-					Current Array Index % 2 == 1), Current Array Element);
-				Wait(0.016, Ignore Condition);
-			End;
 		End;
-		Global.CompressedData = 0;
+
+		"Extract Checkpoint coordinates, radius and facing direction"
+			Global.Checkpoints = Mapped Array(Global.CompressedData, Array(Current Array Element[0][0],
+			Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1],
+			Current Array Element[0][2] == 0 ? False : Current Array Element[0][2]));                                       
+
+		"Extract Bots, Orbs, Flags"
+		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
+			Global.TempArray = Empty Array;
+			"Bots"
+			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][1]), 2);
+				"Translate bot data and flags -> Array(Coords, CrouchEnabled, GravityEnabled)"
+				Global.TempArray[Global.j / 2] =
+					Array(Global.CompressedData[Global.i][1][Global.j],
+						(Global.CompressedData[Global.i][1][Global.j + 1] % 2 != 0),
+						((Global.CompressedData[Global.i][1][Global.j + 1] - Global.CompressedData[Global.i][1][Global.j + 1] % 2) % 4 != 0)
+					);
+			End;
+			"Store Bot array to global data"
+			Global.Bots[Global.i] = Global.TempArray;
+			Global.TempArray = Empty Array;			
+
+			"Extract Orbs/Antiorbs for this level"
+			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][2]), 2);
+				"Transform orb data"
+				Global.TempArray[Global.j / 2] =  Array(
+					Global.CompressedData[Global.i][2][Global.j],
+					Global.CompressedData[Global.i][2][Global.j + 1]);
+				
+			End;
+			"Store Orb Array to global data"
+			Global.Orbs[Global.i] = Filtered Array(Global.TempArray, Current Array Element[1] > 0);
+			"Antiorbs are encoded with a negative Radius"
+			Global.AntiOrbs[Global.i] = Mapped Array(Filtered Array(Global.TempArray, Current Array Element[1] < 0), Array(Current Array Element[0],Current Array Element[1] * -1));
+			Global.TempArray = Empty Array;		
+
+			"Extract Refresh Orbs"
+			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][3]), 2);
+				"Transform Refresh Orb data"
+				Global.TempArray[Global.j / 2] = Array(
+					Global.CompressedData[Global.i][3][Global.j],
+					Global.CompressedData[Global.i][3][Global.j + 1],
+					Global.j / 2 + 1);
+			End;
+			Global.RefreshOrbs[Global.i] = Global.TempArray;
+			Global.TempArray = Empty Array;		
+
+			Wait(0.016, Ignore Condition);
+		End;
+		Global.CompressedData = Null;
+		Global.TawsEditorVariables = Null;
+		Global.TempArray = Null;
+		Global.i = 0;
+		Global.j = 0;
 	}
 }
