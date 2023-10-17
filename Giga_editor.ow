@@ -50,7 +50,7 @@ settings
 		{
 			enabled maps
 			{
-				Workshop Chamber 972777519512064577
+				Watchpoint: Gibraltar 972777519512068292
 			}
 		}
 
@@ -237,7 +237,7 @@ rule("Put your data here")
 			Array(Vector(81.615, -0.480, 39.229), Array(Vector(81.722, 0.220, 51.897), 1), Array(Vector(88.492, 11.141, 48.662), 1), Array(
 			0, 1), 19190), Array(Vector(90.734, 1.427, 36.229), Array(0, 0), Array(), Array(0, 1), 19190), 2);
 		"Vwideawake pride midtown 107cp"
-		Global.CompressedData = Array(Array(Array(Vector(31.212, 12.188, 22.697), 2, Vector(0.844, 0.523, -0.118)), Array(Vector(47.665,
+		disabled Global.CompressedData = Array(Array(Array(Vector(31.212, 12.188, 22.697), 2, Vector(0.844, 0.523, -0.118)), Array(Vector(47.665,
 			21.995, 20.436), 2), Array(), Array(0, 0.500), 20202), Array(Vector(50.180, 12.500, 2.739), Array(0, 0), Array(), Array(0,
 			0.500), 20202), Array(Vector(43.110, 7.938, -8.893), Array(Vector(50.490, 3.576, -16.067), 1), Array(), Array(0, 0.500),
 			20202), Array(Array(Vector(58.111, 3.576, -21.899), 4), Array(Vector(75.298, 11.273, -39.235), 2), Array(Vector(63.585, 11.987,
@@ -443,7 +443,7 @@ rule("2. Player Initialization")
 		
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
-		Call Subroutine(CreateCurrentLevel);
+		Call Subroutine(SetupCheckpoint);
 		Call Subroutine(TeleportToCurrentCheckpoint);
 	}
 }
@@ -522,18 +522,19 @@ rule("Press Rez + Melee + Primary/Secondary Fire to switch checkpoints")
 	actions
 	{
 		If(Is Button Held(Event Player, Button(Primary Fire)));
-			If(Event Player.Checkpoint < Count Of(Global.Checkpoints));
+			If(Event Player.Checkpoint < Count Of(Global.Checkpoints) - 1);
 				Modify Player Variable(Event Player, Checkpoint, Add, 1);
-			Else If(Event Player.Checkpoint == Count Of(Global.Checkpoints));
+			Else If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
 				Event Player.Checkpoint = 0;
 			End;
 		Else If(Is Button Held(Event Player, Button(Secondary Fire)));
 			If(Event Player.Checkpoint > 0);
 				Modify Player Variable(Event Player, Checkpoint, Subtract, 1);
 			Else If(Event Player.Checkpoint == 0);
-				Event Player.Checkpoint = Count Of(Global.Checkpoints);
+				Event Player.Checkpoint = Count Of(Global.Checkpoints) - 1;
 			End;
 		End;
+		Call Subroutine(SetupCheckpoint);
 	}
 }
 rule("---------------------------Effects-------------------------------")
@@ -545,7 +546,7 @@ rule("---------------------------Effects-------------------------------")
 }
 
 
-rule("Create current Level Orbs")
+rule("Render current Level Orbs")
 {
 	event
 	{
@@ -556,24 +557,30 @@ rule("Create current Level Orbs")
 	}
 	conditions
 	{
-		Count Of(Event Player.OrbEffects) < Count Of(Global.Orbs[Event Player.Checkpoint]);	
+		Count Of(Event Player.OrbEffects) != Count Of(Global.Orbs[Event Player.Checkpoint]);	
 	}
 	actions
 	{
-		"Action: Create orb effect"
-		Create Effect(Event Player, Sphere, Global.Config[1], 
-		Global.Orbs[Event Player.Checkpoint][Count Of(Event Player.OrbEffects)][0], 
-		Global.Orbs[Event Player.Checkpoint][Count Of(Event Player.OrbEffects)][1], 
-		Visible To Position Radius and Color);
-		"Save reference for last created orb to player variable"		
-		Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
-		"Action: Create orb icon"
-		Create Icon(Event Player, 
-		Global.Orbs[Event Player.Checkpoint][Count Of(Event Player.OrbEffects)][0], 
-		Halo, Visible To and Position, Color(Yellow), True);
-		"Save reference for last created icon to player variable"		
-		Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
-		
+		If(Count Of(Event Player.OrbEffects) > Count Of(Global.Orbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.OrbEffects));
+			Destroy Icon(Last Of(Event Player.OrbIcons));
+			Modify Player Variable(Event Player, OrbEffects, Remove from Array By Value, Last Of(Event Player.OrbEffects));
+			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Value, Last Of(Event Player.OrbIcons));
+		Else;
+			"Action: Create orb effect"
+			Create Effect(Event Player, Sphere, Global.Config[1], 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created orb to player variable"		
+			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
+			"Action: Create orb icon"
+			Create Icon(Event Player, 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0], 
+			Halo, Visible To and Position, Color(Yellow), True);
+			"Save reference for last created icon to player variable"		
+			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
+		End;
 		Wait(0.016, Ignore Condition);
 		Loop If Condition Is True;
 	}
@@ -631,6 +638,8 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.FreeMode = False;
 		Event Player.CurrentRunTime = 0;
 		Event Player.ToggleControls = False;
+		Event Player.OrbEffects = Empty Array;
+		Event Player.OrbIcons = Empty Array;
 	}
 }
 
@@ -696,34 +705,18 @@ rule("Subroutine CreatePlayerHUD")
 	}
 }
 
-rule("Subroutine CreateCurrentLevel")
+rule("Subroutine SetupCheckpoint")
 {
 	event
 	{
 		Subroutine;
-		CreateCurrentLevel;
+		SetupCheckpoint;
 	}
 
 	actions
 	{
-		
-		"Create Start Checkpoint"
-		Create Effect(Event Player, Ring, Global.Config[0], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
-		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
-		Create In-World Text(Event Player, Custom String("Checkpoint"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
-		Modify Player Variable(Event Player, CheckpointText, Append To Array, Last Created Entity);
-
-
-		"Create Orbs"
-		Create Effect(Event Player, Orb, Global.Config[1], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
-		
-		Modify Player Variable(Event Player, CheckpointEffects, Append To Array, Last Created Entity);
-		Create In-World Text(Event Player, Custom String("Orb"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
-
-		"Create Bot"
-		Create Effect(Event Player, Ring, Global.Config[0], Global.MapData[Event Player.Checkpoint][0], Global.MapData[Event Player.Checkpoint][1], Visible To Position and Radius);
-		Create In-World Text(Event Player, Custom String("Checkpoint"), Global.MapData[Event Player.Checkpoint][0], 1, Clip Against Surfaces, Visible To and String, Color(White), Default Visibility); 
-
+		Start Rule(DestroyExcessEffects, Restart Rule);
+		Call Subroutine(TeleportToCurrentCheckpoint);
 	}
 }
 
@@ -868,12 +861,6 @@ rule("Destroy Excess effects")
 
 	actions
 	{
-		While(Global.Orbs[Event Player.Checkpoint] > Count Of(Event Player.OrbEffects));
-			Destroy Effect(Last Of(Event Player.OrbEffects));
-			Destroy Icon(Last Of(Event Player.OrbEffects));
-			Modify Player Variable(Event Player, OrbEffects, Remove from Array By Value, Last Of(Event Player.OrbEffects));
-			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Value, Last Of(Event Player.OrbIcons));
-			Wait(0.016, Ignore Condition);
-		End;
+
 	}
 }
