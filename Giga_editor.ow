@@ -162,7 +162,6 @@ subroutines
 	7: TawsDecompressData
 	8: PeaceDecompressData
 	9: CreateCheckpoints
-	10: DestroyExcessEffects
 }
 
 
@@ -375,11 +374,17 @@ rule("Effect Color List")
 		"Orb color"
 		Global.Config[1] = Color(Red);
 		"Anti-Orb Color"
-		Global.Config[2] = Color(Yellow);
+		Global.Config[2] = Color(Black);
 		"Jump Cloud Color"
 		Global.Config[3] = Color(Red);
-		"Regular orb Icon"
-		Global.Config[50] = Icon String(Halo);
+		"Refresh Orb Color"
+		Global.Config[4] = Color(Violet);
+		"Finish Checkpoint Ring Color"
+		Global.Config[5] = Color(Aqua);
+		"Goal Checkpoint text Color"
+		Global.Config[6] = Color(White);
+		"Goal Checkpoint text"
+		Global.Config[7] = Custom String("Goal");
 	}
 }
 
@@ -545,8 +550,7 @@ rule("---------------------------Effects-------------------------------")
 	}
 }
 
-
-rule("Render current Level Orbs")
+rule("Create/destroy current level Orbs")
 {
 	event
 	{
@@ -583,6 +587,135 @@ rule("Render current Level Orbs")
 		End;
 		Wait(0.016, Ignore Condition);
 		Loop If Condition Is True;
+	}
+}
+rule("Create/destroy current level RefreshOrbs")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+
+	}
+	conditions
+	{
+		Count Of(Event Player.RefreshOrbEffects) != Count Of(Global.RefreshOrbs[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		"TODO: Implement Taw's/Peace editor switch to reuse a single refresh orb or render all"
+		If(Count Of(Event Player.RefreshOrbEffects) > Count Of(Global.RefreshOrbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.RefreshOrbEffects));
+			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
+			Modify Player Variable(Event Player, RefreshOrbEffects, Remove from Array By Value, Last Of(Event Player.RefreshOrbEffects));
+			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Value, Last Of(Event Player.RefreshOrbIcons));
+		Else;
+			"Action: Create RefeshOrb effect"
+			Create Effect(Event Player, Sphere, Global.Config[4], 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created RefeshOrb to player variable"		
+			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
+			"Action: Create RefeshOrb icon"
+			Create Icon(Event Player, 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0], 
+			Recycle, Visible To and Position, Global.Config[4], True);
+			"Save reference for last created icon to player variable"		
+			Modify Player Variable(Event Player, RefreshOrbIcons, Append To Array, Last Created Entity);
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create/Destroy current level Antiorbs")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Count Of(Event Player.AntiOrbEffects) != Count Of(Global.AntiOrbs[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		If(Count Of(Event Player.AntiOrbEffects) > Count Of(Global.AntiOrbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.AntiOrbEffects));
+			Modify Player Variable(Event Player, AntiOrbEffects, Remove from Array By Value, Last Of(Event Player.AntiOrbEffects));
+		Else;
+			"Action: Create AntiOrb effect"
+			Create Effect(Event Player, Sphere, Global.Config[2], 
+			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][0], 
+			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created AntiOrb to player variable"		
+			Modify Player Variable(Event Player, AntiOrbEffects, Append To Array, Last Created Entity);
+			
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create/Destroy current level Jump Clouds")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Count Of(Event Player.CloudEffects) != Count Of(Global.Clouds[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		If(Count Of(Event Player.CloudEffects) > Count Of(Global.Clouds[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.CloudEffects));
+			Modify Player Variable(Event Player, CloudEffects, Remove from Array By Value, Last Of(Event Player.CloudEffects));
+		Else;
+			"Action: Create Cloud effect"
+			Create Effect(Event Player, Sphere, Global.Config[2], 
+			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][0], 
+			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created Cloud to player variable"		
+			Modify Player Variable(Event Player, CloudEffects, Append To Array, Last Created Entity);
+			
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create Start and Finish checkpoints")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bo t(Event Player) == False;	
+	}
+	actions
+	{
+		"Create start checkpoint Ring"
+		Create Effect(Event Player, Ring, Global.Config[0], Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
+		"Create Goal checkpoint Ring"
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Config[5], Global.Checkpoints[Event Player.Checkpoint + 1][0], Global.Checkpoints[Event Player.Checkpoint + 1][1], Visible To Position Radius and Color);
+		"Create Goal checkpoint Sparkles"
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Config[5], Global.Checkpoints[Event Player.Checkpoint + 1][0], Global.Checkpoints[Event Player.Checkpoint + 1][1], Visible To Position Radius and Color);
+		"Create Goal checkpoint Icon"
+		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Checkpoints[Event Player.Checkpoint + 1][0] + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
+		"Create Goal checkpoint Text"
+		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Config[7], Global.Checkpoints[Event Player.Checkpoint + 1][0] + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
 	}
 }
 rule("--------------------------Parkour Engine rules--------------------------")
@@ -715,7 +848,6 @@ rule("Subroutine SetupCheckpoint")
 
 	actions
 	{
-		Start Rule(DestroyExcessEffects, Restart Rule);
 		Call Subroutine(TeleportToCurrentCheckpoint);
 	}
 }
@@ -848,19 +980,5 @@ rule("Taw's Editor DecompressData")
 		Global.TempArray = Null;
 		Global.i = 0;
 		Global.j = 0;
-	}
-}
-
-rule("Destroy Excess effects")
-{
-	event
-	{
-		Subroutine;
-		DestroyExcessEffects;
-	}
-
-	actions
-	{
-
 	}
 }
