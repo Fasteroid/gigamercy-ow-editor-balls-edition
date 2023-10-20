@@ -2,8 +2,8 @@ settings
 {
 	main
 	{
-		Description: "WIP v.20230831"
-		Mode Name: "GigaMercy Parkour Editor"
+		Description: "WIP v.20230831\n By GigaMercy"
+		Mode Name: "Giga Parkour Editor"
 	}
 
 	lobby
@@ -151,6 +151,9 @@ variables
 		14: CheckpointIcons
 		15: CheckpointText
 		16: ToggleControls
+		17: Mistakes
+		18: Scale
+		19: GrabbedOrbs
 }
 
 subroutines
@@ -391,7 +394,7 @@ rule("Effect Color List")
 	}
 }
 
-rule("--------------------------Initialization Settings------------------------------")
+rule("——————————————————————————Initialization Settings——————————————————————————")
 {
 	event
 	{
@@ -478,7 +481,7 @@ rule("3. Decompress Data")
 }
 
 
-rule("-----------------------------Controls-------------------------------")
+rule("——————————————————————————Controls——————————————————————————")
 {
 	event
 	{
@@ -675,7 +678,7 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 		Small Message(Event Player, Custom String("Spectator mode not implemented yet"));
 	}
 }
-rule("---------------------------Effects-------------------------------")
+rule("——————————————————————————Effects——————————————————————————")
 {
 	event
 	{
@@ -711,9 +714,11 @@ rule("Create/destroy current level Orbs")
 			Visible To Position Radius and Color);
 			"Save reference for last created orb to player variable"		
 			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
+			
 			"Action: Create orb icon"
 			Create Icon(Event Player, 
-			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0], 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] 
+				+ Vector(0,Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1]/2, 0), 
 			Halo, Visible To and Position, Color(Yellow), True);
 			"Save reference for last created icon to player variable"		
 			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
@@ -751,9 +756,11 @@ rule("Create/destroy current level RefreshOrbs")
 			Visible To Position Radius and Color);
 			"Save reference for last created RefeshOrb to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
+			
 			"Action: Create RefeshOrb icon"
 			Create Icon(Event Player, 
-			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0], 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0]
+				+ Vector(0, Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][1]/2, 0), 
 			Recycle, Visible To and Position, Global.Config[4], True);
 			"Save reference for last created icon to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbIcons, Append To Array, Last Created Entity);
@@ -851,7 +858,8 @@ rule("Create Start and Finish checkpoints")
 		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Config[7], Global.Checkpoints[Event Player.Checkpoint + 1][0] + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
 	}
 }
-rule("--------------------------Parkour Engine rules--------------------------")
+
+rule("——————————————————————————Parkour Engine rules——————————————————————————")
 {
 	event
 	{
@@ -859,7 +867,76 @@ rule("--------------------------Parkour Engine rules--------------------------")
 	}
 }
 
-rule("--------------------------Subroutines------------------------------")
+rule("Detect Leaving checkpoint")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		> Global.Checkpoints[Event Player.Checkpoint][1];
+	}
+	actions
+	{
+		Chase Player Variable At Rate(Event Player, CurrentRunTime, 20000, 1, Destination and Rate);
+	}
+}
+
+rule("Detect Landing Outside")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		"TODO: Agregar logica para niveles que no requieran onGround"
+		Is On Ground(Event Player) == True;
+		"TODO: Agregar logica para niveles con teleports"
+		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		> Global.Checkpoints[Event Player.Checkpoint][1];
+	}
+	actions
+	{
+		If(Is True for Any(Event Player.GrabbedOrbs, Current Array Element == False));
+			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.CurrentRunTime = 0;
+			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+
+		"TODO: Add cp up/down threshold forgiveness"
+		Else If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint + 1][0]) > 
+		Global.Checkpoints[Event Player.Checkpoint + 1][1]);
+			Small Message(Event Player, Custom String("You need to land inside the Goal!"));
+			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+
+		"TODO: Add cp up/down threshold forgiveness"
+		Else If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint + 1][0]) <= 
+		Global.Checkpoints[Event Player.Checkpoint + 1][1]);
+			Event Player.Checkpoint += 1;
+			Small Message(Event Player, Custom String("Reached the goal:D"));
+			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+		End;
+	}
+}
+
+rule("——————————————————————————Subroutines——————————————————————————")
 {
 	event
 	{
@@ -903,9 +980,11 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.Finished = False;
 		Event Player.FreeMode = False;
 		Event Player.CurrentRunTime = 0;
+		Event Player.Mistakes = 0;
 		Event Player.ToggleControls = False;
 		Event Player.OrbEffects = Empty Array;
 		Event Player.OrbIcons = Empty Array;
+		Event Player.GrabbedOrbs = Empty Array;
 	}
 }
 
@@ -975,7 +1054,7 @@ rule("Subroutine CreateGlobalHUD")
 					Custom String("---------------------------------------")
 				)
 			), 
-		Right, 1, Null, Null, Color(White), Visible To and String, Default Visibility);
+		Right, 2, Null, Null, Color(White), Visible To and String, Default Visibility);
 	}
 }
 
@@ -996,7 +1075,9 @@ rule("Subroutine CreatePlayerHUD")
 		"Top HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints)), Null, 
 			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
-		
+		"Right HUD Elements"
+		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}", Event Player.CurrentRunTime, Event Player.Mistakes), 
+			Right, 1, Null, Null, Color(White),  Visible To and String, Default Visibility);
 		
 	}
 }
@@ -1012,10 +1093,11 @@ rule("Subroutine SetupCheckpoint")
 	actions
 	{
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint], Global.Orbs[Event Player.Checkpoint] ? False : Null);
 	}
 }
 
-rule("Teleport to current Checkpoint")
+rule("Subrotine TeleportToCurrentCheckpoint")
 {
 	event
 	{
@@ -1058,11 +1140,25 @@ rule("Taw's Editor DecompressData")
 			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
 			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
 			"//TODO: Extraer estas flags"
-			Global.TawsEditorVariables[2] = Mapped Array(Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 8, Round To Integer((
-				Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, Round To Integer(
-				Current Array Element[4] / 1000, Down) / 10)), Array(Current Array Element[0] % 2 != 0, 0, (
-				Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0, (Current Array Element[0] - Current Array Element[0] % 4)
-				% 8 != 0, 0, Current Array Element[2], Current Array Element[1]));
+			Global.TawsEditorVariables[2] = 
+			Mapped Array(
+				Mapped Array(
+					Global.CompressedData, 
+					Array(
+						Current Array Element[4] % 8, 
+						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10 Down) / 10, 
+						Round To Integer(Current Array Element[4] / 1000, Down) / 10)
+					), 
+				Array(
+					Current Array Element[0] % 2 != 0, 
+					0, 
+					(Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0,
+					(Current Array Element[0] - Current Array Element[0] % 4) % 8 != 0, 
+					0, 
+					Current Array Element[2], 
+					Current Array Element[1]
+				)
+			);
 		
 		"Compression V1"
 		Else If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 1);
@@ -1135,6 +1231,7 @@ rule("Taw's Editor DecompressData")
 			End;
 			Global.RefreshOrbs[Global.i] = Global.TempArray;
 			Global.TempArray = Empty Array;		
+
 
 			Wait(0.016, Ignore Condition);
 		End;
