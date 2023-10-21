@@ -92,6 +92,12 @@ settings
 		}
 	}
 
+	workshop
+	{
+		Debug Mode (Inspector Recording): On
+		Edit Mode: On
+	}
+
 	extensions
 	{
 		Beam Effects
@@ -132,6 +138,7 @@ variables
 		22: WorldTexts
 		23: CheckpointInWorldText
 		24: ShowSidebarControlsPlayers
+		25: EditMode
 
 	player:
 		0:  Checkpoint
@@ -154,6 +161,12 @@ variables
 		17: Mistakes
 		18: Scale
 		19: GrabbedOrbs
+		20: GoalCoords
+		21: GoalRadius
+		22: GoalFacingDirection
+		23: GoalThresholds
+		24: RunTimerEnabled
+		25: CurrentSectionTime
 }
 
 subroutines
@@ -168,6 +181,8 @@ subroutines
 	7: TawsDecompressData
 	8: PeaceDecompressData
 	9: CreateCheckpoints
+	10: CreateGlobalEditModeHUD
+	11: CreatePlayerEditModeHUD
 }
 
 
@@ -183,7 +198,12 @@ rule("Put your data here")
 		"OLD DATA 0: Checkpoint, 1: Bot, 2: Orbs, 3: Antiorbs, 4: Cloud, 5: Teleport"
 		disabled Global.MapData = Array(Array(Vector(0.100, 0, 0.100), 4), Array(Vector(10, 5, 0), 1.500),Array(1, Vector(20, 5, 0), 1.500), Array(2, Vector(10, 5, 0), 1.500), Array(Vector(5,0,5)));
 		"Test workshop ceiling multi-ga"
-		disabled Global.CompressedData = Array(Array(Vector(11.103, 0, 0.751), Array(Vector(5.765, 3.277, -5.818), 3, Vector(-12.836, 12.637, -9),
+		disabled Global.CompressedData = Array(
+			Array(
+				Vector(11.103, 0, 0.751), 
+				Array(Vector(5.765, 3.277, -5.818), 
+				3, 
+				Vector(-12.836, 12.637, -9),
 		0, Vector(-15.996, 17.253, 7.653), 0, Vector(-3.328, 22.424, 25.620), 0, Vector(17.192, 22.424, 22.353), 0, Vector(6.265, 0,
 		3.624), 1), Array(), Array(Vector(3.121, 10.811, -14.036), 0.500, Vector(-14.540, 20.243, -17.708), 0.500, Vector(-18.241,
 		21.479, 14.446), 0.500, Vector(2.701, 23.424, 25.210), 0.500, Vector(25.672, 23.424, 18.697), 0.500, 0, 0.500), 20202), Array(
@@ -378,7 +398,7 @@ rule("Effect Color List")
 		"Checkpoint Ring Color"
 		Global.Config[0] = Color(Blue);
 		"Orb color"
-		Global.Config[1] = Color(Red);
+		Global.Config[1] = Color(Yellow);
 		"Anti-Orb Color"
 		Global.Config[2] = Color(Black);
 		"Jump Cloud Color"
@@ -411,7 +431,10 @@ rule("1. Global Initialization")
 
 	actions
 	{
-		Enable Inspector Recording;
+		Call Subroutine(InitializeGlobalVariables);
+		If(!Global.DebugMode);
+			Disable Inspector Recording;
+		End;
 		Disable Built-In Game Mode Announcer;
 		Disable Built-In Game Mode Completion;
 		Disable Built-In Game Mode Music;
@@ -456,6 +479,9 @@ rule("2. Player Initialization")
 		Call Subroutine(CreatePlayerHUD);
 		Call Subroutine(SetupCheckpoint);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		If(Global.EditMode);
+			Call Subroutine(CreatePlayerEditModeHUD);
+		End;
 	}
 }
 
@@ -468,7 +494,6 @@ rule("3. Decompress Data")
 
 	actions
 	{
-		CallSubroutine(InitializeGlobalVariables);
 		"Detect GigaEditor data"
 		If (Global.MapData);
 			Call Subroutine(DecompressMapData);
@@ -537,20 +562,24 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 	}
 	actions
 	{
+		Event Player.FreeMode = True;
 		If(Is Button Held(Event Player, Button(Primary Fire)));
 			If(Event Player.Checkpoint < Count Of(Global.Checkpoints) - 1);
-				Modify Player Variable(Event Player, Checkpoint, Add, 1);
-			Else If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+				Event Player.Checkpoint += 1;
+			Else;
 				Event Player.Checkpoint = 0;
 			End;
 		Else If(Is Button Held(Event Player, Button(Secondary Fire)));
 			If(Event Player.Checkpoint > 0);
-				Modify Player Variable(Event Player, Checkpoint, Subtract, 1);
+				Event Player.Checkpoint -= 1;
 			Else If(Event Player.Checkpoint == 0);
 				Event Player.Checkpoint = Count Of(Global.Checkpoints) - 1;
 			End;
-		End;
+		End;	
 		Call Subroutine(SetupCheckpoint);
+		Call Subroutine(TeleportToCurrentCheckpoint);	
+		Event Player.FreeMode = False;
+		Wait(0.016, Abort When False);
 	}
 }
 rule("Press [Reload] to reset current checkpoint")
@@ -574,10 +603,10 @@ rule("Press [Reload] to reset current checkpoint")
 	}
 	actions
 	{
-		Wait(0.16, Abort When False);
 		If(Is Button Held(Event Player, Button(Reload)) == True);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 		End;
+		Wait(0.016, Abort When False);
 	}
 }
 rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
@@ -847,15 +876,16 @@ rule("Create Start and Finish checkpoints")
 	actions
 	{
 		"Create start checkpoint Ring"
-		Create Effect(Event Player, Ring, Global.Config[0], Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
+		Create Effect(Event Player, Ring, Global.Config[0], Global.Checkpoints[Event Player.Checkpoint][0], 
+		Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
 		"Create Goal checkpoint Ring"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Config[5], Global.Checkpoints[Event Player.Checkpoint + 1][0], Global.Checkpoints[Event Player.Checkpoint + 1][1], Visible To Position Radius and Color);
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Config[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
 		"Create Goal checkpoint Sparkles"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Config[5], Global.Checkpoints[Event Player.Checkpoint + 1][0], Global.Checkpoints[Event Player.Checkpoint + 1][1], Visible To Position Radius and Color);
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Config[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
 		"Create Goal checkpoint Icon"
-		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Checkpoints[Event Player.Checkpoint + 1][0] + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
+		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
 		"Create Goal checkpoint Text"
-		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Config[7], Global.Checkpoints[Event Player.Checkpoint + 1][0] + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
+		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Config[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
 	}
 }
 
@@ -902,7 +932,6 @@ rule("Detect Landing Outside")
 		Is Dummy Bot(Event Player) == False;
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
-		"TODO: Agregar logica para niveles que no requieran onGround"
 		Is On Ground(Event Player) == True;
 		"TODO: Agregar logica para niveles con teleports"
 		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
@@ -910,28 +939,61 @@ rule("Detect Landing Outside")
 	}
 	actions
 	{
+		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&
+		((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True);
+		
 		If(Is True for Any(Event Player.GrabbedOrbs, Current Array Element == False));
 			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
+
+		"TODO: Add cp up/down threshold forgiveness"
+		Else If(Distance Between(Event Player, 
+		Event Player.GoalCoords) > Event Player.GoalRadius);
+			Small Message(Event Player, Custom String("You need to land inside the Goal!"));
+		End;
+		If(Event Player.Checkpoint == 0);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
-			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
-			Call Subroutine(TeleportToCurrentCheckpoint);
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-
-		"TODO: Add cp up/down threshold forgiveness"
-		Else If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint + 1][0]) > 
-		Global.Checkpoints[Event Player.Checkpoint + 1][1]);
-			Small Message(Event Player, Custom String("You need to land inside the Goal!"));
-			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
-			Call Subroutine(TeleportToCurrentCheckpoint);
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-
-		"TODO: Add cp up/down threshold forgiveness"
-		Else If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint + 1][0]) <= 
-		Global.Checkpoints[Event Player.Checkpoint + 1][1]);
-			Event Player.Checkpoint += 1;
-			Small Message(Event Player, Custom String("Reached the goal:D"));
+		End;
+	
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+	}
+}
+rule("Detect Landing on Goal")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
+		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
+		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
+		((Y Component Of(Position Of(Event Player)) <= Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0]) &&
+		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True;
+	}
+	actions
+	{
+		Event Player.Checkpoint += 1;
+		Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+		If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.Finished = True;
+			Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
+			Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
+			Event Player, Event Player.CurrentRunTime));
+		Else;
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+			Small Message(Event Player, Custom String("Reached the goal:D"));
+			Call Subroutine(SetupCheckpoint);
 		End;
 	}
 }
@@ -955,6 +1017,7 @@ rule("Subroutine InitializeGlobalVariables")
 	actions
 	{
 		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"), False, 0);
+		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);		
 		Call Subroutine(CreateGlobalHUD);
 		Global.Checkpoints = Empty Array;
 		Global.Bots = Empty Array;
@@ -1073,7 +1136,7 @@ rule("Subroutine CreatePlayerHUD")
 		Create HUD Text(Event Player, Null, Custom String("Hiya:)"), Null, 
 			Left, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
 		"Top HUD Elements"
-		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints)), Null, 
+		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
 			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
 		"Right HUD Elements"
 		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}", Event Player.CurrentRunTime, Event Player.Mistakes), 
@@ -1092,8 +1155,29 @@ rule("Subroutine SetupCheckpoint")
 
 	actions
 	{
-		Call Subroutine(TeleportToCurrentCheckpoint);
 		Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint], Global.Orbs[Event Player.Checkpoint] ? False : Null);
+		
+		If(!Event Player.FreeMode);
+			"Set crouch enabled for this level"
+			If(Global.Checkpoints[Event Player.Checkpoint][3]);
+				Allow Button(Event Player, Button(Crouch));
+				Set Crouch Enabled(Event Player, True);
+			Else;
+				Disallow Button(Event Player, Button(Crouch));
+				Set Crouch Enabled(Event Player, False);
+			End;
+		End;
+		Event Player.GoalCoords = Global.Checkpoints[Event Player.Checkpoint + 1][0];
+		Event Player.GoalRadius = Global.Checkpoints[Event Player.Checkpoint + 1][1];
+		Event Player.GoalFacingDirection = Global.Checkpoints[Event Player.Checkpoint + 1][2];
+		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
+		
+		"Set facing direction"
+		If(Global.Checkpoints[Event Player.Checkpoint][2]);
+			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
+			"DEBUG"
+			Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+		End;
 	}
 }
 
@@ -1139,14 +1223,15 @@ rule("Taw's Editor DecompressData")
 			"Extract Teleport pads"
 			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
 			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
+
 			"//TODO: Extraer estas flags"
 			Global.TawsEditorVariables[2] = 
 			Mapped Array(
 				Mapped Array(
 					Global.CompressedData, 
 					Array(
-						Current Array Element[4] % 8, 
-						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10 Down) / 10, 
+						(Current Array Element[4] - Round To Integer(Current Array Element[4] / 10, Down) * 10) % 8, 
+						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, 
 						Round To Integer(Current Array Element[4] / 1000, Down) / 10)
 					), 
 				Array(
@@ -1187,12 +1272,16 @@ rule("Taw's Editor DecompressData")
 		End;
 
 		"Extract Checkpoint coordinates, radius and facing direction"
-			Global.Checkpoints = Mapped Array(Global.CompressedData, Array(Current Array Element[0][0],
-			Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1],
-			Current Array Element[0][2] == 0 ? False : Current Array Element[0][2]));                                       
+			Global.Checkpoints = Mapped Array(
+				Global.CompressedData, 
+				Array(
+					Current Array Element[0][0],
+					Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1],
+					Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
+				);                                       
 
 		"Extract Bots, Orbs, Flags"
-		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
+		For Global Variable(i, 0, Count Of(Global.Checkpoints) - 1, 1);
 			Global.TempArray = Empty Array;
 			"Bots"
 			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][1]), 2);
@@ -1222,16 +1311,25 @@ rule("Taw's Editor DecompressData")
 			Global.TempArray = Empty Array;		
 
 			"Extract Refresh Orbs"
-			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][3]), 2);
-				"Transform Refresh Orb data"
-				Global.TempArray[Global.j / 2] = Array(
-					Global.CompressedData[Global.i][3][Global.j],
-					Global.CompressedData[Global.i][3][Global.j + 1],
-					Global.j / 2 + 1);
+			If(Global.CompressedData[Global.i][3][0] == 0);
+				Global.TempArray = False;
+			Else;
+				For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][3]), 2);
+					"Transform Refresh Orb data"
+					Global.TempArray[Global.j / 2] = Array(
+						Global.CompressedData[Global.i][3][Global.j],
+						Global.CompressedData[Global.i][3][Global.j + 1],
+						Global.j / 2 + 1);
+				End;
 			End;
 			Global.RefreshOrbs[Global.i] = Global.TempArray;
 			Global.TempArray = Empty Array;		
-
+			"Save Checkpoint flags"
+			Modify Global Variable At Index(Checkpoints, Global.i, Append To Array, 
+			Array(Global.TawsEditorVariables[2][Global.i][2], 
+			Global.TawsEditorVariables[2][Global.i][3], 
+			Global.TawsEditorVariables[2][Global.i][5], 
+			Global.TawsEditorVariables[2][Global.i][6]));
 
 			Wait(0.016, Ignore Condition);
 		End;
@@ -1240,5 +1338,63 @@ rule("Taw's Editor DecompressData")
 		Global.TempArray = Null;
 		Global.i = 0;
 		Global.j = 0;
+	}
+}
+
+rule("Subroutine CreateGlobalEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreateGlobalEditModeHUD;
+	}
+
+	actions
+	{
+		
+	}
+}
+
+rule("Subroutine CreatePlayerEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerEditModeHUD;
+	}
+
+	actions
+	{
+		Create In-World Text(Event Player,
+		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
+			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][2], Global.Checkpoints[Event Player.Checkpoint][3], 
+				Custom String("Require Ground: {0}\n{1}", Global.Checkpoints[Event Player.Checkpoint][4],
+					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",Global.Checkpoints[Event Player.Checkpoint][5], Global.Checkpoints[Event Player.Checkpoint][6], Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
+					)
+				)
+			)
+		),
+		Global.Checkpoints[Event Player.Checkpoint][0],
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Green),
+		Default Visibility
+		);
+		"Debug landing threshold and goal condition"
+		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
+		X Component Of(Position Of(Event Player)),
+		Y Component Of(Position Of(Event Player)),
+		Z Component Of(Position Of(Event Player))),
+		Top, 0, Null, Null, Color(White), String, Default Visibility);
+		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoalY: {2}", 
+		Distance Between(Event Player, Event Player.GoalCoords), 
+		Y Component Of(Position Of(Event Player)), 
+		Y Component Of(Event Player.GoalCoords)), 
+		Right, 99, Null, Null, 
+		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&((Y Component Of(Position Of(Event Player)) <= 
+			(Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+		(Y Component Of(Position Of(Event Player)) >= 
+			(Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]))) ? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
 	}
 }
