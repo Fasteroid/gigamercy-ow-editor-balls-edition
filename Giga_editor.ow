@@ -139,6 +139,7 @@ variables
 		23: CheckpointInWorldText
 		24: ShowSidebarControlsPlayers
 		25: EditMode
+		26: RequireGrabAllRefreshOrbs
 
 	player:
 		0:  Checkpoint
@@ -161,12 +162,16 @@ variables
 		17: Mistakes
 		18: Scale
 		19: GrabbedOrbs
-		20: GoalCoords
-		21: GoalRadius
-		22: GoalFacingDirection
-		23: GoalThresholds
-		24: RunTimerEnabled
-		25: CurrentSectionTime
+		20: GrabbedRefreshOrbs
+		21: GoalCoords
+		22: GoalRadius
+		23: GoalFacingDirection
+		24: GoalThresholds
+		25: RunTimerEnabled
+		26: CurrentSectionTime
+		27: BotCondition
+		28:	BotStates
+		29: CurrentBotSection
 }
 
 subroutines
@@ -631,8 +636,13 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 	actions
 	{
 		Event Player.Checkpoint = 0;
+		Event Player.Mistakes = 0;
 		"TODO: reset player timers, bots, etc."
+		Event Player.FreeMode = True;
+		Call Subroutine(SetupCheckpoint);
+		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.FreeMode = False;
 	}
 }
 rule("Press [Reload] + [Jump] to toggle 3rd person camera")
@@ -942,26 +952,20 @@ rule("Detect Landing Outside")
 		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&
 		((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
 		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True);
-		
-		If(Is True for Any(Event Player.GrabbedOrbs, Current Array Element == False));
-			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
 
-		"TODO: Add cp up/down threshold forgiveness"
-		Else If(Distance Between(Event Player, 
-		Event Player.GoalCoords) > Event Player.GoalRadius);
-			Small Message(Event Player, Custom String("You need to land inside the Goal!"));
-		End;
 		If(Event Player.Checkpoint == 0);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
-	
-		Call Subroutine(TeleportToCurrentCheckpoint);
-		Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+
+		Small Message(Event Player, Custom String("You need to land inside the Goal!"));
+		disabled Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+
+		Call Subroutine(TeleportToCurrentCheckpoint);
 	}
 }
-rule("Detect Landing on Goal")
+rule("Detect Arriving on Goal")
 {
 	event
 	{
@@ -982,19 +986,54 @@ rule("Detect Landing on Goal")
 	}
 	actions
 	{
-		Event Player.Checkpoint += 1;
-		Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
-		If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
-			Stop Chasing Player Variable(Event Player, CurrentRunTime);
-			Event Player.Finished = True;
-			Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
-			Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
-			Event Player, Event Player.CurrentRunTime));
+		If(Is True For All(Event Player.GrabbedOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedOrbs) > 0));
+			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+		Else If(Is True For All(Event Player.GrabbedRefreshOrbs, Current Array Element == True) && (Count Of(Event Player.GrabbedOrbs) > 0) && Global.RequireGrabAllRefreshOrbs);
+			Small Message(Event Player, Custom String("You need to grab all the refresh orbs!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+		Else If(Global.Bots[Event Player.Checkpoint] && !Event Player.BotCondition);
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
 		Else;
-			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
-			Small Message(Event Player, Custom String("Reached the goal:D"));
-			Call Subroutine(SetupCheckpoint);
+			Event Player.Checkpoint += 1;
+			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+				Stop Chasing Player Variable(Event Player, CurrentRunTime);
+				Event Player.Finished = True;
+				Play Effect(All Players(All Teams), Explosion Sound, Null, Event Player, 100);
+				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
+				Event Player, Event Player.CurrentRunTime));
+				Abort;
+			Else;
+				Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+				Small Message(Event Player, Custom String("Reached the goal:D"));
+				Call Subroutine(SetupCheckpoint);
+			End;
 		End;
+	}
+}
+rule("Bot Condition")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == False;
+		Count Of(Global.Bots[Event Player.Checkpoint]) > 0;
+		Event Player.BotStates[Event Player.CurrentBotSection] == False;
+	}
+	actions
+	{
+		"TODO: Code logic here lmao"
+		Abort;
 	}
 }
 
@@ -1155,8 +1194,10 @@ rule("Subroutine SetupCheckpoint")
 
 	actions
 	{
-		Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint], Global.Orbs[Event Player.Checkpoint] ? False : Null);
-		
+		Event Player.GrabbedOrbs = Global.Orbs[Event Player.Checkpoint] ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
+
+		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
+
 		If(!Event Player.FreeMode);
 			"Set crouch enabled for this level"
 			If(Global.Checkpoints[Event Player.Checkpoint][3]);
@@ -1177,6 +1218,10 @@ rule("Subroutine SetupCheckpoint")
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
 			"DEBUG"
 			Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+		End;
+		If(Event Player.Checkpoint == 0);
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.CurrentRunTime = 0;
 		End;
 	}
 }
