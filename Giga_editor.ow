@@ -36,6 +36,7 @@ settings
 		{
 			enabled maps
 			{
+				Midtown 972777519512068154
 			}
 		}
 
@@ -50,7 +51,6 @@ settings
 		{
 			enabled maps
 			{
-				Watchpoint: Gibraltar 972777519512068292
 			}
 		}
 
@@ -65,7 +65,8 @@ settings
 
 		General
 		{
-			Game Mode Start: Immediately
+			Allow Hero Switching: Off
+			Game Mode Start: Manual
 			Hero Limit: Off
 			Kill Cam: Off
 			Kill Feed: Off
@@ -176,6 +177,13 @@ variables
 		29: CurrentBotSection
 		30: Bot
 		31: LeftCheckpoint
+		32: i
+		33: j
+		34: Ability1
+		35: Ability2
+		36: Ultimate
+		37: Crouch
+		38: Jump
 }
 
 subroutines
@@ -197,6 +205,8 @@ subroutines
 	14: InitializePlayerBot
 	15: UpdateBotPosition
 	16: CancelAbilityAndMomentum
+	17: SetCurrentAbilities
+	18: EnableAllAbilities
 }
 
 
@@ -223,7 +233,7 @@ rule("Put your data here")
 		21.479, 14.446), 0.500, Vector(2.701, 23.424, 25.210), 0.500, Vector(25.672, 23.424, 18.697), 0.500, 0, 0.500), 20202), Array(
 		Vector(-0.123, 0, 3.996), Array(0, 1), Array(), Array(0, 0.500), 20202), 2);
 		"Test Aeter Gibraltar VWA95"
-		Global.CompressedData = Array(Array(Vector(26.605, -2, -124.160), Array(Vector(27.440, -2, -126.589), 1), Array(Vector(36.958,
+		disabled Global.CompressedData = Array(Array(Vector(26.605, -2, -124.160), Array(Vector(27.440, -2, -126.589), 1), Array(Vector(36.958,
 			-3.840, -129.826), 0.900), Array(0, 1), 19192), Array(Vector(37.453, 4.010, -125), Array(0, 0), Array(), Array(0, 1), 19190),
 			Array(Vector(41.469, -4, -145.063), Array(Vector(48.312, -4.930, -154.701), 1), Array(), Array(0, 1), 19192), Array(Vector(
 			42.838, 3.227, -141.750), Array(Vector(33.453, -2.074, -138.931), 1), Array(Vector(33.406, 8.742, -138.918), 1), Array(0, 1),
@@ -276,7 +286,7 @@ rule("Put your data here")
 			Array(Vector(81.615, -0.480, 39.229), Array(Vector(81.722, 0.220, 51.897), 1), Array(Vector(88.492, 11.141, 48.662), 1), Array(
 			0, 1), 19190), Array(Vector(90.734, 1.427, 36.229), Array(0, 0), Array(), Array(0, 1), 19190), 2);
 		"Vwideawake pride midtown 107cp"
-		disabled Global.CompressedData = Array(Array(Array(Vector(31.212, 12.188, 22.697), 2, Vector(0.844, 0.523, -0.118)), Array(Vector(47.665,
+		Global.CompressedData = Array(Array(Array(Vector(31.212, 12.188, 22.697), 2, Vector(0.844, 0.523, -0.118)), Array(Vector(47.665,
 			21.995, 20.436), 2), Array(), Array(0, 0.500), 20202), Array(Vector(50.180, 12.500, 2.739), Array(0, 0), Array(), Array(0,
 			0.500), 20202), Array(Vector(43.110, 7.938, -8.893), Array(Vector(50.490, 3.576, -16.067), 1), Array(), Array(0, 0.500),
 			20202), Array(Array(Vector(58.111, 3.576, -21.899), 4), Array(Vector(75.298, 11.273, -39.235), 2), Array(Vector(63.585, 11.987,
@@ -425,6 +435,10 @@ rule("Global Config")
 		Global.Config[6] = Color(White);
 		"Goal Checkpoint text"
 		Global.Config[7] = Custom String("Goal");
+		"Teleport checkpoint Text"
+		Global.Config[8] = Icon String(Spiral);
+		"Teleport checkpoint effect color"
+		Global.Config[9] = Color(Yellow);
 		"Where to store unused bots by default"
 		Global.BotPenCoords = Vector(0, 200, 0);
 	}
@@ -444,7 +458,6 @@ rule("1. Global Initialization")
 	{
 		Ongoing - Global;
 	}
-
 	actions
 	{
 		Call Subroutine(InitializeGlobalVariables);
@@ -491,7 +504,7 @@ rule("2. Player Initialization")
 	{
 		Small Message(Event Player, Custom String("Initializing player..."));
 		"Keep match time counter"
-		If(Current Game Mode != Game Mode(Skirmish));
+		If(Current Game Mode != Game Mode(Skirmish) && Current Game Mode != Game Mode(Hybrid));
 			Disable Game Mode HUD(Event Player);
 		End;
 		Enable Death Spectate All Players(Event Player);
@@ -770,11 +783,13 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 		If(Event Player.FreeMode);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			Call Subroutine(ResetCheckpoint);
+			Call Subroutine(SetCurrentAbilities);
 			Set Ultimate Charge(Event Player, 0);
 		Else;
 			"TODO: Mover esto a una subrutina setabilities"
 			Set Ultimate Ability Enabled(Event Player, True);
 			Set Ultimate Charge(Event Player, 100);
+			Call Subroutine(EnableAllAbilities);
 		End;
 		Event Player.FreeMode = !Event Player.FreeMode;
 		Stop Chasing Player Variable(Event Player, CurrentRunTime);
@@ -958,9 +973,9 @@ rule("Create Start and Finish checkpoints")
 		"Create Goal checkpoint Sparkles"
 		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Config[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
 		"Create Goal checkpoint Icon"
-		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
+		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
 		"Create Goal checkpoint Text"
-		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Global.Config[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
+		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Config[8] : Global.Config[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
 	}
 }
 rule("Create Bot Icon")
@@ -987,6 +1002,30 @@ rule("Create Bot Icon")
 		Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), 
 		True);
 		Modify Player Variable(Event Player, BotIcons, Append To Array, Last Created Entity);
+	}
+}
+rule("Create Teleport Effects")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bot(Event Player) == False;
+	}
+	actions
+	{
+		"For now we assume theres only one teleport pad per level, no need for multiple effect handling"
+		Create Effect(Global.Teleports[Event Player.Checkpoint] ? Event Player : Null,
+		Bad Aura,
+		Global.Config[9],
+		Global.Teleports[Event Player.Checkpoint][0],
+		Global.Teleports[Event Player.Checkpoint][1],
+		Visible To Position Radius and Color);
 	}
 }
 rule("——————————————————————————Parkour Engine rules——————————————————————————")
@@ -1168,15 +1207,29 @@ rule("Detect Grabbing RefreshOrb")
 	}
 	actions
 	{
-		If(Event Player.BotCondition || True);
-			Event Player.GrabbedRefreshOrbs = Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint],
-				Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] ||
-				Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] 
-				|| Event Player.GrabbedRefreshOrbs[Current Array Index] ? True : False);
-			Small Message(Event Player, Custom String("Refresh Orb Grab! {0}/{1}",
-			Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
-			Count Of(Event Player.GrabbedRefreshOrbs)));
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		If(Event Player.BotCondition);
+			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
+				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] &&
+				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700 ||
+				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700));
+
+					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
+					Small Message(Event Player, 
+					Custom String("Orb Grab! {0}/{1}, {2} also refreshed!",
+						Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
+						Count Of(Event Player.GrabbedRefreshOrbs),
+						Custom String("{0}{1}{2}", 
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? Ability Icon String(Hero Of(Event Player), Button(Ability 2)) : Empty Array,
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate)) : Empty Array
+						)
+					));
+					Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+					"Trigger Bot Section"
+					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
+						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
+						Call Subroutine(UpdateBotPosition);
+				End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Call Subroutine(ResetWithMistake);
@@ -1428,8 +1481,8 @@ rule("Subroutine SetUpCheckpoint")
 
 	actions
 	{
-		Event Player.GoalCoords = Global.Checkpoints[Event Player.Checkpoint + 1][0];
-		Event Player.GoalRadius = Global.Checkpoints[Event Player.Checkpoint + 1][1];
+		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
+		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
 		Event Player.GoalFacingDirection = Global.Checkpoints[Event Player.Checkpoint + 1][2];
 		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
 		
@@ -1443,7 +1496,7 @@ rule("Subroutine SetUpCheckpoint")
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
-
+		Event Player.Crouch = Global.Checkpoints[Event Player.Checkpoint][3];
 		"If no bot then condition is true"
 		disabled Event Player.BotCondition = Count Of(Global.Bots[Event Player.Checkpoint]) > 0 ? False : True;
 		Call Subroutine(ResetCheckpoint);
@@ -1481,16 +1534,12 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.LeftCheckpoint = False;
 		Event Player.CurrentBotSection = 0;
-		disabled If(!Event Player.FreeMode);
-			"Set crouch enabled for this level"
-			If(Global.Checkpoints[Event Player.Checkpoint][3]);
-				Allow Button(Event Player, Button(Crouch));
-				Set Crouch Enabled(Event Player, True);
-			Else;
-				Disallow Button(Event Player, Button(Crouch));
-				Set Crouch Enabled(Event Player, False);
-			End;
-		disabled End;
+		If(Event Player.FreeMode);
+			Call Subroutine(EnableAllAbilities);
+		Else;
+		Event Player.Ability1 = True;
+		Event Player.Jump = True;
+		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
 	}
 }
@@ -1758,5 +1807,49 @@ rule("Subroutine CancelAbilityAndMomentum")
 		Wait(0.016, Restart When True);
 		Apply Impulse(Event Player, Normalize(Velocity Of(Event Player)) * -1 * 1, Speed Of(Event Player), To World,
 			Incorporate Contrary Motion);
+	}
+}
+rule("Subroutine SetCurrentAbilities")
+{
+	event
+	{
+		Subroutine;
+		SetCurrentAbilities;
+	}
+
+	actions
+	{
+		If(Event Player.FreeMode || Event Player.Finished);
+			Abort;
+		End;
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		If(Event Player.Crouch);
+			Allow Button(Event Player, Button(Crouch));
+		Else;
+			Disallow Button(Event Player, Button(Crouch));
+		End;
+		Set Jump Enabled(Event Player, Event Player.Jump);
+	}
+}
+rule("Subroutine EnableAllAbilities")
+{
+	event
+	{
+		Subroutine;
+		EnableAllAbilities;
+	}
+
+	actions
+	{
+		Set Ability 1 Enabled(Event Player, True);
+		Set Ability 2 Enabled(Event Player, True);
+		Set Ultimate Ability Enabled(Event Player, True);
+		Set Crouch Enabled(Event Player, True);
+		Set Jump Enabled(Event Player, True);
+		Allow Button(Event Player, Button(Crouch));
+		Allow Button(Event Player, Button(Jump));
 	}
 }
