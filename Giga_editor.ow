@@ -169,22 +169,22 @@ variables
 		20: GrabbedRefreshOrbs
 		21: GoalCoords
 		22: GoalRadius
-		23: GoalFacingDirection
-		24: GoalThresholds
-		25: RunTimerEnabled
-		26: CurrentSectionTime
-		27: BotCondition
-		28:	BotStates
-		29: CurrentBotSection
-		30: Bot
-		31: LeftCheckpoint
-		32: i
-		33: j
-		34: Ability1
-		35: Ability2
-		36: Ultimate
-		37: Crouch
-		38: Jump
+		23: GoalThresholds
+		24: RunTimerEnabled
+		25: CurrentSectionTime
+		26: BotCondition
+		27: BotStates
+		28:	CurrentBotSection
+		29: Bot
+		30: LeftCheckpoint
+		31: i
+		32: j
+		33: Ability1
+		34: Ability2
+		35: Ultimate
+		36: Crouch
+		37: Jump
+		38: BotUpdate
 }
 
 subroutines
@@ -205,9 +205,10 @@ subroutines
 	13: CreatePlayerEditModeHUD
 	14: InitializePlayerBot
 	15: UpdateBotPosition
-	16: CancelAbilityAndMomentum
-	17: SetCurrentAbilities
-	18: EnableAllAbilities
+	16: CancelMomentum
+	17: CancelUltimate
+	18: SetCurrentAbilities
+	19: EnableAllAbilities
 }
 
 
@@ -376,6 +377,8 @@ rule("Global Config")
 		Global.Config[9] = Color(Yellow);
 		"Bot Hero"
 		Global.Config[10] = Hero(Baptiste);
+		"Player Hero"
+		Global.Config[11] = Hero(Mercy);
 		"Where to store unused bots by default"
 		Global.BotPenCoords = Vector(0, 200, 0);
 	}
@@ -436,15 +439,14 @@ rule("2. Player Initialization")
 
 	actions
 	{
-		Small Message(Event Player, Custom String("Initializing player..."));
+		Log To Inspector(Custom String("Initializing player {0}...", Event Player));
 		Disable Game Mode HUD(Event Player);
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
-		"TODO: Spawn room may be needed for some maps, make this an global option"
+		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
 		disabled Start Forcing Spawn Room(Team 1, Color(Red));
 		disabled Start Forcing Spawn Room(Team 2, Color(Red));
 		Set Status(Event Player, Null, Invincible, 9999);
-		
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
 		If(Global.EditMode);
@@ -453,8 +455,8 @@ rule("2. Player Initialization")
 		Else If(Is True for Any(Global.Bots, Current Array Element == True));
 			Call Subroutine(InitializePlayerBot);
 		End;
-		Call Subroutine(SetUpCheckpoint);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(SetUpCheckpoint);
 	}
 }
 
@@ -477,6 +479,7 @@ rule("3. Decompress Data")
 			Wait Until(Has Spawned(Host Player), 9999);
 			Big Message(All Players(All Teams), Custom String("Peace editor maps are not supported yet:("));
 		End;
+		Log To Inspector(Custom String("Decompression ended"));
 	}
 }
 
@@ -553,8 +556,8 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 				Event Player.Checkpoint = Count Of(Global.Checkpoints) - 1;
 			End;
 		End;	
-		Call Subroutine(SetUpCheckpoint);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(SetUpCheckpoint);
 		Event Player.FreeMode = False;
 		Wait(0.016, Abort When False);
 	}
@@ -584,7 +587,6 @@ rule("Press [Reload] to reset current checkpoint")
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			Call Subroutine(ResetCheckpoint);
 		End;
-		Wait(0.016, Abort When False);
 	}
 }
 rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
@@ -608,13 +610,17 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 	}
 	actions
 	{
+		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
+		"Anti abuse measure"
+		If(Event Player.Checkpoint == 0);
+			Abort;
+		End;
 		Event Player.Checkpoint = 0;
 		Event Player.Mistakes = 0;
 		"TODO: reset player timers, bots, etc."
 		Event Player.FreeMode = True;
-		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
-		Call Subroutine(SetUpCheckpoint);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(SetUpCheckpoint);
 		Event Player.FreeMode = False;
 	}
 }
@@ -716,6 +722,7 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 	actions
 	{
 		If(Event Player.FreeMode);
+			Call Subroutine(CancelUltimate);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			Call Subroutine(ResetCheckpoint);
 			Call Subroutine(SetCurrentAbilities);
@@ -750,6 +757,7 @@ rule("Create/destroy current level Orbs")
 	}
 	conditions
 	{
+		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.OrbEffects) != Count Of(Global.Orbs[Event Player.Checkpoint]);	
 	}
 	actions
@@ -792,6 +800,7 @@ rule("Create/destroy current level RefreshOrbs")
 	}
 	conditions
 	{
+		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.RefreshOrbEffects) != Count Of(Global.RefreshOrbs[Event Player.Checkpoint]);	
 	}
 	actions
@@ -833,6 +842,7 @@ rule("Create/Destroy current level Antiorbs")
 	}
 	conditions
 	{
+		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.AntiOrbEffects) != Count Of(Global.AntiOrbs[Event Player.Checkpoint]);	
 	}
 	actions
@@ -864,6 +874,7 @@ rule("Create/Destroy current level Jump Clouds")
 	}
 	conditions
 	{
+		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.CloudEffects) != Count Of(Global.Clouds[Event Player.Checkpoint]);	
 	}
 	actions
@@ -1040,8 +1051,11 @@ rule("Detect Arriving on Goal or Teleport")
 		Is Dummy Bot(Event Player) == False;
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
-		((Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		"Deprecated: Use LeftCheckpoint instead"
+		disabled ((Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
 		> Global.Checkpoints[Event Player.Checkpoint][1]) || Event Player.LeftCheckpoint) == True;
+		Event Player.LeftCheckpoint == True;
+		"TODO: Get OnGround flag from current goal in case the level has a teleport"
 		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
 		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
 		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
@@ -1064,6 +1078,7 @@ rule("Detect Arriving on Goal or Teleport")
 			Call Subroutine(ResetWithMistake);
 		Else;
 			Event Player.Checkpoint += 1;
+			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
 				Event Player.Finished = True;
@@ -1071,14 +1086,15 @@ rule("Detect Arriving on Goal or Teleport")
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
 				Event Player, Event Player.CurrentRunTime));
 				Abort;
+			"Player finished current checkpoint"
 			Else;
 				Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 				Small Message(Event Player, Custom String("Reached the goal:D"));
-				Call Subroutine(SetUpCheckpoint);
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
 				End;
+				Call Subroutine(SetUpCheckpoint);
 			End;
 		End;
 	}
@@ -1167,6 +1183,7 @@ rule("Detect Grabbing RefreshOrb")
 					"Trigger Bot Section"
 					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
 						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
+						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
 						Call Subroutine(UpdateBotPosition);
 				End;
 		Else;
@@ -1175,7 +1192,7 @@ rule("Detect Grabbing RefreshOrb")
 		End;
 	}
 }
-rule("TODO: Bot Condition")
+disabled rule("TODO: Bot Condition")
 {
 	event
 	{
@@ -1194,6 +1211,53 @@ rule("TODO: Bot Condition")
 	{
 		"TODO: Code logic here lmao"
 		Abort;
+	}
+}
+rule("Update Bot Status")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == True;
+		Event Player.BotUpdate == True;
+	}
+	actions
+	{
+		Event Player.BotUpdate = False;
+		Call Subroutine(CancelMomentum);
+		
+		Cancel Primary Action(Event Player);
+		"TODO: Placeholder, bots arent allowed to use ultimate for now"
+		If(Is Using Ultimate(Event Player) && False);
+			Call Subroutine(CancelUltimate);
+		End;
+
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3]);
+				disabled Stop Holding Button(Event Player, Button(Jump));
+				Clear Status(Event Player, Rooted);
+				Set Gravity(Event Player, 100);
+			Else;
+				Set Gravity(Event Player, 0);
+				disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
+				"TODO: Refactor this to use the same function as the player, dont copy paste"
+				Call Subroutine(CancelMomentum);
+			End;
+			Teleport(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
+			Wait(0.016, Ignore Condition);
+		Else;
+			Teleport(Event Player, Global.BotPenCoords);
+		End;
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2]);
+			Start Holding Button(Event Player, Button(Crouch));
+		Else;
+			Stop Holding Button(Event Player, Button(Crouch));
+		End;
+		Loop If Condition Is True;
 	}
 }
 rule("——————————————————————————Subroutines——————————————————————————")
@@ -1235,7 +1299,6 @@ rule("Subroutine InitializePlayerVariables")
 
 	actions
 	{
-		Small Message(Event Player, Custom String("Welcome"));
 		Event Player.Checkpoint = 0;
 		Event Player.Finished = False;
 		Event Player.FreeMode = False;
@@ -1247,6 +1310,7 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.RefreshOrbEffects = Empty Array;
 		Event Player.RefreshOrbIcons = Empty Array;
 		Event Player.Scale = 1;
+		"TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
 	}
 }
@@ -1267,13 +1331,20 @@ rule("Subroutine InitializePlayerBot")
 			Global.BotPenCoords,
 			Null);
 			Event Player.Bot = Last Created Entity;
-			disabled Wait(0.016, Ignore Condition);
-			disabled Wait(0.016, Ignore Condition);
+			Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
+			Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
+			Set Player Variable(Event Player.Bot, Scale, 1);
+
 			Set Gravity(Event Player.Bot, 0);
 			Set Status(Event Player.Bot, Null, Invincible, 9999);
 			Set Status(Event Player.Bot, Null, Phased Out, 9999);
 			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Config[10]));
-
+			"TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
+			Start Facing(Event Player.Bot, 
+				Direction Towards(
+					Update Every Frame(Eye Position(Event Player.Bot)), 
+					Update Every Frame(Eye Position(Event Player))), 
+				9999, To World, Direction and Turn Rate);
 		End;
 	}
 }
@@ -1287,40 +1358,26 @@ rule("Subroutine UpdateBotPosition")
 
 	actions
 	{
+		"Call for a bot update"
+		Set Player Variable(Event Player.Bot, BotUpdate, True);
+		Wait(0.016, Ignore Condition);
+		"TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
 		If(Global.Bots[Event Player.Checkpoint]);
 			Start Forcing Player Outlines(
-				Event Player.Bot, 
+				Event Player.Bot,
 				Event Player,
-				True, 
-				Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), 
-				Always);
-			If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3]);
-				Stop Holding Button(Event Player.Bot, Button(Jump));
-				Clear Status(Event Player.Bot, Rooted);
-				Set Gravity(Event Player.Bot, 1);
-			Else;
-				Set Gravity(Event Player.Bot, 0);
-				disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
-				"TODO: Refactor this to use the same function as the player, dont copy paste"
-				Apply Impulse(Event Player.Bot, Up, 0, To World, Cancel Contrary Motion XYZ);
-				Wait(0.016, Ignore Condition);	
-		
-				Apply Impulse(Event Player.Bot, Normalize(Velocity Of(Event Player.Bot)) * -1 * 1, Speed Of(Event Player.Bot), To World,
-				Incorporate Contrary Motion);
-			End;
-			Teleport(Event Player.Bot, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
-			Wait(0.016, Ignore Condition);
-			Start Facing(Event Player.Bot, 
-				Direction Towards(
-					Update Every Frame(Eye Position(Event Player.Bot)), 
-					Update Every Frame(Eye Position(Event Player))), 
-				9999, To World, Direction and Turn Rate);
-			
-			"Bot Condition checks if we need to kill or rez the current bot. False = Requires rez, True = Alles gut"
-			Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
+				True,
+				Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), Always);
 		Else;
-			Teleport(Event Player.Bot, Global.BotPenCoords);
+			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
+			"TODO: Check if we can cancel other heroes primary action to get rid of the if conditon"
+			If(Hero Of(Event Player) == Hero(Mercy));
+				Cancel Primary Action(Event Player);
+			End;
 		End;
+		
+		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
+		Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
 	}
 }
 rule("Subroutine DecompressMapData")
@@ -1435,13 +1492,15 @@ rule("Subroutine SetUpCheckpoint")
 
 	actions
 	{
+		Log To Inspector(Custom String("SetUpCheckpoint"));
 		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
 		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
-		Event Player.GoalFacingDirection = Global.Checkpoints[Event Player.Checkpoint + 1][2];
 		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
 		
 		"Set facing direction"
 		If(Global.Checkpoints[Event Player.Checkpoint][2]);
+			"FIXME: Added this to see if face direction bug is fixed or not"
+			Wait(0.016, Ignore Condition);
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
 			"DEBUG"
 			Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
@@ -1451,11 +1510,11 @@ rule("Subroutine SetUpCheckpoint")
 			Event Player.CurrentRunTime = 0;
 		End;
 		Event Player.Crouch = Global.Checkpoints[Event Player.Checkpoint][3];
-
+		"Set Bot checkpoint too"
+		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
 		Call Subroutine(ResetCheckpoint);
 	}
 }
-
 rule("Subroutine ResetWithMistake")
 {
 	event
@@ -1466,12 +1525,13 @@ rule("Subroutine ResetWithMistake")
 
 	actions
 	{
+		"TODO: Toggle this if you want glitch levels like in taws or peace"
+		Cancel Primary Action(Event Player);
 		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		Call Subroutine(ResetCheckpoint);
 	}
 }
-
 rule("Subroutine ResetCheckpoint")
 {
 	event
@@ -1482,18 +1542,20 @@ rule("Subroutine ResetCheckpoint")
 
 	actions
 	{
+
+		Log To Inspector(Custom String("ResetCheckpoint"));
 		"Reset all orbs to not grabbed"
 		Event Player.GrabbedOrbs = Global.Orbs[Event Player.Checkpoint] ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.LeftCheckpoint = False;
 		Event Player.CurrentBotSection = 0;
+		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
 		Event Player.Ability1 = True;
 		Event Player.Jump = True;
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
 	}
 }
-
 rule("Subrotine TeleportToCurrentCheckpoint")
 {
 	event
@@ -1504,11 +1566,11 @@ rule("Subrotine TeleportToCurrentCheckpoint")
 
 	actions
 	{
-		Call Subroutine(CancelAbilityAndMomentum);
+		Log To Inspector(Custom String("TeleportPlayer"));
+		Call Subroutine(CancelMomentum);
 		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 	}
 }
-
 rule("Taw's Editor DecompressData")
 {
 	event
@@ -1519,6 +1581,7 @@ rule("Taw's Editor DecompressData")
 
 	actions
 	{
+		Log To Inspector(Custom String("Decompressing Taw's Data..."));
 		Global.TawsEditorVariables = Empty Array;
 		"ctemp"
 		Global.i = 0;
@@ -1609,8 +1672,8 @@ rule("Taw's Editor DecompressData")
 						Array(
 							Global.CompressedData[Global.i][1][Global.j],
 							False,
-							(Global.CompressedData[Global.i][1][Global.j + 1] % 2 != 0),
 							((Global.CompressedData[Global.i][1][Global.j + 1] - Global.CompressedData[Global.i][1][Global.j + 1] % 2) % 4 == 0),
+							(Global.CompressedData[Global.i][1][Global.j + 1] % 2 != 0),
 							False,
 							False
 						);
@@ -1676,7 +1739,6 @@ rule("Taw's Editor DecompressData")
 		Global.j = 0;
 	}
 }
-
 rule("Subroutine CreateGlobalEditModeHUD")
 {
 	event
@@ -1690,7 +1752,6 @@ rule("Subroutine CreateGlobalEditModeHUD")
 		
 	}
 }
-
 rule("Subroutine CreatePlayerEditModeHUD")
 {
 	event
@@ -1717,6 +1778,28 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		Color(Green),
 		Default Visibility
 		);
+		"Create Bot text"
+		Create In-World Text(Local Player,
+		Custom String("{0}\nFacing: {1}\n{2}", 
+			Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][0], 
+			Global.Bots[Event Player.Checkpoint][Local Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Local Player.CurrentBotSection][1], 
+			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
+				Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][2],
+				Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][3], 
+				Custom String("Resurrect: {0}\nRefresh GA after Rez:{1}\nCurrentPos: {2}", 
+					Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][4],
+					Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][5],
+					Position Of(Local Player.Bot)
+				)
+			)
+		),
+		Global.Bots[Event Player.Checkpoint][Local Player.CurrentBotSection][0] + Vector(0,1,0),
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Aqua),
+		Default Visibility
+		);
 		"Debug landing threshold and goal condition"
 		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
 		X Component Of(Position Of(Event Player)),
@@ -1736,27 +1819,44 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		
 		Create HUD Text(Event Player, Null, Null, 
 		Custom String("---------------------------------------\nCount Of Grabbed\n Orbs: {0}\nRefreshOrbs: {1}", 
-		Count Of(Event Player.GrabbedOrbs), Count Of(Event Player.GrabbedRefreshOrbs)), 
+		Custom String("{0}/{1}", 
+			Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), 
+			Count Of(Event Player.GrabbedOrbs)), 
+		Custom String("{0}/{1}", 
+			Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)), 
+			Count Of(Event Player.GrabbedRefreshOrbs))), 
 		Right, 100, Null, Null, 
 		Color(Aqua), Visible To String and Color, Default Visibility);
 	}
 }
-rule("Subroutine CancelAbilityAndMomentum")
+rule("Subroutine CancelMomentum")
 {
 	event
 	{
 		Subroutine;
-		CancelAbilityAndMomentum;
+		CancelMomentum;
 	}
 
 	actions
 	{
-		"TODO: Extend this subroutine to bots too"
-		Cancel Primary Action(Event Player);
 		Apply Impulse(Event Player, Up, 0, To World, Cancel Contrary Motion XYZ);
 		Wait(0.016, Restart When True);
 		Apply Impulse(Event Player, Normalize(Velocity Of(Event Player)) * -1 * 1, Speed Of(Event Player), To World,
 			Incorporate Contrary Motion);
+	}
+}
+rule("Subroutine CancelUltimate")
+{
+	event
+	{
+		Subroutine;
+		CancelUltimate;
+	}
+
+	actions
+	{
+		Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
+		Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
 	}
 }
 rule("Subroutine SetCurrentAbilities")
@@ -1776,6 +1876,7 @@ rule("Subroutine SetCurrentAbilities")
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
 		Else;
