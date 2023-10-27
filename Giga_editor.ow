@@ -79,14 +79,6 @@ settings
 	{
 		General
 		{
-			Mercy
-			{
-				Guardian Angel Cooldown Time: 0%
-				Ultimate Generation - Combat Valkyrie: 0%
-				Ultimate Generation - Passive Valkyrie: 0%
-				Ultimate Generation Valkyrie: 10%
-			}
-
 			enabled heroes
 			{
 				Mercy
@@ -144,6 +136,7 @@ variables
 		26: RequireGrabAllRefreshOrbs
 		27: BotPenCoords
 		28: Checkpoint
+		29: RGB
 
 	player:
 		0:  Checkpoint
@@ -179,12 +172,15 @@ variables
 		30: LeftCheckpoint
 		31: i
 		32: j
-		33: Ability1
-		34: Ability2
-		35: Ultimate
-		36: Crouch
-		37: Jump
-		38: BotUpdate
+		33: Crouch
+		34: Jump
+		35: Ability1
+		36: Ability2
+		37: Ultimate
+		38: PrimaryFire
+		39: SecondaryFire
+		40: ActionSet
+		41: BotUpdate
 }
 
 subroutines
@@ -439,7 +435,7 @@ rule("2. Player Initialization")
 
 	actions
 	{
-		Log To Inspector(Custom String("Initializing player {0}...", Event Player));
+		disabled Log To Inspector(Custom String("Initializing player {0}...", Event Player));
 		Disable Game Mode HUD(Event Player);
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
@@ -479,7 +475,7 @@ rule("3. Decompress Data")
 			Wait Until(Has Spawned(Host Player), 9999);
 			Big Message(All Players(All Teams), Custom String("Peace editor maps are not supported yet:("));
 		End;
-		Log To Inspector(Custom String("Decompression ended"));
+		disabled Log To Inspector(Custom String("Decompression ended"));
 	}
 }
 
@@ -583,8 +579,10 @@ rule("Press [Reload] to reset current checkpoint")
 	}
 	actions
 	{
-		If(Is Button Held(Event Player, Button(Reload)) == True);
-			Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		If(Event Player.LeftCheckpoint);
+			Call Subroutine(ResetWithMistake);
+		Else;
 			Call Subroutine(ResetCheckpoint);
 		End;
 	}
@@ -725,7 +723,6 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 			Call Subroutine(CancelUltimate);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			Call Subroutine(ResetCheckpoint);
-			Call Subroutine(SetCurrentAbilities);
 			Set Ultimate Charge(Event Player, 0);
 		Else;
 			"TODO: Mover esto a una subrutina setabilities"
@@ -974,6 +971,41 @@ rule("Create Teleport Effects")
 		Visible To Position Radius and Color);
 	}
 }
+disabled rule("Calculate rainbow")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		While(Global.RGB[1] < 255);
+			Global.RGB[1] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[2] > 0);
+			Global.RGB[2] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[0] < 255);
+			Global.RGB[0] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[1] > 0);
+			Global.RGB[1] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[2] < 255);
+			Global.RGB[2] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[0] > 0);
+			Global.RGB[0] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		Loop;
+	}
+}
 rule("——————————————————————————Parkour Engine rules——————————————————————————")
 {
 	event
@@ -1081,11 +1113,12 @@ rule("Detect Arriving on Goal or Teleport")
 			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
-				Event Player.Finished = True;
+				"TODO: Refactored this to setupcheckpoint"
+				disabled Event Player.Finished = True;
 				Play Effect(All Players(All Teams), Explosion Sound, Null, Event Player, 100);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
 				Event Player, Event Player.CurrentRunTime));
-				Abort;
+				disabled Abort;
 			"Player finished current checkpoint"
 			Else;
 				Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
@@ -1094,8 +1127,8 @@ rule("Detect Arriving on Goal or Teleport")
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
 				End;
-				Call Subroutine(SetUpCheckpoint);
 			End;
+			Call Subroutine(SetUpCheckpoint);
 		End;
 	}
 }
@@ -1185,6 +1218,10 @@ rule("Detect Grabbing RefreshOrb")
 						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
 						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
 						Call Subroutine(UpdateBotPosition);
+					End;
+					Set Ability 1 Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Null);
+					Set Ability 2 Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Null);
+					Set Ultimate Ability Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Null);
 				End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
@@ -1260,6 +1297,31 @@ rule("Update Bot Status")
 		Loop If Condition Is True;
 	}
 }
+
+rule("Detect Using Ability 1")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Using Ability 1(Event Player) == True;
+	}
+	actions
+	{
+		If(Event Player.FreeMode == False);
+			Set Ability 1 Enabled(Event Player, False);
+		End;
+		Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) > 0, 9999);
+		"Disable this if you want to set the cooldowns through lobby settings"
+		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
+	}
+}
+
 rule("——————————————————————————Subroutines——————————————————————————")
 {
 	event
@@ -1287,6 +1349,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.AntiOrbs = Empty Array;
 		Global.RefreshOrbs = Empty Array;
 		Global.Teleports = Empty Array;
+		Global.RGB = Array(255,0,0);
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -1400,7 +1463,7 @@ rule("Subroutine CreateGlobalHUD")
 	{
 		"Map Creator and code"
 		Create HUD Text(All Players(All Teams), Null, Null, Custom String("Giga Parkour Editor"),
-			Left, 0, Null, Null, Color(White), Visible To and String, Default Visibility);
+			Left, 0, Null, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 		"Leaderboard"
 		Create HUD Text(All Players(All Teams), Null, Null, Custom String("Leaderboard:\n{0}",
 		Custom String("Top5 Placeholder")),
@@ -1492,7 +1555,9 @@ rule("Subroutine SetUpCheckpoint")
 
 	actions
 	{
-		Log To Inspector(Custom String("SetUpCheckpoint"));
+		disabled Log To Inspector(Custom String("SetUpCheckpoint"));
+		Event Player.Finished = Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1;
+
 		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
 		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
 		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
@@ -1543,15 +1608,19 @@ rule("Subroutine ResetCheckpoint")
 	actions
 	{
 
-		Log To Inspector(Custom String("ResetCheckpoint"));
+		disabled Log To Inspector(Custom String("ResetCheckpoint"));
 		"Reset all orbs to not grabbed"
 		Event Player.GrabbedOrbs = Global.Orbs[Event Player.Checkpoint] ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.LeftCheckpoint = False;
 		Event Player.CurrentBotSection = 0;
 		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
-		Event Player.Ability1 = True;
+		"TODO: Temporarily enabled here, should come from cp flags"
 		Event Player.Jump = True;
+		
+		If(Hero Of(Event Player) == Hero(Mercy));
+			Event Player.Ability1 = Global.Bots[Event Player.Checkpoint] == True;
+		End;
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
 	}
@@ -1566,7 +1635,7 @@ rule("Subrotine TeleportToCurrentCheckpoint")
 
 	actions
 	{
-		Log To Inspector(Custom String("TeleportPlayer"));
+		disabled Log To Inspector(Custom String("TeleportPlayer"));
 		Call Subroutine(CancelMomentum);
 		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 	}
@@ -1581,7 +1650,7 @@ rule("Taw's Editor DecompressData")
 
 	actions
 	{
-		Log To Inspector(Custom String("Decompressing Taw's Data..."));
+		disabled Log To Inspector(Custom String("Decompressing Taw's Data..."));
 		Global.TawsEditorVariables = Empty Array;
 		"ctemp"
 		Global.i = 0;
@@ -1779,7 +1848,7 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		Default Visibility
 		);
 		"Create Bot text"
-		Create In-World Text(Local Player,
+		Create In-World Text(Global.Bots[Local Player.Checkpoint] ? Local Player : Null,
 		Custom String("{0}\nFacing: {1}\n{2}", 
 			Global.Bots[Local Player.Checkpoint][Local Player.CurrentBotSection][0], 
 			Global.Bots[Event Player.Checkpoint][Local Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Local Player.CurrentBotSection][1], 
@@ -1872,6 +1941,7 @@ rule("Subroutine SetCurrentAbilities")
 		If(Event Player.FreeMode || Event Player.Finished);
 			Abort;
 		End;
+
 		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
