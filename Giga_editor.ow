@@ -1470,7 +1470,7 @@ rule("Subroutine CreateGlobalHUD")
 			Left, 99, Null, Null, Color(Red), Visible To and String, Default Visibility);
 		"Instructions"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls\n", Input Binding String(Button(Interact))), Null,
-			Right, 0, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
+			Right, 1, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
 
 		"TODO: Break up into blocks that use no more than 4 input binding string per custom string"
 		disabled Continue;
@@ -1511,7 +1511,7 @@ rule("Subroutine CreateGlobalHUD")
 					)
 				)
 			), 
-		Right, 2, Null, Null, Color(White), Visible To and String, Default Visibility);
+		Right, 12, Null, Null, Color(White), Visible To and String, Default Visibility);
 		"TODO: Move to player init and use preferred language"
 		Create HUD Text(All Players(All Teams), Null, 
 		Custom String("Elapsed time: {0} minutes {1} seconds",
@@ -1519,7 +1519,9 @@ rule("Subroutine CreateGlobalHUD")
 		Null,
 		Top,
 		0, Null, Color(White), Null, Visible To and String, Default Visibility);
-		
+		Create HUD Text(All Players(All Teams), Null, Null, Custom String("Server Load: {0}%, Avg:{1}%, Peak:{2}%",Server Load, Server Load Average, Server Load Peak),
+			Right, 0, Null, Null, Server Load Average > 60 ? Color(Orange) : Color(Green), Visible To and String, Default Visibility);
+
 	}
 }
 rule("Subroutine CreatePlayerHUD")
@@ -1535,13 +1537,13 @@ rule("Subroutine CreatePlayerHUD")
 		Small Message(Event Player, Custom String("Player HUD"));
 		"Left HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Hiya:)"), Null, 
-			Left, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
+			Left, 10, Null, Color(White), Null, Visible To and String, Default Visibility);
 		"Top HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
-			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
+			Top, 10, Null, Color(White), Null, Visible To and String, Default Visibility);
 		"Right HUD Elements"
 		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
-			Right, 1, Null, Null, Color(White),  Visible To and String, Default Visibility);
+			Right, 10, Null, Null, Color(White),  Visible To and String, Default Visibility);
 		
 	}
 }
