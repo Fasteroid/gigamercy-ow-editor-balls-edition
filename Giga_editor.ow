@@ -179,7 +179,7 @@ variables
 		37: Ultimate
 		38: PrimaryFire
 		39: SecondaryFire
-		40: ActionSet
+		40: TempFreeMode
 		41: BotUpdate
 }
 
@@ -538,6 +538,7 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 	}
 	actions
 	{
+		Event Player.TempFreeMode = Event Player.FreeMode;
 		Event Player.FreeMode = True;
 		If(Is Button Held(Event Player, Button(Primary Fire)));
 			If(Event Player.Checkpoint < Count Of(Global.Checkpoints) - 1);
@@ -553,8 +554,9 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 			End;
 		End;	
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.FreeMode = Event Player.TempFreeMode;
+
 		Call Subroutine(SetUpCheckpoint);
-		Event Player.FreeMode = False;
 		Wait(0.016, Abort When False);
 	}
 }
@@ -570,15 +572,17 @@ rule("Press [Reload] to reset current checkpoint")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
-		Is Button Held(Event Player, Button(Crouch)) == False;
 		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
 	}
 	actions
 	{
+		"Sometimes going into free mode triggered this rule, if the keys were released in a specific order"
+		If(Is Button Held(Event Player, Button(Crouch)) == True || Is Button Held(Event Player, Button(Melee)) == True);
+			Abort;
+		End;
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		If(Event Player.LeftCheckpoint);
 			Call Subroutine(ResetWithMistake);
@@ -618,8 +622,8 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 		"TODO: reset player timers, bots, etc."
 		Event Player.FreeMode = True;
 		Call Subroutine(TeleportToCurrentCheckpoint);
-		Call Subroutine(SetUpCheckpoint);
 		Event Player.FreeMode = False;
+		Call Subroutine(SetUpCheckpoint);
 	}
 }
 rule("Press [Reload] + [Jump] to toggle 3rd person camera")
@@ -644,6 +648,7 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 	}
 	actions
 	{
+		Wait(0.6, Abort When False);
 		Small Message(Event Player, Custom String("3rd Person not implemented yet"));
 	}
 }
@@ -694,6 +699,7 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	}
 	actions
 	{
+		Wait(0.6, Abort When False);
 		Small Message(Event Player, Custom String("Spectator mode not implemented yet"));
 	}
 }
@@ -733,6 +739,7 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 		Event Player.FreeMode = !Event Player.FreeMode;
 		Stop Chasing Player Variable(Event Player, CurrentRunTime);
 		Small Message(Event Player, Custom String("Free Mode {0}", Event Player.FreeMode ? Custom String("Enabled") : Custom String("Disabled")));
+		Wait(0.600, Ignore Condition);
 	}
 }
 rule("——————————————————————————Effects——————————————————————————")
@@ -1115,17 +1122,21 @@ rule("Detect Arriving on Goal or Teleport")
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
 				"TODO: Refactored this to setupcheckpoint"
 				disabled Event Player.Finished = True;
-				Play Effect(All Players(All Teams), Explosion Sound, Null, Event Player, 100);
+				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
+				"TODO: Set a color for finish explosion in config"
+				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Event Player.GoalCoords, Event Player.GoalRadius);
+				Wait(0.1, Ignore Condition);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
 				Event Player, Event Player.CurrentRunTime));
 				disabled Abort;
 			"Player finished current checkpoint"
 			Else;
-				Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 				Small Message(Event Player, Custom String("Reached the goal:D"));
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
+				Else;
+					Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 				End;
 			End;
 			Call Subroutine(SetUpCheckpoint);
@@ -1520,7 +1531,7 @@ rule("Subroutine CreateGlobalHUD")
 		Top,
 		0, Null, Color(White), Null, Visible To and String, Default Visibility);
 		Create HUD Text(All Players(All Teams), Null, Null, Custom String("Server Load: {0}%, Avg:{1}%, Peak:{2}%",Server Load, Server Load Average, Server Load Peak),
-			Right, 0, Null, Null, Server Load Average > 60 ? Color(Orange) : Color(Green), Visible To and String, Default Visibility);
+			Right, 0, Null, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Visible To String and Color, Default Visibility);
 
 	}
 }
@@ -1577,6 +1588,11 @@ rule("Subroutine SetUpCheckpoint")
 			Event Player.CurrentRunTime = 0;
 		End;
 		Event Player.Crouch = Global.Checkpoints[Event Player.Checkpoint][3];
+		Event Player.Jump = True;
+		If(Hero Of(Event Player) == Hero(Mercy));
+			Event Player.Ability1 = Global.Bots[Event Player.Checkpoint] == True;
+		End;
+
 		"Set Bot checkpoint too"
 		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
 		Call Subroutine(ResetCheckpoint);
@@ -1618,11 +1634,6 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.CurrentBotSection = 0;
 		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
 		"TODO: Temporarily enabled here, should come from cp flags"
-		Event Player.Jump = True;
-		
-		If(Hero Of(Event Player) == Hero(Mercy));
-			Event Player.Ability1 = Global.Bots[Event Player.Checkpoint] == True;
-		End;
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
 	}
@@ -1928,6 +1939,7 @@ rule("Subroutine CancelUltimate")
 	{
 		Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
 		Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
+		Set Status(Event Player, Null, Stunned, 0.008);
 	}
 }
 rule("Subroutine SetCurrentAbilities")
@@ -1948,13 +1960,13 @@ rule("Subroutine SetCurrentAbilities")
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		Set Jump Enabled(Event Player, Event Player.Jump);
 		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
 		Else;
 			Disallow Button(Event Player, Button(Crouch));
 		End;
-		Set Jump Enabled(Event Player, Event Player.Jump);
 	}
 }
 rule("Subroutine EnableAllAbilities")
