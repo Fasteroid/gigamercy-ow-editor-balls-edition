@@ -356,7 +356,7 @@ rule("Global Config")
 		"Orb color"
 		Global.Config[1] = Color(Yellow);
 		"Anti-Orb Color"
-		Global.Config[2] = Color(Black);
+		Global.Config[2] = Color(Red);
 		"Jump Cloud Color"
 		Global.Config[3] = Color(Red);
 		"Refresh Orb Color"
@@ -1238,6 +1238,33 @@ rule("Detect Grabbing RefreshOrb")
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Call Subroutine(ResetWithMistake);
 		End;
+	}
+}
+rule("Detect Touching AntiOrb")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Global.AntiOrbs[Event Player.Checkpoint] == True;
+		
+		"TODO: Encontrar un mejor algoritmo de deteccion. De momento nos basamos en Peace"
+		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
+		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
+		== True;
+	}
+	actions
+	{
+		Set Status(Event Player, Null, Burning, 0.16);
+		Call Subroutine(ResetWithMistake);
 	}
 }
 disabled rule("TODO: Bot Condition")
