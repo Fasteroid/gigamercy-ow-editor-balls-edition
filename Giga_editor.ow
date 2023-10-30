@@ -171,7 +171,7 @@ variables
 		24: RunTimerEnabled
 		25: CurrentSectionTime
 		26: BotCondition
-		27: BotStates
+		27: DEPRECATEDBotStates
 		28:	CurrentBotSection
 		29: Bot
 		30: LeftCheckpoint
@@ -465,7 +465,8 @@ rule("Press [Interact] twice to view/hide controls")
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Crouch)) == False;
 		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
+		"TODO: Disabled because it caused issues when gliding, consider reenabling"
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == False;
@@ -519,9 +520,11 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 		End;	
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		Event Player.FreeMode = Event Player.TempFreeMode;
-
+		Log To Inspector(Custom String("{0} - Switched manually to CP {1}", Event Player, Event Player.Checkpoint));
 		Call Subroutine(SetUpCheckpoint);
-		Wait(0.016, Abort When False);
+		"Hold buttons to speed switch"
+		Wait(0.2, Abort When False);
+		Loop If Condition Is True;
 	}
 }
 rule("Press [Reload] to reset current checkpoint")
@@ -1297,13 +1300,15 @@ disabled rule("TODO: Bot Condition")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Event Player.FreeMode == False;
-		Count Of(Global.Bots[Event Player.Checkpoint]) > 0;
-		Event Player.BotStates[Event Player.CurrentBotSection] == False;
+		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] == True;
+		Event Player.BotCondition == False;
 	}
 	actions
 	{
-		"TODO: Code logic here lmao"
-		Abort;
+		Log To Inspector(Custom String("{0} - Bot condition triggered", Event Player));
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
+			Small Message(Event Player, Custom String("There is a bot here"));
+		End;
 	}
 }
 rule("Update Bot Status")
@@ -1371,8 +1376,22 @@ rule("Detect Using Ability 1")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
+
 		If(Event Player.FreeMode == False);
-			Set Ability 1 Enabled(Event Player, False);
+			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
+			If(
+				Hero Of(Event Player) == Hero(Mercy) && 
+				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
+				Event Player.BotCondition == True &&
+				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
+				Log To Inspector(Custom String("{0} - Used GA & no R.O. advancing bot now", Event Player));
+				Event Player.CurrentBotSection += 1;
+				Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
+				Call Subroutine(UpdateBotPosition);
+				Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
+			Else;
+				Set Ability 1 Enabled(Event Player, False);
+			End;
 		End;
 		Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
 		"Disable this if you want to set the cooldowns through lobby settings"
@@ -1506,7 +1525,7 @@ rule("Subroutine UpdateBotPosition")
 		Set Player Variable(Event Player.Bot, BotUpdate, True);
 		Wait(0.016, Ignore Condition);
 		"TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
-		If(Global.Bots[Event Player.Checkpoint]);
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
 			Start Forcing Player Outlines(
 				Event Player.Bot,
 				Event Player,
@@ -1514,10 +1533,10 @@ rule("Subroutine UpdateBotPosition")
 				Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), Always);
 		Else;
 			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
-			"TODO: Check if we can cancel other heroes primary action to get rid of the if conditon"
-			If(Hero Of(Event Player) == Hero(Mercy));
-				Cancel Primary Action(Event Player);
-			End;
+			"TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
+			disabled If(Hero Of(Event Player) == Hero(Mercy));
+				disabled Cancel Primary Action(Event Player);
+			disabled End;
 		End;
 		
 		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
@@ -1554,7 +1573,7 @@ rule("Subroutine CreateGlobalHUD")
 
 
 		"Instructions"
-		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls\n", Input Binding String(Button(Interact))), Null,
+		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
 			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
 
 		"TODO: Break up into blocks that use no more than 4 input binding string per custom string"
