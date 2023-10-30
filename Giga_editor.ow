@@ -141,6 +141,7 @@ variables
 		29: RGB
 		30: CreatorAndCode
 		31: ServerLoad
+		32: MapTitle
 
 	player:
 		0:  Checkpoint
@@ -335,6 +336,8 @@ rule("Creator and Code")
 		Global.CreatorAndCode[0] = Custom String("Author");
 		"Your workshop code here"
 		Global.CreatorAndCode[1] = Custom String("Code");
+		"Only edit this if you want a custom map title"
+		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Config[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
 	}
 }
 
@@ -955,7 +958,7 @@ rule("Create Bot Icon")
 	{
 		"Create Bot Icon"
 		Create Icon(Global.Bots[Event Player.Checkpoint] ? Event Player : Null, 
-		Position Of(Event Player.Bot) + Vector(0, 2, 0), 
+		Eye Position(Event Player.Bot) + Vector(0, 0.5, 0), 
 		Arrow: Down, 
 		Visible To Position and Color, 
 		Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), 
@@ -1133,16 +1136,17 @@ rule("Detect Arriving on Goal or Teleport")
 			Event Player.Checkpoint += 1;
 			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+				"TODO: Consider not duplicating this block if possible"
+				If(Global.Teleports[Event Player.Checkpoint - 1]);
+					Call Subroutine(TeleportToCurrentCheckpoint);
+					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
+				End;
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
-				"TODO: Refactored this to setupcheckpoint"
-				disabled Event Player.Finished = True;
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
 				"TODO: Set a color for finish explosion in config"
-				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Event Player.GoalCoords, Event Player.GoalRadius);
+				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
-				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds",
-				Event Player, Event Player.CurrentRunTime));
-				disabled Abort;
+				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player, Event Player.CurrentRunTime));
 			"Player finished current checkpoint"
 			Else;
 				Small Message(Event Player, Custom String("Reached the goal:D"));
@@ -1539,18 +1543,16 @@ rule("Subroutine CreateGlobalHUD")
 	actions
 	{
 		"Map Creator and code"
-		Create HUD Text(All Players(All Teams), 
-		Null, 
-		Null, 
-		Custom String("{0} Parkour {1} by {2}", Global.Config[11], Current Map, 
-			Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0],Global.CreatorAndCode[1])
-		),
-			Left, 0, Null, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, Null, Global.MapTitle,
+		Left, 0, Null, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 			
 		"Leaderboard"
-		Create HUD Text(All Players(All Teams), Null, Null, Custom String("Leaderboard:\n{0}",
-		Custom String("Top5 Placeholder")),
-			Left, 2, Null, Null, Color(Red), Visible To and String, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, 
+		Custom String("\n\n                           "),
+		Custom String("Leaderboard:"),
+		Left, 2, Null, Null, Color(Red), Visible To and String, Default Visibility);
+
+
 		"Instructions"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls\n", Input Binding String(Button(Interact))), Null,
 			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
@@ -1646,19 +1648,19 @@ rule("Subroutine CreatePlayerHUD")
 		"Top HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
 			Top, 10, Null, Color(White), Null, Visible To and String, Default Visibility);
-		"Right HUD Elements"
-		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
-			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
 		Create HUD Text(
 			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Event Player : Null, 
 			Null,
-			Custom String("  Collected Orbs:\n{0}     {1}", 
-				Custom String("{0}: {1}/{2}", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)),
-				Count Of(Event Player.GrabbedOrbs)),
-				Custom String("{0}: {1}/{2}", Icon String(Recycle), Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
-		Count Of(Event Player.GrabbedRefreshOrbs))),
+			Custom String("Collected Orbs:\n{0}{1}", 
+				Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)) : Empty Array,
+				Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("  {0}: {1}/{2}", Icon String(Recycle), Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
+		Count Of(Event Player.GrabbedRefreshOrbs)) : Empty Array),
 			Null,
-			Right, 20, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
+			Top, 10, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
+		"Right HUD Elements"
+		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
+			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
+
 		
 	}
 }
@@ -1744,7 +1746,7 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.Resetting = False;
 	}
 }
-rule("Subrotine TeleportToCurrentCheckpoint")
+rule("Subroutine TeleportToCurrentCheckpoint")
 {
 	event
 	{
