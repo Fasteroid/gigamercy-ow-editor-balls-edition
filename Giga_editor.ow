@@ -50,7 +50,7 @@ settings
 		{
 			enabled maps
 			{
-				Circuit royal 972777519512068153
+				Hanamura 0
 			}
 		}
 
@@ -89,8 +89,8 @@ settings
 
 	workshop
 	{
-		Debug Mode (Inspector Recording): Off
-		Edit Mode: Off
+		Debug Mode (Inspector Recording): On
+		Edit Mode: On
 		Server Load Widget: On
 	}
 
@@ -142,6 +142,7 @@ variables
 		30: CreatorAndCode
 		31: ServerLoad
 		32: MapTitle
+		33: PeaceEditorVariables
 
 	player:
 		0:  Checkpoint
@@ -223,56 +224,172 @@ rule("Put your data here")
 
 	actions
 	{
-		Global.CompressedData = Array(Array(Vector(134.450, 10.980, -4.210), Array(Vector(130.310, 10.960, 12.340), 1), Array(), Array(0,
-			0.500), 20200), Array(Vector(135.050, 12.960, 17.800), Array(Vector(125.330, 16.960, 23.890), 1), Array(), Array(0, 0.500),
-			20200), Array(Vector(116.590, 16.960, 29.620), Array(Vector(111.640, 18.230, 17.380), 1), Array(), Array(0, 0.500), 20200),
-			Array(Vector(97.110, 16.960, -1.940), Array(Vector(105.050, 16.960, -10.210), 1), Array(), Array(0, 0.500), 20200), Array(
-			Vector(120.970, 10.970, -5.050), Array(Vector(113.480, 10.960, 4.070), 1), Array(), Array(0, 0.500), 20200), Array(Vector(
-			104.740, 10.960, 0.170), Array(Vector(89.330, 10.960, 9.350), 1), Array(), Array(0, 0.500), 20200), Array(Vector(88.330, 14,
-			-4.880), Array(Vector(96.810, 18.500, 7.460), 2), Array(), Array(0, 0.500), 20200), Array(Vector(96.080, 16.960, 32.080),
-			Array(Vector(103.970, 16.960, 34.820), 1), Array(Vector(98.910, 14.450, 31.890), 0.800), Array(0, 0.500), 20200), Array(Vector(
-			108.400, 12.300, 35.400), Array(Vector(111.090, 14.900, 42.750), 3), Array(), Array(0, 0.500), 20200), Array(Vector(93.200,
-			17.960, 43.840), Array(Vector(91.660, 21.830, 35.390), 1), Array(), Array(0, 0.500), 20200), Array(Vector(69.700, 17.960,
-			53.620), Array(Vector(65.570, 18.610, 55.450), 3), Array(), Array(0, 0.500), 20200), Array(Vector(46.870, 14.960, 36.750),
-			Array(Vector(57.850, 14.960, 35.520), 1), Array(), Array(0, 0.500), 20200), Array(Vector(75.690, 10.960, 41.960), Array(Vector(
-			79.540, 10.960, 60.840), 1), Array(), Array(0, 0.500), 20200), Array(Vector(63.270, 11.930, 49.930), Array(Vector(57.850,
-			14.960, 35.520), 1), Array(), Array(0, 0.500), 20201), Array(Vector(49.950, 14.960, 12.950), Array(Vector(61.210, 12.960,
-			8.360), 1), Array(Vector(56.970, 15.820, 7.950), 0.700), Array(0, 0.500), 20202), Array(Vector(70.740, 18.960, 11.270), Array(
-			0, 0), Array(), Array(0, 0.500), 20200), Array(Vector(52.560, 14.960, 26.040), Array(Vector(61.210, 12.960, 8.360), 1),
-			Array(), Array(0, 0.500), 20200), Array(Vector(76.840, 12.960, -1.330), Array(Vector(67.300, 15.010, -19.510), 1), Array(),
-			Array(0, 0.500), 20202), Array(Vector(52.040, 19.890, -23.760), Array(Vector(27.660, 14.820, -10.680), 1), Array(Vector(29.430,
-			19, -16.990), 0.800), Array(0, 0.500), 20201), Array(Vector(24.900, 15, -39.470), Array(Vector(17.980, 15, -48.840), 1), Array(
-			Vector(26.010, 16.300, -48.440), 0.800), Array(0, 0.500), 20200), Array(Vector(31.280, 12.060, -40.030), Array(Vector(29.940,
-			11.350, -26.330), 1), Array(Vector(30.410, 10.200, -20.170), 0.800), Array(0, 0.500), 20202), Array(Vector(15.340, 5.980,
-			-16.010), Array(Vector(13.140, 10, -27.790), 1), Array(), Array(0, 0.500), 20200), Array(Vector(20.530, 10, -46.020), Array(
-			Vector(11.950, 10.460, -49.380), 3), Array(), Array(0, 0.500), 20203), Array(Vector(9.330, 17.050, -43.580), Array(Vector(
-			9.240, 12.800, -27.020), 1), Array(), Array(0, 0.500), 20200), Array(Vector(-1.570, 15.310, -30.370), Array(Vector(14.520,
-			8.820, -11.100), 3), Array(), Array(0, 0.500), 20200), Array(Vector(11.060, 13.020, 6.460), Array(Vector(19.680, 6, -1.340),
-			1), Array(Vector(19.500, 7.700, 7.110), 0.800), Array(0, 0.500), 20200), Array(Vector(6.910, 5.830, -5.740), Array(Vector(
-			-8.380, 7.080, -8.840), 1), Array(Vector(-7.824, 7.579, -3.026), 0.700), Array(0, 0.500), 20200), Array(Vector(-10.068, 5.817,
-			6.225), Array(Vector(-24.030, 12.870, -9.820), 1), Array(Vector(-22.400, 8.410, -8), 0.800), Array(0, 0.500), 20202), Array(
-			Vector(-23.896, 6.001, 12.495), Array(Vector(-30.570, 11, -1.270), 1), Array(), Array(0, 0.500), 20201), Array(Vector(-12.990,
-			12, -18.730), Array(Vector(-27.720, 6, -25.820), 1), Array(Vector(-35.450, 7.450, -30.550), 0.800), Array(0, 0.500), 20202),
-			Array(Vector(-41.040, 4.070, -40.400), Array(Vector(-45.240, 4.200, -54.710), 1), Array(Vector(-45.050, 3.650, -41.170),
-			0.800), Array(0, 0.500), 20202), Array(Vector(-42.540, 10, -34.440), Array(Vector(-45.240, 4.200, -54.710), 1), Array(), Array(
-			0, 0.500), 20201), Array(Vector(-30.590, 8.350, -59.640), Array(Vector(-26.760, 10, -52.980), 1), Array(Vector(-28.960, 7.250,
-			-48.870), 0.800), Array(0, 0.500), 20200), Array(Vector(-18.480, 13, -47.790), Array(Vector(-14.480, 8, -34.680), 1), Array(
-			Vector(-17.180, 24.800, -33.180), 0.800, Vector(-22.490, 12.500, -9.920), 0.800), Array(0, 0.500), 20203), Array(Vector(
-			-22.040, 12.890, -3.260), Array(0, 0), Array(), Array(0, 0.500), 20201), Array(Vector(-8.440, 7.080, -9.030), Array(Vector(
-			13.810, 6, -4.520), 1), Array(Vector(15.470, 13.500, -7.890), 0.800), Array(0, 0.500), 20200), Array(Vector(26.020, 11.640,
-			-5.270), Array(Vector(35.300, 14.860, -3.090), 1), Array(), Array(0, 0.500), 20200), Array(Vector(54.150, 15.020, -18.500),
-			Array(Vector(61.020, 15, -37.700), 1), Array(), Array(0, 0.500), 20201), Array(Vector(73.790, 17.300, -30.910), Array(0, 0),
-			Array(), Array(0, 0.500), 20201), Array(Vector(76.580, 17.290, -34.380), Array(Vector(61.520, 17.050, -18.340), 3), Array(),
-			Array(0, 0.500), 20001), Array(Vector(75.570, 16.840, -48.740), Array(0, 0), Array(), Array(0, 0.500), 20200), Array(Vector(
-			92.640, 16.520, -49.210), Array(Vector(61.890, 15, -31.750), 1), Array(), Array(0, 0.500), 20201), Array(Vector(63.190, 17.050,
-			-18.080), Array(Vector(53.750, 15.010, -6.790), 1), Array(), Array(0, 0.500), 20201), Array(Vector(47.590, 17.910, 6.780),
-			Array(Vector(50.550, 19.960, 21.650), 1), Array(Vector(50.140, 18, 20.410), 0.800), Array(0, 0.500), 20200), Array(Vector(
-			43.390, 14.960, 40.440), Array(Vector(46.250, 21.240, 26.790), 1), Array(), Array(0, 0.500), 20200), Array(Vector(75.950,
-			10.960, 32.170), Array(Vector(64.210, 11.810, 19.270), 1), Array(Vector(80.510, 12, 15.280), 0.800), Array(0, 0.500), 20202),
-			Array(Vector(98.380, 8.960, 18.170), Array(Vector(90, 10, 30.400), 1, Vector(90, 10, 30.400), 1), Array(), Array(0, 0.500, 0,
-			0), 20202), Array(Array(Vector(78.710, 17.960, 38.740), 2, 0, Array(Vector(2.270, 6, 18.370), 2, 2, 2)), Array(Vector(53.120,
-			19.960, 23.540), 1), Array(), Array(0, 0.500), 20200), Array(Array(Vector(-104.960, 7.380, 8.960), 3), Array(0, 0), Array(),
-			Array(0, 0.500), 20202), 2);
+		Global.Checkpoint = Array(Array(Vector(61.666, -2.044, 40.309), 1.600, True, Array(Vector(-40.051, 0.250, -108.314), False, True),
+			False, False, Array(), Array(), Array()), Array(Vector(64.082, -2.288, 46.897), 1.600, True, Array(Vector(58.609, -1.401,
+			53.589), False, True), False, False, Array(Array(Vector(61.780, 1.276, 61.776), False, False, True)), Array(), Array()), Array(
+			Vector(66.198, -2.956, 65.812), 1.600, True, Array(Vector(65.800, -3.166, 74.692), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(76.003, -3.375, 78.187), 1.600, True, Array(Vector(75.168, -2.828, 55.816), False, True),
+			False, False, Array(Array(Vector(74.248, 8.549, 50.088), False, False, True)), Array(), Array()), Array(Vector(72.597, 6.497,
+			45.549), 1.600, True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(83.028, -2.930,
+			53.714), 1.600, True, Array(Vector(82.630, -3.541, 70.745), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(97.179, -3.641, 74.593), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(
+			-33.257, 1, -115.117), 1.600, True, Array(Vector(-40.063, 0.250, -108.334), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(-46.936, 1, -101.496), 1.600, True, Array(Vector(-40.064, 0.250, -108.333), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(-32.664, 1, -100.888), 1.600, True, Array(Vector(-46.084, 1, -92.746), False, True),
+			False, False, Array(Array(Vector(-41.642, 2.892, -90.052), False, False, True)), Array(), Array()), Array(Vector(-36.924, 1,
+			-85.442), 1.600, True, Array(Vector(-33.010, 1, -79.672), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			-27.392, 1, -89.017), 1.600, True, Array(Vector(-23.984, 1, -97.874), False, True), False, False, Array(Array(Vector(-21.133,
+			3.550, -94.988), False, False, True)), Array(), Array()), Array(Vector(-13.777, 1, -102.204), 1.600, True, Array(Vector(-3.714,
+			-0.925, -93.171), False, True), False, False, Array(), Array(), Array()), Array(Vector(-2.959, 2.540, -82.504), 1.600, True,
+			Array(False, False, True), False, False, Array(Array(Vector(-6.118, 3.920, -79.355), False, False, True)), Array(), Array()),
+			Array(Vector(-8.600, 2.540, -76.829), 1.600, True, Array(Vector(-17.014, -0.749, -90.577), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(-16.225, 9.186, -90.003), 1.600, True, Array(Vector(-21.201, -0.925, -75.058), False, True),
+			False, False, Array(Array(Vector(-20.437, 9.992, -74.717), False, False, True)), Array(), Array()), Array(Vector(-17.394, 9,
+			-71.832), 1.600, True, Array(Vector(-8.968, 9, -61.287), False, True), False, False, Array(Array(Vector(1.065, 11.459,
+			-72.793), False, False, True)), Array(), Array()), Array(Vector(10.116, 7.010, -81.653), 1.600, True, Array(Vector(3.760,
+			7.010, -97.335), False, True), False, False, Array(Array(Vector(0.157, 8.706, -96.153), False, False, True)), Array(),
+			Array()), Array(Vector(-9.178, 1, -105.623), 1.600, True, Array(Vector(-17.957, 1, -104.218), False, True), False, False,
+			Array(Array(Vector(-15.276, 3.271, -96.200), False, False, True)), Array(), Array()), Array(Vector(-10.844, -0.925, -84.660),
+			1.600, True, Array(Vector(4.891, -1, -69.158), False, True), False, False, Array(), Array(), Array()), Array(Vector(4.987, 5,
+			-69.022), 1.600, True, Array(Vector(13.366, 4, -72.131), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			20.102, 4, -85.009), 1.600, True, Array(Vector(12.216, 7, -94.475), False, True), False, False, Array(Array(Vector(10.965,
+			8.475, -91.287), False, False, True)), Array(), Array()), Array(Vector(6.063, 7.010, -86.543), 1.600, True, Array(Vector(
+			12.822, 7.010, -83.414), False, True), False, False, Array(), Array(), Array()), Array(Vector(13.726, 9.010, -87.369), 1.600,
+			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(-0.673, -1, -97.091), 1.600, True,
+			Array(Vector(7.645, -1, -93.450), False, True), False, False, Array(Array(Vector(-1.744, 2.501, -83.677), False, False, True)),
+			Array(), Array()), Array(Vector(7.755, -1.905, -78.868), 1.600, True, Array(Vector(9.298, -5.102, -91.621), False, True),
+			False, False, Array(Array(Vector(15.063, -3.500, -87.120), False, False, True)), Array(), Array()), Array(Vector(19.436, -5,
+			-91.005), 1.600, True, Array(Vector(8.886, -5, -79.504), False, True), False, False, Array(Array(Vector(-0.375, 3.320,
+			-74.244), Vector(21.014, -5.495, -91.395), False, True)), Array(), Array()), Array(Vector(15.074, -5, -97.335), 1.600, True,
+			Array(Vector(21.397, -3, -81.395), False, True), False, False, Array(), Array(), Array()), Array(Vector(9.395, -0.920,
+			-72.995), 1.600, True, Array(Vector(2.309, 0.982, -64.152), False, True), False, False, Array(Array(Vector(1.681, 2.204,
+			-72.371), False, False, True)), Array(), Array()), Array(Vector(-3.627, -1.905, -67.534), 1.600, True, Array(False, False,
+			True), False, False, Array(Array(Vector(2.994, -0.489, -77.834), False, False, True)), Array(), Array(Array(Vector(-0.604,
+			-5.100, -74.217), 8), Array(Vector(2.491, -5.102, -77.373), 8), Array(Vector(-3.463, -5.100, -71.416), 8), Array(Vector(-6.580,
+			-5.100, -68.342), 8))), Array(Vector(-10.415, -4.920, -61.735), 1.600, True, Array(Vector(-19.477, -1, -50.992), False, True),
+			False, False, Array(Array(Vector(-30.530, 4.294, -53.276), False, False, True)), Array(), Array()), Array(Vector(-38.643, 1,
+			-61.544), 1.600, True, Array(Vector(-28.767, 1, -73.470), False, True), False, False, Array(Array(Vector(-26.206, 6.470,
+			-69.861), False, False, True)), Array(), Array()), Array(Vector(-22.085, 2.996, -66.788), 1.600, True, Array(Vector(-36.886, 1,
+			-65.452), False, True), False, False, Array(Array(Vector(-29.821, 4.073, -61.216), False, False, True)), Array(), Array()),
+			Array(Vector(-20.954, 4, -58.085), 1.600, True, Array(Vector(-16.189, 4, -53.260), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(-16.649, -1.168, -34.377), 1.600, True, Array(Vector(-24.045, -1.029, -20.745), False, True),
+			False, False, Array(Array(Vector(-27.452, 10.010, -19.634), False, False, True)), Array(), Array()), Array(Vector(-22.849,
+			-1.254, -13.731), 1.600, True, Array(Vector(-10.626, -0.693, -10.118), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(-5.760, 7.978, -10.109), 1.600, True, Array(Vector(4.704, 7.978, -10.314), False, True), False, False, Array(
+			Array(Vector(-4.096, 8.493, -19.936), False, False, True)), Array(), Array()), Array(Vector(-9.857, 7, -23.747), 1.600, True,
+			Array(False, False, True), False, False, Array(Array(Vector(-9.967, 8.503, -28.122), False, False, True)), Array(), Array()),
+			Array(Vector(-8.630, 5, -36.147), 1.600, True, Array(Vector(1.222, 5.603, -36.807), False, True), False, False, Array(Array(
+			Vector(-4.029, 6.415, -40.951), False, False, True)), Array(), Array()), Array(Vector(-7.079, 5.611, -45.736), 1.600, True,
+			Array(Vector(-9.272, 5, -39.762), False, True), False, False, Array(Array(Vector(13.087, 6.906, -41.101), False, False, True)),
+			Array(), Array(Array(Vector(1.779, 4.683, -41.045), 12))), Array(Vector(17.587, -1.224, -49.019), 1.600, True, Array(Vector(
+			2.843, -1.800, -48.856), False, True), False, False, Array(Array(Vector(8.350, 0.071, -48.890), False, False, True)), Array(),
+			Array()), Array(Vector(-8.821, 3.960, -47.838), 1.600, True, Array(Vector(0.941, -0.600, -54.759), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(13.066, 7.071, -48.835), 1.600, True, Array(False, False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(19.631, 4.299, -40.781), 1.600, True, Array(False, False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(8.208, 1.109, -42.809), 1.600, True, Array(False, False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(6.471, 2.109, -38.680), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array(Array(Vector(17.630, -0.681, -37.457), 12))), Array(Vector(23.785, 2.272, -34.501), 1.600, True, Array(False, False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(23.656, 2.021, -41.621), 1.600, True, Array(Vector(26.443,
+			-1.660, -46.553), False, True), False, False, Array(), Array(), Array()), Array(Vector(18.659, 0.981, -58.794), 1.600, True,
+			Array(Vector(25.046, -1.875, -71.271), False, True), False, False, Array(Array(Vector(29.673, -0.044, -65.455), False, False,
+			True)), Array(), Array()), Array(Vector(36.125, -1.942, -61.410), 1.600, True, Array(Vector(43.444, -1.144, -68.219), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(42.827, 1.411, -57.077), 1.600, True, Array(False, False, True),
+			False, False, Array(Array(Vector(47.130, -0.537, -52.269), False, False, True)), Array(), Array()), Array(Vector(45.284,
+			-1.191, -45.876), 1.600, True, Array(Vector(47.013, -2.005, -61.067), False, True), False, False, Array(Array(Vector(35.298,
+			7.350, -69.193), False, False, True), Array(Vector(31.541, 7.607, -73.225), False, False, True)), Array(), Array()), Array(
+			Vector(28.245, 3, -82.924), 1.600, True, Array(Vector(23.055, 2.921, -69.652), False, True), False, False, Array(Array(Vector(
+			26.052, 4.762, -75.881), False, False, True)), Array(), Array()), Array(Vector(35.461, 3.676, -65.695), 1.600, True, Array(
+			Vector(18.463, 2.850, -51.312), False, True), False, False, Array(Array(Vector(27.861, 3.858, -60.141), Vector(34.671, 2.314,
+			-51.322), False, True), Array(Vector(31.685, 4.135, -41.447), False, False, True), Array(Vector(28.034, 4.630, -51.450), False,
+			False, True)), Array(), Array()), Array(Vector(31.653, 2.327, -37.754), 1.600, True, Array(Vector(42.980, 2, -32.902), False,
+			True), False, False, Array(Array(Vector(20.518, 4.443, -30.084), False, False, True)), Array(), Array()), Array(Vector(12.953,
+			0, -30.173), 1.600, True, Array(Vector(12.959, 2.754, -42.849), True, True), False, False, Array(), Array(), Array()), Array(
+			Vector(1.692, -1.875, -44.872), 1.600, True, Array(Vector(-9.197, -1, -46.277), False, True), False, False, Array(Array(Vector(
+			-4.768, 0.016, -44.712), False, False, True), Array(Vector(-8.294, 2.805, -40.903), False, False, True)), Array(), Array()),
+			Array(Vector(-7.975, 1.040, -34.875), 1.600, True, Array(Vector(-11.245, 1, -20.755), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(2.225, 1, -21.913), 1.600, True, Array(False, False, True), False, True, Array(), Array(),
+			Array()), Array(Vector(22.063, 6.607, -9.755), 1.600, True, Array(Vector(26.245, 6, -24.245), False, True), False, False,
+			Array(Array(Vector(18.845, 8.361, -21.142), False, False, True)), Array(), Array()), Array(Vector(13.020, 6.736, -21.579),
+			1.600, True, Array(Vector(0.755, 7, -23.908), False, True), False, False, Array(Array(Vector(-4.179, 8.360, -20.115), False,
+			False, True)), Array(), Array()), Array(Vector(-23.208, 2.352, -11.638), 1.600, True, Array(Vector(-15.387, 1, 1.208), False,
+			True), False, False, Array(Array(Vector(-17.071, -4.572, 1.117), False, False, True), Array(Vector(-17.071, -2.549, 1.117),
+			False, False, True), Array(Vector(-17.071, -0.903, 1.117), False, False, True)), Array(), Array()), Array(Vector(-14.900,
+			3.868, 13.241), 1.600, True, Array(Vector(-17.124, 3.995, 24.259), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(3.305, 2.497, 38.235), 1.600, True, Array(Vector(-12.411, 1, 30.688), False, True), False, False, Array(Array(
+			Vector(2.074, 4.784, 30.198), False, False, True)), Array(), Array()), Array(Vector(9.990, -0.925, 28.293), 1.600, True, Array(
+			False, False, True), False, False, Array(Array(Vector(9.222, -0.547, 25.866), False, False, True)), Array(), Array()), Array(
+			Vector(19.311, -1.158, 35.166), 1.600, True, Array(Vector(21.509, 2.228, 40.573), False, True), False, False, Array(Array(
+			Vector(13.254, -1.326, 51.465), Vector(3.226, 2.501, 39.511), False, True)), Array(), Array()), Array(Vector(15.369, -0.987,
+			27.411), 1.600, True, Array(Vector(23.529, 2.467, 29.967), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(16.707, 0, 8.771), 1.600, True, Array(Vector(5.462, 0, 8.531), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(13.919, 3.998, 16.629), 1.600, True, Array(Vector(14.420, 4.593, 24.021), False, True), False, False, Array(Array(
+			Vector(8.126, 5.506, 23.095), False, False, True)), Array(), Array()), Array(Vector(3.736, 3.966, 23.022), 1.600, True, Array(
+			Vector(-12.709, 1, 29.177), False, True), False, False, Array(), Array(), Array()), Array(Vector(6.573, 10.010, 26.461), 1.600,
+			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(8.835, 11.261, 24.251), 1.600, True,
+			Array(Vector(15.622, 11.297, 17.475), False, True), False, False, Array(), Array(), Array()), Array(Vector(-3.909, 7.962,
+			11.912), 1.600, True, Array(Vector(-4.203, 1, 2.652), False, True), False, False, Array(Array(Vector(-4.041, 5.202, 10.697),
+			False, False, True)), Array(), Array()), Array(Vector(-3.797, 1, -8.924), 1.600, True, Array(Vector(28.789, 10.463, -4.107),
+			False, True), False, False, Array(Array(Vector(2.797, 4.710, -6.015), False, False, True)), Array(), Array()), Array(Vector(
+			-3.887, 4, 14.748), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(-14.006,
+			-1.026, 13.674), 1.600, True, Array(Vector(-15.366, -1, 22.270), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(1.940, -1, 23.896), 1.600, True, Array(Vector(2.024, -1.237, 28.264), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(1.797, -0.387, 13.862), 1.600, True, Array(Vector(15.325, -1, 22.270), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(14.044, -0.434, 12.175), 1.600, True, Array(False, False, True), False, True, Array(),
+			Array(), Array()), Array(Vector(14.013, -0.002, 9.554), 1.600, True, Array(Vector(13.263, 0.999, -4.315), False, True), False,
+			False, Array(), Array(), Array()), Array(Vector(29.313, 10.456, -3.627), 1.600, True, Array(Vector(8.515, 0, 8.956), False,
+			True), False, False, Array(Array(Vector(10.473, 4.320, 8.908), False, False, True)), Array(), Array()), Array(Vector(28.555,
+			10.442, 4.336), 1.600, True, Array(Vector(45.224, 6, -7.236), False, True), False, False, Array(Array(Vector(40.020, 7.515,
+			-2.527), False, False, True), Array(Vector(39.911, 7.500, -5.443), False, False, True)), Array(), Array()), Array(Vector(
+			13.500, 0.986, -4.418), 1.600, True, Array(Vector(28.205, 0, -8.016), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(30.735, 2.524, -13.567), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(41.015, 7.077,
+			-14.445), False, False, True), Array(Vector(45.980, 7.014, -14.396), False, False, True), Array(Vector(47.198, 3.269, -24.817),
+			False, False, True)), Array(), Array(Array(Vector(30.739, 2.332, -13.566), 14))), Array(Vector(40.236, 0.039, -26.196), 1.600,
+			True, Array(Vector(39.582, 0.038, -8.873), False, True), False, False, Array(Array(Vector(43.871, 2.585, -7.802), False, False,
+			True)), Array(), Array()), Array(Vector(56.123, -1, -4.955), 1.600, True, Array(False, False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(57.370, -0.143, 1.693), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(50.620, -0.070, 0.643), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(54.561, -0.116, -7.187), 1.600, True, Array(Vector(54.884, -1.224, 15.499), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(47.796, 6, 14.253), 1.600, True, Array(Vector(34.657, 6, 17.988), False, True), False,
+			False, Array(Array(Vector(35.446, 4.505, 17.735), Vector(47.753, 6, 6.200), False, True), Array(Vector(47.340, 4.278, 6.008),
+			False, False, True), Array(Vector(40.989, 3.191, 21.428), False, False, True)), Array(), Array()), Array(Vector(40.784, 0.324,
+			26.567), 1.600, True, Array(Vector(44.207, 0.470, 38.388), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(27.919, 3, 31.527), 1.600, True, Array(Vector(27.337, 3, 24.672), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(34.532, 13.953, 22.449), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(
+			30.932, 18.978, 20.053), False, False, True), Array(Vector(28.490, 12.350, 4.135), False, False, True), Array(Vector(39.824,
+			7.501, -2.429), False, False, True)), Array(), Array(Array(Vector(34.581, 13.458, 22.372), 11))), Array(Vector(41.478, 5.999,
+			2.229), 1.600, True, Array(Vector(49.441, 6, 2.474), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			63.774, 0.593, 4.736), 1.600, True, Array(Vector(56.613, -1.794, 18.224), False, True), False, False, Array(Array(Vector(
+			66.468, 10.169, 22.502), False, False, True), Array(Vector(65.680, 10.198, 30.173), False, False, True)), Array(), Array()),
+			Array(Vector(61.222, 0.334, 35.752), 1.600, True, Array(Vector(62.301, 6, -2.312), False, True), False, False, Array(Array(
+			Vector(62.982, 4.425, 6.438), False, False, True)), Array(), Array()), Array(Vector(61.551, 6, -12.940), 1.600, True, Array(
+			Vector(51.221, 6, -12.397), False, True), False, False, Array(Array(Vector(56.694, 4.066, -12.766), Vector(27.438, 12.607,
+			-12.185), False, True), Array(Vector(33.195, 10.660, -12.449), False, False, True), Array(Vector(52.989, 13.983, -13.862),
+			False, False, True)), Array(), Array()), Array(Vector(72.676, -1.970, -0.078), 1.600, True, Array(False, False, True), False,
+			True, Array(), Array(), Array()), Array(Vector(76.485, -1.979, 0.044), 1.600, True, Array(Vector(83.789, -2.999, 5.137), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(93.164, -1.897, -6.207), 1.600, True, Array(Vector(99.687,
+			-0.051, 0.125), False, True), True, False, Array(Array(Vector(85.496, 3.481, -7.720), False, False, True), Array(Vector(84.623,
+			9.426, -7.781), False, False, True), Array(Vector(100.248, 14.511, 0.210), False, False, True), Array(Vector(93.414, 11.601,
+			-6.283), False, False, True), Array(Vector(93.417, 6.397, -4.341), False, False, True), Array(Vector(93.355, 1.513, -2.235),
+			False, False, True), Array(Vector(106.438, 3.395, -0.163), False, False, True)), Array(), Array()), Array(Vector(113.057, 1,
+			0.069), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(99.316, 12, 7.177),
+			1.600, True, Array(Vector(85.167, 12, 9.802), False, True), False, False, Array(Array(Vector(86.334, 14.758, -6.994), False,
+			False, True)), Array(), Array()), Array(Vector(84.868, 7, -3.968), 1.600, True, Array(Vector(84.756, 7, -4.601), False, True),
+			False, False, Array(Array(Vector(84.785, 8.603, -6.551), Vector(102.809, 5.163, 7.550), False, True), Array(Vector(87.946,
+			6.503, -5.759), False, False, True), Array(Vector(91.847, 6.610, -5.461), False, False, True), Array(Vector(94.699, 6.398,
+			-1.111), False, False, True), Array(Vector(94.740, 6.562, 3.788), False, False, True), Array(Vector(99.975, 6.765, 4.007),
+			False, False, True)), Array(), Array()), Array(Vector(91.903, 2, -0.622), 1.600, True, Array(Vector(93.246, 2, 12.243), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(75.946, 2, 7.196), 1.600, True, Array(Vector(79.805, -1.870,
+			35.959), False, True), False, False, Array(Array(Vector(81.995, -1.422, 15.094), False, False, True), Array(Vector(78.486,
+			0.326, 27.190), False, False, True)), Array(), Array()), Array(Vector(81.916, -3, 10.078), 1.600, True, Array(False, False,
+			True), False, True, Array(), Array(), Array()), Array(Vector(52.946, -3.083, 80.260), 1.600, True, Array(Vector(78.853, -3.023,
+			58), False, True), False, False, Array(Array(Vector(76.181, 11.386, 81.913), False, False, True), Array(Vector(85.198, 11.603,
+			82.931), False, False, True), Array(Vector(94.308, 8.876, 86.019), False, False, True), Array(Vector(88.745, 16.134, 55.849),
+			False, False, True), Array(Vector(87.706, 16.165, 49.759), False, False, True), Array(Vector(88.912, 13.380, 41.231), False,
+			False, True), Array(Vector(88.958, 0.633, 56.154), False, False, True)), Array(), Array(Array(Vector(52.946, -3.083, 80.260),
+			26), Array(Vector(88.794, -3.481, 56.788), 25))), Array(Vector(94.310, -2, 19.419), 1.600, True, Array(False, False, True),
+			False, True, Array(), Array(), Array()), Array(Vector(0.352, 3.528, -58.549), 1.600, True, Array(Vector(13.094, 15.267,
+			-48.771), True, True), False, False, Array(), Array(), Array()), Array(Vector(12.891, 0, -23.966), 2.500, True, Array(False,
+			False, True), False, False, Array(), Array(), Array()));
 	}
 }
 rule("Global Config")
@@ -285,37 +402,37 @@ rule("Global Config")
 	actions
 	{
 		"------Colors------"
-		disabled continue;
+		disabled End;
 		"Start Checkpoint Ring Color"
-		Global.Config[0] = Color(Blue);
+		Global.Config[0] = Color(Red);
 		"Goal Checkpoint Ring Color"
-		Global.Config[5] = Color(Aqua);
+		Global.Config[5] = Color(Red);
 		"Goal Checkpoint text Color"
 		Global.Config[6] = Color(White);
 		"Teleport pad effect color"
-		Global.Config[9] = Color(Yellow);
+		Global.Config[9] = Color(Red);
 		"Orb color"
-		Global.Config[1] = Color(Yellow);
+		Global.Config[1] = Color(Red);
 		"Orb Icon Color"
-		Global.Config[12] = Color(Yellow);
+		Global.Config[12] = Color(White);
 		"Refresh Orb Color"
-		Global.Config[4] = Color(Violet);
+		Global.Config[4] = Color(Red);
 		"Refresh Orb Icon Color"
-		Global.Config[13] = Color(Violet);
+		Global.Config[13] = Color(White);
 		"Anti-Orb Color"
-		Global.Config[2] = Color(Red);
+		Global.Config[2] = Color(Black);
 		"Jump Cloud Color"
 		Global.Config[3] = Color(Red);
 
 		"------Texts & Icons------"
-		disabled continue;
+		disabled End;
 		"Goal Checkpoint text"
 		Global.Config[7] = Custom String("Goal");
 		"Teleport pad Text or Icon"
 		Global.Config[8] = Icon String(Spiral);
 		
 		"------Bot & Player Settings------"
-		disabled continue;
+		disabled End;
 		"Bot Hero"
 		Global.Config[10] = Hero(Mercy);
 		"Player Hero"
@@ -436,8 +553,7 @@ rule("3. Decompress Data")
 		Else If (Global.CompressedData);
 			Call Subroutine(TawsDecompressData);
 		Else If (Global.Checkpoint);
-			Wait Until(Has Spawned(Host Player), 9999);
-			Big Message(All Players(All Teams), Custom String("Peace editor maps are not supported yet:("));
+			Call Subroutine(PeaceDecompressData);
 		End;
 		Log To Inspector(Custom String("Decompression ended"));
 	}
@@ -753,7 +869,7 @@ rule("Server load widget by GigaMercy")
 	}
 	actions
 	{
-		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg:{1}%, Peak:{2}%",Server Load, Server Load Average, Server Load Peak),
+		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
 		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
 	}
 }
@@ -903,7 +1019,7 @@ rule("Create/Destroy current level Jump Clouds")
 			Modify Player Variable(Event Player, CloudEffects, Remove from Array By Value, Last Of(Event Player.CloudEffects));
 		Else;
 			"Action: Create Cloud effect"
-			Create Effect(Event Player, Sphere, Global.Config[2], 
+			Create Effect(Event Player, Cloud, Global.Config[3], 
 			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][0], 
 			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][1], 
 			Visible To Position Radius and Color);
@@ -1577,7 +1693,7 @@ rule("Subroutine CreateGlobalHUD")
 			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
 
 		"TODO: Break up into blocks that use no more than 4 input binding string per custom string"
-		disabled Continue;
+		disabled End;
 
 		"Controls pt1"
 		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
@@ -1782,7 +1898,171 @@ rule("Subroutine TeleportToCurrentCheckpoint")
 		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 	}
 }
-rule("Taw's Editor DecompressData")
+rule("Subroutine CreateGlobalEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreateGlobalEditModeHUD;
+	}
+
+	actions
+	{
+		
+	}
+}
+rule("Subroutine CreatePlayerEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerEditModeHUD;
+	}
+
+	actions
+	{
+		Create In-World Text(Event Player,
+		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
+			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][2], Global.Checkpoints[Event Player.Checkpoint][3], 
+				Custom String("Require Ground: {0}\n{1}", Global.Checkpoints[Event Player.Checkpoint][4],
+					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",Global.Checkpoints[Event Player.Checkpoint][5], Global.Checkpoints[Event Player.Checkpoint][6], Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
+					)
+				)
+			)
+		),
+		Global.Checkpoints[Event Player.Checkpoint][0],
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Green),
+		Default Visibility
+		);
+		"Create Bot text"
+		Create In-World Text(Global.Bots[Event Player.Checkpoint] ? Event Player : Null,
+		Custom String("{0}\nFacing: {1}\n{2}", 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0], 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1], 
+			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2],
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3], 
+				Custom String("Resurrect: {0}\nRefresh GA after Rez: {1}\nCurrentPos: {2}", 
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4],
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
+					Position Of(Event Player.Bot)
+				)
+			)
+		),
+		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0,1,0),
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Aqua),
+		Default Visibility
+		);
+		"Debug landing threshold and goal condition"
+		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
+		X Component Of(Position Of(Event Player)),
+		Y Component Of(Position Of(Event Player)),
+		Z Component Of(Position Of(Event Player))),
+		Top, 0, Null, Null, Color(White), String, Default Visibility);
+
+		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoalY: {2}", 
+		Distance Between(Event Player, Event Player.GoalCoords), 
+		Y Component Of(Position Of(Event Player)), 
+		Y Component Of(Event Player.GoalCoords)), 
+		Right, 99, Null, Null, 
+		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&((Y Component Of(Position Of(Event Player)) <= 
+			(Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+		(Y Component Of(Position Of(Event Player)) >= 
+			(Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]))) ? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
+	}
+}
+rule("Subroutine CancelMomentum")
+{
+	event
+	{
+		Subroutine;
+		CancelMomentum;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Cancelled Momentum", Event Player));
+		Apply Impulse(Event Player, Up, 0, To World, Cancel Contrary Motion XYZ);
+		Wait(0.016, Restart When True);
+		Apply Impulse(Event Player, Normalize(Velocity Of(Event Player)) * -1 * 1, Speed Of(Event Player), To World,
+			Incorporate Contrary Motion);
+	}
+}
+rule("Subroutine CancelUltimate")
+{
+	event
+	{
+		Subroutine;
+		CancelUltimate;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Cancelled Ultimate", Event Player));
+		Event Player.TempFreeMode = Event Player.FreeMode;
+		Event Player.FreeMode = True;
+		Kill(Event Player, Null);
+		disabled Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
+		Resurrect(Event Player);
+		disabled Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
+		Event Player.FreeMode = Event Player.TempFreeMode;
+		disabled Set Status(Event Player, Null, Stunned, 0.008);
+	}
+}
+rule("Subroutine SetCurrentAbilities")
+{
+	event
+	{
+		Subroutine;
+		SetCurrentAbilities;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
+		If(Event Player.FreeMode || Event Player.Finished);
+			Abort;
+		End;
+
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		Set Jump Enabled(Event Player, Event Player.Jump);
+		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
+		If(Event Player.Crouch);
+			Allow Button(Event Player, Button(Crouch));
+		Else;
+			Disallow Button(Event Player, Button(Crouch));
+		End;
+	}
+}
+rule("Subroutine EnableAllAbilities")
+{
+	event
+	{
+		Subroutine;
+		EnableAllAbilities;
+	}
+
+	actions
+	{
+		Set Ability 1 Enabled(Event Player, True);
+		Set Ability 2 Enabled(Event Player, True);
+		Set Ultimate Ability Enabled(Event Player, True);
+		Set Crouch Enabled(Event Player, True);
+		Set Jump Enabled(Event Player, True);
+		Allow Button(Event Player, Button(Crouch));
+		Allow Button(Event Player, Button(Jump));
+	}
+}
+rule("Subroutine Taw'sDecompressData")
 {
 	event
 	{
@@ -1950,167 +2230,144 @@ rule("Taw's Editor DecompressData")
 		Global.j = 0;
 	}
 }
-rule("Subroutine CreateGlobalEditModeHUD")
+rule("Subroutine PeaceDecompressData")
 {
 	event
 	{
 		Subroutine;
-		CreateGlobalEditModeHUD;
+		PeaceDecompressData;
 	}
 
 	actions
 	{
+		"Workshop setting: Bot Floating?"
+		Global.PeaceEditorVariables[0] = False;
+		"Workshop setting: Land On Arrival Point?"
+		Global.PeaceEditorVariables[1] = False;
+		"Peace orb to workshop sphere radius. If some orbs are impossible to grab increase this number in 0.1 increments"
+		Global.PeaceEditorVariables[4] = 0.5;
+
+		Log To Inspector(Custom String("Peace Decompress Data start"));
+
+		"Filter all checkpoints that are not teleport levels"
+		Global.PeaceEditorVariables[2] = Filtered Array(Global.Checkpoint, Current Array Element[5] == False);
+
+		"Extract all non-teleport checkpoints. Assume facingdirection=false, Landing thresholds = 1"
+		Global.Checkpoints = Mapped Array(Global.PeaceEditorVariables[2], 
+		Array(
+			Current Array Element[0],
+			Current Array Element[1],
+			False,
+			Current Array Element[2],
+			Global.PeaceEditorVariables[1],
+			1,
+			1)
+		);
+
+		"Extract initial bots. TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
+		Global.Bots = 
+			Mapped Array(Global.PeaceEditorVariables[2],
+			Count Of(Current Array Element[3]) > 0 ? Array(Array(
+				Current Array Element[3][0],
+				False,
+				False,
+				!Global.PeaceEditorVariables[0],
+				Current Array Element[3][1],
+				Current Array Element[3][2])) : Array(False)
+		);
 		
-	}
-}
-rule("Subroutine CreatePlayerEditModeHUD")
-{
-	event
-	{
-		Subroutine;
-		CreatePlayerEditModeHUD;
-	}
+		"Extract and translate level effects"
+		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
+			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
+			
+			"Extract level Normal Orbs"
+			Global.Orbs[Global.i] = 
+				Mapped Array(
+					Filtered Array(
+						Global.PeaceEditorVariables[2][Global.i][6],
+						Current Array Element[1] == False), 
+					Count Of(Current Array Element) > 0 ? 
+						Array(Current Array Element[0], Global.PeaceEditorVariables[4]) : False
+				);
+			"Cleanup empty orb array"
+			If(Global.Orbs[Global.i][0] == False);
+				Global.Orbs[Global.i] = False;
+			End;
+			
+			"Extract level Antiorbs"
+			Global.AntiOrbs[Global.i] = 
+				Count Of(Global.PeaceEditorVariables[2][Global.i][7]) > 0 ? 
+				Global.PeaceEditorVariables[2][Global.i][7] : False;
 
-	actions
-	{
-		Create In-World Text(Event Player,
-		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
-			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][2], Global.Checkpoints[Event Player.Checkpoint][3], 
-				Custom String("Require Ground: {0}\n{1}", Global.Checkpoints[Event Player.Checkpoint][4],
-					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",Global.Checkpoints[Event Player.Checkpoint][5], Global.Checkpoints[Event Player.Checkpoint][6], Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
-					)
-				)
-			)
-		),
-		Global.Checkpoints[Event Player.Checkpoint][0],
-		1, 
-		Do Not Clip,
-		Visible To Position and String,
-		Color(Green),
-		Default Visibility
-		);
-		"Create Bot text"
-		Create In-World Text(Global.Bots[Event Player.Checkpoint] ? Event Player : Null,
-		Custom String("{0}\nFacing: {1}\n{2}", 
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0], 
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1], 
-			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2],
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3], 
-				Custom String("Resurrect: {0}\nRefresh GA after Rez:{1}\nCurrentPos: {2}", 
-					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4],
-					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
-					Position Of(Event Player.Bot)
-				)
-			)
-		),
-		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0,1,0),
-		1, 
-		Do Not Clip,
-		Visible To Position and String,
-		Color(Aqua),
-		Default Visibility
-		);
-		"Debug landing threshold and goal condition"
-		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
-		X Component Of(Position Of(Event Player)),
-		Y Component Of(Position Of(Event Player)),
-		Z Component Of(Position Of(Event Player))),
-		Top, 0, Null, Null, Color(White), String, Default Visibility);
+			"Extract level Clouds, assume Radius of 1"
+			Global.Clouds[Global.i] = 
+				Count Of(Global.PeaceEditorVariables[2][Global.i][8]) > 0 ? 
+				Mapped Array(
+					Global.PeaceEditorVariables[2][Global.i][8], 
+					Array(
+						Current Array Element[0], 
+						1, 
+						Current Array Element[1])
+				) : False;
 
-		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoalY: {2}", 
-		Distance Between(Event Player, Event Player.GoalCoords), 
-		Y Component Of(Position Of(Event Player)), 
-		Y Component Of(Event Player.GoalCoords)), 
-		Right, 99, Null, Null, 
-		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&((Y Component Of(Position Of(Event Player)) <= 
-			(Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
-		(Y Component Of(Position Of(Event Player)) >= 
-			(Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]))) ? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
-	}
-}
-rule("Subroutine CancelMomentum")
-{
-	event
-	{
-		Subroutine;
-		CancelMomentum;
-	}
+			
+			"Create a teleport pad in levels where the next cp has the teleport flag enabled"
+			Global.Teleports[Global.i] = Global.Checkpoint[Global.i + 1][5] == True ? 
+				Array(
+					Global.Checkpoint[Global.i + 1][0],
+					Global.Checkpoint[Global.i + 1][1],
+					False,
+					1,
+					1
+				) : False;
+			
+			"Temporarily extract level Multi-GA orbs"
+			Global.PeaceEditorVariables[3] = Filtered Array(Global.PeaceEditorVariables[2][Global.i][6], Current Array Element[1] != False);
 
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Cancelled Momentum", Event Player));
-		Apply Impulse(Event Player, Up, 0, To World, Cancel Contrary Motion XYZ);
-		Wait(0.016, Restart When True);
-		Apply Impulse(Event Player, Normalize(Velocity Of(Event Player)) * -1 * 1, Speed Of(Event Player), To World,
-			Incorporate Contrary Motion);
-	}
-}
-rule("Subroutine CancelUltimate")
-{
-	event
-	{
-		Subroutine;
-		CancelUltimate;
-	}
+			"If no Multi-GA orbs, level extraction is complete"
+			If(Count Of(Global.PeaceEditorVariables[3]) == 0);
+				Global.RefreshOrbs[Global.i] = False;
 
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Cancelled Ultimate", Event Player));
-		Event Player.TempFreeMode = Event Player.FreeMode;
-		Event Player.FreeMode = True;
-		Kill(Event Player, Null);
-		disabled Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
-		Resurrect(Event Player);
-		disabled Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
-		Event Player.FreeMode = Event Player.TempFreeMode;
-		disabled Set Status(Event Player, Null, Stunned, 0.008);
-	}
-}
-rule("Subroutine SetCurrentAbilities")
-{
-	event
-	{
-		Subroutine;
-		SetCurrentAbilities;
-	}
+				"Clean up empty bot array"
+				If(Global.Bots[Global.i][0] == False);
+					Global.Bots[Global.i] = False;
+				End;
+			Else;
+				Global.RefreshOrbs[Global.i] = Empty Array;
+				
+				"Blzz: Oh you need to use multidimensional arrays? HA"
+				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
+					"Extract Multi-GA level bots"
+					Modify Global Variable At Index(Bots, Global.i, Append To Array,
+						Array(Array(
+							Global.PeaceEditorVariables[3][Global.j][1],
+							False,	
+							False,
+							!Global.PeaceEditorVariables[0],
+							Global.PeaceEditorVariables[3][Global.j][2],
+							Global.PeaceEditorVariables[3][Global.j][3]
+						))
+					);
 
-	actions
-	{
-		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
-		If(Event Player.FreeMode || Event Player.Finished);
-			Abort;
+					"Extract level Refresh orbs, leave out the bot section # for now"
+					Modify Global Variable At Index(RefreshOrbs, Global.i, Append To Array,
+						Array(Array(
+							Global.PeaceEditorVariables[3][Global.j][0],
+							Global.PeaceEditorVariables[4],
+							Global.j + 1,
+							True,
+							False,
+							False
+						))
+					); 
+				End;
+			End;
+			Wait(0.004, Ignore Condition);
 		End;
 
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
-		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
-		Set Crouch Enabled(Event Player, Event Player.Crouch);
-		Set Jump Enabled(Event Player, Event Player.Jump);
-		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
-		If(Event Player.Crouch);
-			Allow Button(Event Player, Button(Crouch));
-		Else;
-			Disallow Button(Event Player, Button(Crouch));
-		End;
-	}
-}
-rule("Subroutine EnableAllAbilities")
-{
-	event
-	{
-		Subroutine;
-		EnableAllAbilities;
-	}
-
-	actions
-	{
-		Set Ability 1 Enabled(Event Player, True);
-		Set Ability 2 Enabled(Event Player, True);
-		Set Ultimate Ability Enabled(Event Player, True);
-		Set Crouch Enabled(Event Player, True);
-		Set Jump Enabled(Event Player, True);
-		Allow Button(Event Player, Button(Crouch));
-		Allow Button(Event Player, Button(Jump));
+		"Cleanup"
+		Global.Checkpoint = Null;
+		Global.PeaceEditorVariables = Null;
+		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
 }
