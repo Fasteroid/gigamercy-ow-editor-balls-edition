@@ -157,39 +157,37 @@ variables
 		9:  BotEffects
 		10: BotIcons
 		11: CloudEffects
-		12: SphereEffects
-		13: CheckpointEffects
-		14: CheckpointIcons
-		15: CheckpointText
-		16: ToggleControls
-		17: Mistakes
-		18: Scale
-		19: GrabbedOrbs
-		20: GrabbedRefreshOrbs
-		21: GoalCoords
-		22: GoalRadius
-		23: GoalThresholds
-		24: RunTimerEnabled
-		25: CurrentSectionTime
-		26: BotCondition
-		27: DEPRECATEDBotStates
-		28:	CurrentBotSection
-		29: Bot
-		30: LeftCheckpoint
-		31: i
-		32: j
-		33: Crouch
-		34: Jump
-		35: Ability1
-		36: Ability2
-		37: Ultimate
-		38: PrimaryFire
-		39: SecondaryFire
-		40: TempFreeMode
-		41: BotUpdate
-		42: Resetting
+		12: CheckpointEffects
+		13: CheckpointIcons
+		14: CheckpointText
+		15: ToggleControls
+		16: Mistakes
+		17: Scale
+		18: GrabbedOrbs
+		19: GrabbedRefreshOrbs
+		20: GoalCoords
+		21: GoalRadius
+		22: GoalThresholds
+		23: RunTimerEnabled
+		24: CurrentSectionTime
+		25: BotCondition
+		26: DEPRECATEDBotStates
+		27: CurrentBotSection
+		28:	Bot
+		29: LeftCheckpoint
+		30: i
+		31: j
+		32: Crouch
+		33: Jump
+		34: Ability1
+		35: Ability2
+		36: Ultimate
+		37: PrimaryFire
+		38: SecondaryFire
+		39: TempFreeMode
+		40: BotUpdate
+		41: Resetting
 }
-
 subroutines
 {
 	0:  InitializeGlobalVariables
@@ -532,6 +530,7 @@ rule("2. Player Initialization")
 		Else If(Is True for Any(Global.Bots, Current Array Element == True));
 			Call Subroutine(InitializePlayerBot);
 		End;
+		Enable Messages(Event Player.Bot);
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		Call Subroutine(SetUpCheckpoint);
 	}
@@ -639,7 +638,7 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 		Log To Inspector(Custom String("{0} - Switched manually to CP {1}", Event Player, Event Player.Checkpoint));
 		Call Subroutine(SetUpCheckpoint);
 		"Hold buttons to speed switch"
-		Wait(0.2, Abort When False);
+		Wait(0.1, Abort When False);
 		Loop If Condition Is True;
 	}
 }
@@ -871,6 +870,9 @@ rule("Server load widget by GigaMercy")
 	{
 		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
 		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
+		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+	
 	}
 }
 rule("——————————————————————————Effects——————————————————————————")
@@ -905,7 +907,7 @@ rule("Create/destroy current level Orbs")
 		Else;
 			"Action: Create orb effect"
 			Create Effect(
-			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Config[1], 
+			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Orb, Global.Config[1], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -948,7 +950,8 @@ rule("Create/destroy current level RefreshOrbs")
 			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Value, Last Of(Event Player.RefreshOrbIcons));
 		Else;
 			"Action: Create RefeshOrb effect"
-			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, Sphere, Global.Config[4], 
+			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+			Orb, Global.Config[4], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -1270,11 +1273,13 @@ rule("Detect Arriving on Goal or Teleport")
 			Else;
 				Small Message(Event Player, Custom String("Reached the goal:D"));
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
-					Call Subroutine(TeleportToCurrentCheckpoint);
+					"TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
+					disabled Call Subroutine(TeleportToCurrentCheckpoint);
+					Call Subroutine(CancelMomentum);
+					Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
-				Else;
-					Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 				End;
+					Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			End;
 			Call Subroutine(SetUpCheckpoint);
 		End;
@@ -1402,6 +1407,34 @@ rule("Detect Touching AntiOrb")
 	{
 		Set Status(Event Player, Null, Burning, 0.16);
 		Call Subroutine(ResetWithMistake);
+	}
+}
+rule("Detect Touching Jump Cloud")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Global.Clouds[Event Player.Checkpoint] == True;
+		
+		Is True For Any(Global.Clouds[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0])  <= Current Array Element[1] + 0.500 &&
+		Absolute Value(Y Component Of(Current Array Element[0]) - Y Component Of(Position Of(Event Player))) <= Vector(0, 0.030, 0)))
+		== True;
+	}
+	actions
+	{
+		Play Effect(Event Player, Explosion Sound, Null, Event Player, 100);
+
+		Apply Impulse(Event Player, Up, First Of(Filtered Array(Global.Clouds[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.500)))[2], To World, Cancel Contrary Motion);
 	}
 }
 disabled rule("TODO: Bot Condition")
@@ -1588,6 +1621,10 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.OrbIcons = Empty Array;
 		Event Player.RefreshOrbEffects = Empty Array;
 		Event Player.RefreshOrbIcons = Empty Array;
+		Event Player.CloudEffects = Empty Array;
+		Event Player.AntiOrbEffects = Empty Array;
+		Event Player.BotEffects = Empty Array;
+		Event Player.BotIcons = Empty Array;
 		Event Player.Scale = 1;
 		"TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
@@ -2245,7 +2282,9 @@ rule("Subroutine PeaceDecompressData")
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = False;
 		"Peace orb to workshop sphere radius. If some orbs are impossible to grab increase this number in 0.1 increments"
-		Global.PeaceEditorVariables[4] = 0.5;
+		Global.PeaceEditorVariables[4] = 0.7;
+		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
+		Global.PeaceEditorVariables[7] = 1;
 
 		Log To Inspector(Custom String("Peace Decompress Data start"));
 
@@ -2275,7 +2314,8 @@ rule("Subroutine PeaceDecompressData")
 				Current Array Element[3][1],
 				Current Array Element[3][2])) : Array(False)
 		);
-		
+		"Teleport CP counter, do not modify"
+		Global.PeaceEditorVariables[6] = 0;
 		"Extract and translate level effects"
 		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
 			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
@@ -2306,20 +2346,24 @@ rule("Subroutine PeaceDecompressData")
 					Global.PeaceEditorVariables[2][Global.i][8], 
 					Array(
 						Current Array Element[0], 
-						1, 
+						Global.PeaceEditorVariables[7], 
 						Current Array Element[1])
 				) : False;
 
 			
 			"Create a teleport pad in levels where the next cp has the teleport flag enabled"
-			Global.Teleports[Global.i] = Global.Checkpoint[Global.i + 1][5] == True ? 
-				Array(
-					Global.Checkpoint[Global.i + 1][0],
-					Global.Checkpoint[Global.i + 1][1],
-					False,
-					1,
-					1
-				) : False;
+			If(Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][5] == True);
+				Global.Teleports[Global.i] = Array(
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						False,
+						1,
+						1
+					);
+				Global.PeaceEditorVariables[6] += 1;
+			Else;
+				Global.Teleports[Global.i] = False;
+			End;
 			
 			"Temporarily extract level Multi-GA orbs"
 			Global.PeaceEditorVariables[3] = Filtered Array(Global.PeaceEditorVariables[2][Global.i][6], Current Array Element[1] != False);
@@ -2369,5 +2413,24 @@ rule("Subroutine PeaceDecompressData")
 		Global.Checkpoint = Null;
 		Global.PeaceEditorVariables = Null;
 		Log To Inspector(Custom String("Peace Decompress Data End"));
+	}
+}
+rule("a")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Communicating Any (Event Player) == True;
+	}
+	actions
+	{
+		Small Message(Event Player, Custom String("Hello:)"));
+		Communicate(Event Player.Bot, Hello);
 	}
 }
