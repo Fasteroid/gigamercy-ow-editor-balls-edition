@@ -858,25 +858,6 @@ rule("Press [Melee] twice to cancel ultimate")
 		Wait(1, Ignore Condition);
 	}
 }
-rule("Server load widget by GigaMercy")
-{
-	event
-	{
-		Ongoing - Global;
-	}
-	conditions
-	{
-		Global.ServerLoad == True;
-	}
-	actions
-	{
-		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
-		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
-		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
-		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
-	
-	}
-}
 rule("——————————————————————————Effects——————————————————————————")
 {
 	event
@@ -2490,22 +2471,29 @@ rule("Subroutine PeaceDecompressData")
 		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
 }
-rule("a")
+rule("——————————————————————————Add-ons——————————————————————————")
 {
 	event
 	{
-		Ongoing - Each Player;
-		All;
-		All;
+		Ongoing - Global;
+	}
+}
+rule("Server load widget by GigaMercy")
+{
+	event
+	{
+		Ongoing - Global;
 	}
 	conditions
 	{
-		Is Dummy Bot(Event Player) == False;
-		Is Communicating Any (Event Player) == True;
+		Global.ServerLoad == True;
 	}
 	actions
 	{
-		Small Message(Event Player, Custom String("Hello:)"));
-		Communicate(Event Player.Bot, Hello);
+		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
+		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
+		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+	
 	}
 }
