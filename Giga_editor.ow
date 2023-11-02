@@ -80,6 +80,7 @@ settings
 		General
 		{
 			No Ammunition Requirement: On
+			Ability Cooldown Time: 0%			
 			enabled heroes
 			{
 				Mercy
@@ -90,7 +91,7 @@ settings
 	workshop
 	{
 		Debug Mode (Inspector Recording): On
-		Edit Mode: On
+		Edit Mode: Off
 		Server Load Widget: On
 	}
 
@@ -187,6 +188,7 @@ variables
 		39: TempFreeMode
 		40: BotUpdate
 		41: Resetting
+		42: MercyRezTimer
 }
 subroutines
 {
@@ -813,7 +815,7 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 			Call Subroutine(ResetCheckpoint);
 			Set Ultimate Charge(Event Player, 0);
 		Else;
-			"TODO: Mover esto a una subrutina setabilities"
+			"TODO: Move to subroutine setcurrentabilities?"
 			Set Ultimate Ability Enabled(Event Player, True);
 			Set Ultimate Charge(Event Player, 100);
 			Call Subroutine(EnableAllAbilities);
@@ -1229,10 +1231,8 @@ rule("Detect Arriving on Goal or Teleport")
 		Is Dummy Bot(Event Player) == False;
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
-		"Deprecated: Use LeftCheckpoint instead"
-		disabled ((Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
-		> Global.Checkpoints[Event Player.Checkpoint][1]) || Event Player.LeftCheckpoint) == True;
 		Event Player.LeftCheckpoint == True;
+
 		"TODO: Get OnGround flag from current goal in case the level has a teleport"
 		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
 		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
@@ -1263,6 +1263,10 @@ rule("Detect Arriving on Goal or Teleport")
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
 				End;
+				
+				Event Player.FreeMode = True;
+				Set Ultimate Ability Enabled(Event Player, True);
+				Call Subroutine(EnableAllAbilities);
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
 				"TODO: Set a color for finish explosion in config"
@@ -1478,17 +1482,19 @@ rule("Update Bot Status")
 		Event Player.BotUpdate = False;
 		Call Subroutine(CancelMomentum);
 		
-		Cancel Primary Action(Event Player);
-		"TODO: Placeholder, bots arent allowed to use ultimate for now"
+		"TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
 		If(Is Using Ultimate(Event Player) && False);
 			Call Subroutine(CancelUltimate);
 		End;
 
 		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3]);
-				disabled Stop Holding Button(Event Player, Button(Jump));
-				Clear Status(Event Player, Rooted);
-				Set Gravity(Event Player, 100);
+			Stop Holding Button(Event Player, Button(Jump));
+			disabled Clear Status(Event Player, Rooted);
+			Set Gravity(Event Player, 100);
 			Else;
+				If(Hero Of(Event Player) == Hero(Mercy));
+					Start Holding Button(Event Player, Button(Jump));
+				End;
 				Set Gravity(Event Player, 0);
 				disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
 				"TODO: Refactor this to use the same function as the player, dont copy paste"
@@ -1503,6 +1509,12 @@ rule("Update Bot Status")
 			Start Holding Button(Event Player, Button(Crouch));
 		Else;
 			Stop Holding Button(Event Player, Button(Crouch));
+		End;
+		"TODO: Only used for peace rez levels for now"
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4]);
+			Kill(Event Player, Null);
+		Else;
+			Resurrect(Event Player);
 		End;
 		Loop If Condition Is True;
 	}
@@ -1528,17 +1540,17 @@ rule("Detect Using Ability 1")
 
 		If(Event Player.FreeMode == False);
 			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
-			If(
-				Hero Of(Event Player) == Hero(Mercy) && 
+			If(	Hero Of(Event Player) == Hero(Mercy) && 
 				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
 				Event Player.BotCondition == True &&
 				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
-				Log To Inspector(Custom String("{0} - Used GA & no R.O. advancing bot now", Event Player));
-				Event Player.CurrentBotSection += 1;
-				Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
-				Call Subroutine(UpdateBotPosition);
-				Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
-			Else;
+					Log To Inspector(Custom String("{0} - Used GA & no refresh orb. advancing bot now", Event Player));
+					Event Player.CurrentBotSection += 1;
+					Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
+					Call Subroutine(UpdateBotPosition);
+					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
+			"Disable GA only if unlimitedGA is disabled on this level"
+			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False);
 				Set Ability 1 Enabled(Event Player, False);
 			End;
 		End;
@@ -1548,7 +1560,55 @@ rule("Detect Using Ability 1")
 		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
 	}
 }
+rule("Detect Using Mercy Resurrect")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Using Ability 2(Event Player) == True;
+		Event Player.FreeMode == False;
+		Event Player.Finished == False;
+		disabled Event Player.Resetting == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
+		Event Player.MercyRezTimer = 0;
+		"Start chasing mercy resurrect time"
+		Chase Player Variable At Rate(Event Player, MercyRezTimer, 9999, 1, None);
+		Wait Until(!Is Using Ability 2(Event Player), 1.750);
+		Stop Chasing Player Variable(Event Player, MercyRezTimer);
 
+
+		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
+			Resurrect(Event Player.Bot);
+			"TODO: Rework this once we allow other bot ability rewards"
+			Small Message(Event Player, 
+				Custom String("{0} Resurrected!{1}",
+					Global.Config[10],
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? 
+					Custom String(", {0}{1}{2} also refreshed",
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6] ? Ability Icon String(Hero Of(Event Player), Button(Ability 2)) : Empty Array,
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate)) : Empty Array
+					) : Empty Array
+				)
+			);
+			Set Ability 1 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5]);
+			Set Ability 2 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6]);
+			Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7]);
+			Event Player.BotCondition = True;
+		Else;
+			Set Ability 2 Enabled(Event Player, False);
+		End;
+	}
+}
 rule("Regen ultimate in FreeMode")
 {
 	event
@@ -1647,6 +1707,7 @@ rule("Subroutine InitializePlayerBot")
 			Global.BotPenCoords,
 			Null);
 			Event Player.Bot = Last Created Entity;
+			Disable Built-In Game Mode Respawning(Event Player.Bot);
 			Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
 			Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
 			Set Player Variable(Event Player.Bot, Scale, 1);
@@ -1691,7 +1752,13 @@ rule("Subroutine UpdateBotPosition")
 				disabled Cancel Primary Action(Event Player);
 			disabled End;
 		End;
-		
+
+		"TODO: Idk use bot rewards or something, this is bad"	
+		If(Hero Of(Event Player) == Hero(Mercy));
+			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		End;
+
 		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
 		Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
 	}
@@ -1867,6 +1934,8 @@ rule("Subroutine SetUpCheckpoint")
 		End;
 		Event Player.Crouch = Global.Checkpoints[Event Player.Checkpoint][3];
 		Event Player.Jump = True;
+		
+		"TODO: Enable abilities for non mercy heroes"
 		If(Hero Of(Event Player) == Hero(Mercy) || True);
 			Event Player.Ability1 = Global.Bots[Event Player.Checkpoint] == True;
 		End;
@@ -1960,10 +2029,17 @@ rule("Subroutine CreatePlayerEditModeHUD")
 	{
 		Create In-World Text(Event Player,
 		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
-			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][2], Global.Checkpoints[Event Player.Checkpoint][3], 
-				Custom String("Require Ground: {0}\n{1}", Global.Checkpoints[Event Player.Checkpoint][4],
-					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",Global.Checkpoints[Event Player.Checkpoint][5], Global.Checkpoints[Event Player.Checkpoint][6], Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
-					)
+			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
+				Global.Checkpoints[Event Player.Checkpoint][2], 
+				Global.Checkpoints[Event Player.Checkpoint][3], 
+				Custom String("Require Ground: {0}\n{1}\nUnlimited GA: {2}", 
+					Global.Checkpoints[Event Player.Checkpoint][4],
+					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",
+						Global.Checkpoints[Event Player.Checkpoint][5], 
+						Global.Checkpoints[Event Player.Checkpoint][6], 
+						Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
+					),
+					Global.Checkpoints[Event Player.Checkpoint][7]
 				)
 			)
 		),
@@ -2003,15 +2079,15 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		Z Component Of(Position Of(Event Player))),
 		Top, 0, Null, Null, Color(White), String, Default Visibility);
 
-		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoalY: {2}", 
+		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoal Y: {2}", 
 		Distance Between(Event Player, Event Player.GoalCoords), 
 		Y Component Of(Position Of(Event Player)), 
 		Y Component Of(Event Player.GoalCoords)), 
 		Right, 99, Null, Null, 
-		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&((Y Component Of(Position Of(Event Player)) <= 
-			(Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
-		(Y Component Of(Position Of(Event Player)) >= 
-			(Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]))) ? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
+		(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && 
+			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
+		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -2109,21 +2185,18 @@ rule("Subroutine Taw'sDecompressData")
 
 	actions
 	{
+		"Workshop Setting: Single Use Shift/Unlimited GA (Affects all checkpoints)"
+		Global.TawsEditorVariables[0] = False;
+		"Workshop Setting: Default Checkpoint Radius"
+		Global.TawsEditorVariables[1] = 2;
+
 		Log To Inspector(Custom String("Decompressing Taw's Data..."));
-		Global.TawsEditorVariables = Empty Array;
+		"CheckpointFlags"
+		Global.TawsEditorVariables[2] = Empty Array;		
 		"ctemp"
 		Global.i = 0;
-		"temp"
-		Global.TawsEditorVariables[1] = Empty Array;
-		"CheckpointFlags"
-		Global.TawsEditorVariables[2] = Empty Array;
 		"Orb/Refresh Orb index"
 		Global.j = 0;
-		"Orb/Antiorb data"
-		Global.TawsEditorVariables[4] = Empty Array;
-		"TEMPORAL, JUST FOR TAWS COMPATIBILITY"
-		Global.DefaultCheckpointRadius = 2;
-
 		"Compression V2"
 		If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 2);
 			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
@@ -2158,24 +2231,24 @@ rule("Subroutine Taw'sDecompressData")
 			"Extract Teleport pads"
 			Global.Teleports = Mapped Array(Global.CompressedData, 
 				Array(Current Array Element[0][2],
-				Global.DefaultCheckpointRadius, 
+				Global.TawsEditorVariables[1], 
 				False, 
-				Global.DefaultCheckpointRadius, 
-				Global.DefaultCheckpointRadius));
+				Global.TawsEditorVariables[1], 
+				Global.TawsEditorVariables[1]));
 
 			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
+				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
 		"Compression V0"
 		Else;	
 			"Extract Teleports"
-			Global.Teleports = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.DefaultCheckpointRadius,
-				Global.DefaultCheckpointRadius, Global.DefaultCheckpointRadius, False));
+			Global.Teleports = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.TawsEditorVariables[1],
+				Global.TawsEditorVariables[1], Global.TawsEditorVariables[1], False));
 			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0, 0, Global.DefaultCheckpointRadius, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0 ? 0.200 : Global.DefaultCheckpointRadius));
+				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
 		End;
 
 		"Extract Checkpoint coordinates, radius and facing direction"
@@ -2183,7 +2256,7 @@ rule("Subroutine Taw'sDecompressData")
 				Global.CompressedData, 
 				Array(
 					Current Array Element[0][0],
-					Current Array Element[0][1] == 0 ? Global.DefaultCheckpointRadius : Current Array Element[0][1],
+					Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
 					Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
 				);                                       
 
@@ -2256,7 +2329,8 @@ rule("Subroutine Taw'sDecompressData")
 			Array(Global.TawsEditorVariables[2][Global.i][2], 
 			Global.TawsEditorVariables[2][Global.i][3], 
 			Global.TawsEditorVariables[2][Global.i][5], 
-			Global.TawsEditorVariables[2][Global.i][6]));
+			Global.TawsEditorVariables[2][Global.i][6],
+			Global.TawsEditorVariables[0]));
 
 			Wait(0.016, Ignore Condition);
 		End;
@@ -2280,7 +2354,7 @@ rule("Subroutine PeaceDecompressData")
 		"Workshop setting: Bot Floating?"
 		Global.PeaceEditorVariables[0] = False;
 		"Workshop setting: Land On Arrival Point?"
-		Global.PeaceEditorVariables[1] = False;
+		Global.PeaceEditorVariables[1] = True;
 		"Peace orb to workshop sphere radius. If some orbs are impossible to grab increase this number in 0.1 increments"
 		Global.PeaceEditorVariables[4] = 0.7;
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
@@ -2299,8 +2373,9 @@ rule("Subroutine PeaceDecompressData")
 			False,
 			Current Array Element[2],
 			Global.PeaceEditorVariables[1],
-			1,
-			1)
+			Current Array Element[1],
+			Current Array Element[1],
+			Current Array Element[4])
 		);
 
 		"Extract initial bots. TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
@@ -2357,8 +2432,8 @@ rule("Subroutine PeaceDecompressData")
 						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
 						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
 						False,
-						1,
-						1
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1]
 					);
 				Global.PeaceEditorVariables[6] += 1;
 			Else;
