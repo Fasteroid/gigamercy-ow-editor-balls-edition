@@ -80,7 +80,7 @@ settings
 		General
 		{
 			No Ammunition Requirement: On
-			Ability Cooldown Time: 0%			
+			Ability Cooldown Time: 1%			
 			enabled heroes
 			{
 				Mercy
@@ -91,7 +91,7 @@ settings
 	workshop
 	{
 		Debug Mode (Inspector Recording): On
-		Edit Mode: Off
+		Edit Mode: On
 		Server Load Widget: On
 	}
 
@@ -189,6 +189,8 @@ variables
 		40: BotUpdate
 		41: Resetting
 		42: MercyRezTimer
+		43: StartingAbilities
+		44: TempCheckpoint
 }
 subroutines
 {
@@ -484,13 +486,12 @@ rule("1. Global Initialization")
 		Disable Built-In Game Mode Scoring;
 		Disable Built-In Game Mode Respawning(All Players(All Teams));		
 		"TODO: Figure why match time is setup like this in taws and peace"
-		If(Current Game Mode != Game Mode(Skirmish));
-			Set Match Time(1);
-		Else;
-			Set Match Time(0);
-			"Possible cause for mercy dialogue?"
-			disabled Start Game Mode;	
-		End;
+		disabled If(Current Game Mode != Game Mode(Skirmish));
+		disabled 	Set Match Time(1);
+		disabled Else;
+		disabled 	Set Match Time(0);
+				 	disabled Start Game Mode;	
+		disabled End;
 		Pause Match Time;
 		Stop Forcing Spawn Room(All Teams);
 
@@ -1227,7 +1228,7 @@ rule("Detect Arriving on Goal or Teleport")
 			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
-		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedOrbs) > 0) && Global.RequireGrabAllRefreshOrbs);
+		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedRefreshOrbs) > 0) && Global.RequireGrabAllRefreshOrbs);
 			Small Message(Event Player, Custom String("You need to grab all the refresh orbs!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
@@ -1357,9 +1358,12 @@ rule("Detect Grabbing RefreshOrb")
 						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
 						Call Subroutine(UpdateBotPosition);
 					End;
-					Set Ability 1 Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Null);
-					Set Ability 2 Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Null);
-					Set Ultimate Ability Enabled(Event Player, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Null);
+					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
+					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;					
+					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ultimate;					
+					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 				End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
@@ -1520,6 +1524,10 @@ rule("Detect Using Ability 1")
 		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
 
 		If(Event Player.FreeMode == False);
+			Event Player.TempCheckpoint = Event Player.Checkpoint;
+			Event Player.Ability1 = False;
+			Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
+
 			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
 			If(	Hero Of(Event Player) == Hero(Mercy) && 
 				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
@@ -1530,12 +1538,13 @@ rule("Detect Using Ability 1")
 					Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
 					Call Subroutine(UpdateBotPosition);
 					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
-			"Disable GA only if unlimitedGA is disabled on this level"
-			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False);
-				Set Ability 1 Enabled(Event Player, False);
+					Event Player.Ability1 = True;
+			"If player does not have unlimited GA, set GA status (racing conditions apply)"
+			Else If(
+				Global.Checkpoints[Event Player.Checkpoint][7] == False);
+				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 			End;
 		End;
-		Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
 		"Disable this if you want to set the cooldowns through lobby settings"
 		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
 		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
@@ -1913,12 +1922,22 @@ rule("Subroutine SetUpCheckpoint")
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
-		Event Player.Crouch = Global.Checkpoints[Event Player.Checkpoint][3];
-		Event Player.Jump = True;
+		"TODO: Refactor to use compressed abilities"
+		Event Player.StartingAbilities = 
+			Array(
+				Global.Checkpoints[Event Player.Checkpoint][3],
+				True,
+				Global.Bots[Event Player.Checkpoint] ? True : False,
+				False,
+				False,
+				True,
+				True,
+				True
+			);
 		
 		"TODO: Enable abilities for non mercy heroes"
-		If(Hero Of(Event Player) == Hero(Mercy) || True);
-			Event Player.Ability1 = Global.Bots[Event Player.Checkpoint] == True;
+		If(Hero Of(Event Player) != Hero(Mercy));
+			Event Player.StartingAbilities[2] = True;
 		End;
 
 		"Set Bot checkpoint too"
@@ -1962,6 +1981,12 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.LeftCheckpoint = False;	
 		Event Player.CurrentBotSection = 0;
 		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
+
+		Event Player.Crouch = Event Player.StartingAbilities[0];
+		Event Player.Jump = Event Player.StartingAbilities[1];
+		Event Player.Ability1 = Event Player.StartingAbilities[2];
+		Event Player.Ability2 = Event Player.StartingAbilities[3];
+		Event Player.Ultimate = Event Player.StartingAbilities[4];
 		"TODO: Temporarily enabled here, should come from cp flags"
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
@@ -2069,6 +2094,17 @@ rule("Subroutine CreatePlayerEditModeHUD")
 			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
 			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
 		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
+
+		"TODO: Create debug HUD and move this there"
+		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
+		Event Player.Ability1, 
+		Ability Cooldown(Event Player, Button(Ability 1)), 
+		Custom String("{0}\nAbility Charge:{1}", 
+			Is Using Ability 1(Event Player),
+			Ability Charge(Event Player, Button(Ability 1)))
+		), 
+		Right, 99, Null, Null, 
+		Color(Orange), Visible To String and Color, Default Visibility);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -2170,6 +2206,8 @@ rule("Subroutine Taw'sDecompressData")
 		Global.TawsEditorVariables[0] = False;
 		"Workshop Setting: Default Checkpoint Radius"
 		Global.TawsEditorVariables[1] = 2;
+		"Taw's editor rules don't require player to grab all refresh orbs"
+		Global.RequireGrabAllRefreshOrbs = False;
 
 		Log To Inspector(Custom String("Decompressing Taw's Data..."));
 		"CheckpointFlags"
@@ -2336,10 +2374,12 @@ rule("Subroutine PeaceDecompressData")
 		Global.PeaceEditorVariables[0] = False;
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = True;
-		"Peace orb to workshop sphere radius. If some orbs are impossible to grab increase this number in 0.1 increments"
+		"Default orb radius. If some orbs are impossible to grab increase this number in 0.1 increments"
 		Global.PeaceEditorVariables[4] = 0.7;
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
 		Global.PeaceEditorVariables[7] = 1;
+		"Peace editor rules require player to grab all refresh orbs"
+		Global.RequireGrabAllRefreshOrbs = True;
 
 		Log To Inspector(Custom String("Peace Decompress Data start"));
 
