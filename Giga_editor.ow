@@ -80,7 +80,7 @@ settings
 		General
 		{
 			No Ammunition Requirement: On
-			Ability Cooldown Time: 1%			
+			Ability Cooldown Time: 0%			
 			enabled heroes
 			{
 				Mercy
@@ -90,9 +90,9 @@ settings
 
 	workshop
 	{
-		Debug Mode (Inspector Recording): On
-		Edit Mode: On
-		Server Load Widget: On
+		Debug Mode (Inspector Recording): Off
+		Edit Mode: Off
+		Server Load Widget: Off
 	}
 
 	extensions
@@ -144,6 +144,10 @@ variables
 		31: ServerLoad
 		32: MapTitle
 		33: PeaceEditorVariables
+		34: PlayerData
+		35: Scoreboard
+		36: EnPadding
+		37: Top5Colors
 
 	player:
 		0:  Checkpoint
@@ -172,7 +176,7 @@ variables
 		23: RunTimerEnabled
 		24: CurrentSectionTime
 		25: BotCondition
-		26: DEPRECATEDBotStates
+		26: ThirdPerson
 		27: CurrentBotSection
 		28:	Bot
 		29: LeftCheckpoint
@@ -191,6 +195,8 @@ variables
 		42: MercyRezTimer
 		43: StartingAbilities
 		44: TempCheckpoint
+		45: PlayerName
+		46: BestRun
 }
 subroutines
 {
@@ -214,6 +220,7 @@ subroutines
 	17: CancelUltimate
 	18: SetCurrentAbilities
 	19: EnableAllAbilities
+	20: PlayerCompletedRun
 }
 
 
@@ -425,6 +432,8 @@ rule("Global Config")
 		Global.Config[2] = Color(Black);
 		"Jump Cloud Color"
 		Global.Config[3] = Color(Red);
+		"Scoreboard Top 5 colors"
+		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255), Color(White), Color(White));
 
 		"------Texts & Icons------"
 		disabled End;
@@ -733,8 +742,16 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 	}
 	actions
 	{
-		Wait(0.6, Abort When False);
-		Small Message(Event Player, Custom String("3rd Person not implemented yet"));
+		"By overclocking"
+		Wait(0.750, Abort When False);
+		Event Player.ThirdPerson = !Event Player.ThirdPerson;
+		Skip If(Event Player.ThirdPerson, 2);
+		Stop Camera(Event Player);
+		Abort;
+		Start Camera(Event Player, Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player)
+			+ 0.500), Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500),
+			Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500) + Facing Direction Of(Event Player)
+			* -3, Null, Event Player, True), Null, Event Player, True), Event Player + Facing Direction Of(Event Player) * 100, 100);
 	}
 }
 rule("Press [Reload] + [Interact] to TP to player")
@@ -756,10 +773,12 @@ rule("Press [Reload] + [Interact] to TP to player")
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Event Player.FreeMode == True;
+		Is Dummy Bot(Player Closest To Reticle(Event Player, Team(All))) == False;
 	}
 	actions
 	{
-		Small Message(Event Player, Custom String("TP not implemented yet"));
+		Teleport(Event Player, Player Closest To Reticle(Event Player, Team(All)));
 	}
 }
 rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
@@ -811,17 +830,18 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 	actions
 	{
 		If(Event Player.FreeMode);
-			Call Subroutine(CancelUltimate);
+			If(Is Using Ultimate(Event Player));
+				Call Subroutine(CancelUltimate);
+			End;
 			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = !Event Player.FreeMode;
 			Call Subroutine(ResetCheckpoint);
-			Set Ultimate Charge(Event Player, 0);
+			disabled Set Ultimate Charge(Event Player, 0);
 		Else;
 			"TODO: Move to subroutine setcurrentabilities?"
-			Set Ultimate Ability Enabled(Event Player, True);
-			Set Ultimate Charge(Event Player, 100);
 			Call Subroutine(EnableAllAbilities);
+			Event Player.FreeMode = !Event Player.FreeMode;
 		End;
-		Event Player.FreeMode = !Event Player.FreeMode;
 		Stop Chasing Player Variable(Event Player, CurrentRunTime);
 		Small Message(Event Player, Custom String("Free Mode {0}", Event Player.FreeMode ? Custom String("Enabled") : Custom String("Disabled")));
 		Wait(0.600, Ignore Condition);
@@ -1240,21 +1260,20 @@ rule("Detect Arriving on Goal or Teleport")
 			Event Player.Checkpoint += 1;
 			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+				Stop Chasing Player Variable(Event Player, CurrentRunTime);
+				Event Player.FreeMode = True;
 				"TODO: Consider not duplicating this block if possible"
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
 				End;
-				
-				Event Player.FreeMode = True;
-				Set Ultimate Ability Enabled(Event Player, True);
 				Call Subroutine(EnableAllAbilities);
-				Stop Chasing Player Variable(Event Player, CurrentRunTime);
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
 				"TODO: Set a color for finish explosion in config"
 				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player, Event Player.CurrentRunTime));
+				Call Subroutine(PlayerCompletedRun);
 			"Player finished current checkpoint"
 			Else;
 				Small Message(Event Player, Custom String("Reached the goal:D"));
@@ -1524,12 +1543,11 @@ rule("Detect Using Ability 1")
 		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
 
 		If(Event Player.FreeMode == False);
-			Event Player.TempCheckpoint = Event Player.Checkpoint;
 			Event Player.Ability1 = False;
 			Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
 
 			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
-			If(	Hero Of(Event Player) == Hero(Mercy) && 
+			If(Hero Of(Event Player) == Hero(Mercy) && 
 				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
 				Event Player.BotCondition == True &&
 				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
@@ -1539,9 +1557,8 @@ rule("Detect Using Ability 1")
 					Call Subroutine(UpdateBotPosition);
 					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 					Event Player.Ability1 = True;
-			"If player does not have unlimited GA, set GA status (racing conditions apply)"
-			Else If(
-				Global.Checkpoints[Event Player.Checkpoint][7] == False);
+			"If lvl does not have unlimited GA, set GA status (racing conditions apply)"
+			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False);
 				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 			End;
 		End;
@@ -1649,6 +1666,8 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.RefreshOrbs = Empty Array;
 		Global.Teleports = Empty Array;
 		Global.RGB = Array(255,0,0);
+		Global.Scoreboard = Empty Array;
+		Global.EnPadding = Custom String("                                                                                                                                ");
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -1664,6 +1683,7 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.Checkpoint = 0;
 		Event Player.Finished = False;
 		Event Player.FreeMode = False;
+		Event Player.ThirdPerson = False;
 		Event Player.CurrentRunTime = 0;
 		Event Player.Mistakes = 0;
 		Event Player.ToggleControls = False;
@@ -1678,6 +1698,8 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.Scale = 1;
 		"TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
+		"TODO: Add VIP nicknames"
+		Event Player.PlayerName = Custom String("{0}", Event Player);
 	}
 }
 rule("Subroutine InitializePlayerBot")
@@ -1772,15 +1794,41 @@ rule("Subroutine CreateGlobalHUD")
 	actions
 	{
 		"Map Creator and code"
-		Create HUD Text(All Players(All Teams), Null, Null, Global.MapTitle,
+		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Global.MapTitle,
 		Left, 0, Null, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		
+		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Null, Left, 2, Null, Null, Null, Visible To,
+		Default Visibility);
 			
-		"Leaderboard"
-		Create HUD Text(All Players(All Teams), Null, 
-		Custom String("\n\n                           "),
-		Custom String("Leaderboard:"),
+		"Scoreboard"
+		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
+		Null, 
+		Global.EnPadding,
+		Custom String("Scoreboard:"),
 		Left, 2, Null, Null, Color(Red), Visible To and String, Default Visibility);
-
+		"Create Top 5 scoreboard rows"
+		For Global Variable(i, 0, 10, 1);
+			"Insert scoreboard record"
+			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
+				Hero Icon String(
+					Global.Scoreboard[Evaluate Once(Global.i)][3]), 
+			Custom String("{0}. {1}\n{2}", 
+			Evaluate Once(Global.i + 1),
+			Global.Scoreboard[Evaluate Once(Global.i)][0],
+			Custom String("{0} sec - Mistakes: {1}{2}", 
+				Global.Scoreboard[Evaluate Once(Global.i)][1],
+				Global.Scoreboard[Evaluate Once(Global.i)][2],
+				String Slice(
+					Global.EnPadding, 0, 107 - String Length(Custom String("{0}{1}",
+						Global.Scoreboard[Evaluate Once(Global.i)][1],
+						Global.Scoreboard[Evaluate Once(Global.i)][2])
+					)
+				)
+			)
+			),
+			Null,
+			Left, 2 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
+		End;
 
 		"Instructions"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
@@ -2163,6 +2211,7 @@ rule("Subroutine SetCurrentAbilities")
 		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
 		Set Jump Enabled(Event Player, Event Player.Jump);
 		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
@@ -2190,6 +2239,29 @@ rule("Subroutine EnableAllAbilities")
 		Set Jump Enabled(Event Player, True);
 		Allow Button(Event Player, Button(Crouch));
 		Allow Button(Event Player, Button(Jump));
+	}
+}
+rule("Subroutine PlayerCompletedRun")
+{
+	event
+	{
+		Subroutine;
+		PlayerCompletedRun;
+	}
+
+	actions
+	{
+		If(Event Player.BestRun == False || (Event Player.BestRun[0] > Event Player.CurrentRunTime || (Event Player.BestRun[0] == Event Player.CurrentRunTime && Event Player.BestRun[1] > Event Player.Mistakes)));
+			Event Player.BestRun = Array(Event Player.CurrentRunTime, Event Player.Mistakes);
+			If(Is True For Any(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName));
+				Set Global Variable At Index(Scoreboard, Index Of Array Value(Global.Scoreboard, Event Player.PlayerName), Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player)));
+				Log To Inspector(Custom String("{0} - Modified scoreboard", Event Player));
+			Else;
+				Modify Global Variable(Scoreboard, Append To Array, Array(Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player))));
+				Log To Inspector(Custom String("{0} - Added best run to scoreboard", Event Player));
+			End;
+			Global.Scoreboard = Sorted Array(Global.Scoreboard, Current Array Element[1]);
+		End;
 	}
 }
 rule("Subroutine Taw'sDecompressData")
@@ -2536,4 +2608,4 @@ rule("Server load widget by GigaMercy")
 		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
 	
 	}
-}
+} 
