@@ -92,7 +92,7 @@ settings
 	{
 		Debug Mode (Inspector Recording): Off
 		Edit Mode: Off
-		Server Load Widget: Off
+		Server Load Widget: On
 	}
 
 	extensions
@@ -148,6 +148,8 @@ variables
 		35: Scoreboard
 		36: EnPadding
 		37: Top5Colors
+		38: Top5Prefix
+		39: VIPs
 
 	player:
 		0:  Checkpoint
@@ -197,6 +199,10 @@ variables
 		44: TempCheckpoint
 		45: PlayerName
 		46: BestRun
+		47: SavedCheckpoint
+		48: Cheat
+		49: PlayerNameColor
+		50: NameTemp
 }
 subroutines
 {
@@ -434,6 +440,8 @@ rule("Global Config")
 		Global.Config[3] = Color(Red);
 		"Scoreboard Top 5 colors"
 		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255), Color(White), Color(White));
+		"Default Player nameplate color"
+		Global.Config[14] = Color(White);
 
 		"------Texts & Icons------"
 		disabled End;
@@ -441,6 +449,8 @@ rule("Global Config")
 		Global.Config[7] = Custom String("Goal");
 		"Teleport pad Text or Icon"
 		Global.Config[8] = Icon String(Spiral);
+		"Scoreboard Top 5 prefix (1st, 2nd, 3rd place)"
+		Global.Top5Prefix = Array(Custom String("1st"), Custom String("2nd"), Custom String("3rd"),Custom String("4th"), Custom String("5th"));
 		
 		"------Bot & Player Settings------"
 		disabled End;
@@ -468,7 +478,24 @@ rule("Creator and Code")
 		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Config[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
 	}
 }
-
+rule("VIPs / Custom player tags")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		"BNet name, Nickname, Color"
+		Global.VIPs = Array(
+			Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224))
+		);
+		"Add your custom names here"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+	}
+}
 rule("——————————————————————————Initialization Settings——————————————————————————")
 {
 	event
@@ -1698,8 +1725,16 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.Scale = 1;
 		"TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
-		"TODO: Add VIP nicknames"
-		Event Player.PlayerName = Custom String("{0}", Event Player);
+		"TODO: Get rid of this temp variable?"
+		Event Player.NameTemp = First Of(Filtered Array(Global.VIPs, Current Array Element[0] == Custom String("{0}", Event Player)));
+		If(Count Of(Event Player.NameTemp) > 1);
+			Event Player.PlayerName = Event Player.NameTemp[1];
+			Event Player.PlayerNameColor = Event Player.NameTemp[2];
+		Else;
+			Event Player.PlayerName = Custom String("{0}", Event Player);
+			Event Player.PlayerNameColor = Global.Config[14];
+		End;
+		Event Player.NameTemp = Null;
 	}
 }
 rule("Subroutine InitializePlayerBot")
@@ -1812,8 +1847,8 @@ rule("Subroutine CreateGlobalHUD")
 			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
 				Hero Icon String(
 					Global.Scoreboard[Evaluate Once(Global.i)][3]), 
-			Custom String("{0}. {1}\n{2}", 
-			Evaluate Once(Global.i + 1),
+			Custom String("{0} {1}\n{2}", 
+			Global.Top5Prefix[Evaluate Once(Global.i)],
 			Global.Scoreboard[Evaluate Once(Global.i)][0],
 			Custom String("{0} sec - Mistakes: {1}{2}", 
 				Global.Scoreboard[Evaluate Once(Global.i)][1],
@@ -1937,8 +1972,9 @@ rule("Subroutine CreatePlayerHUD")
 		"Right HUD Elements"
 		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
 			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
-
 		
+		"Create player name tag"
+			Create In-World Text(All Players(All Teams), Custom String("{0} {1}{2}", Event Player.PlayerName, Event Player.Checkpoint, Event Player.Cheat ? Custom String("({0})", Event Player.SavedCheckpoint) : Empty Array), Event Player, 1.300, Do Not Clip, Visible To Position String And Color, Event Player.PlayerNameColor, Default Visibility);
 	}
 }
 rule("Subroutine SetUpCheckpoint")
@@ -2281,6 +2317,9 @@ rule("Subroutine Taw'sDecompressData")
 		"Taw's editor rules don't require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = False;
 
+		"Give credits to the original editor maker"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Taw"), Custom String("Taw"), Color(Purple));
+
 		Log To Inspector(Custom String("Decompressing Taw's Data..."));
 		"CheckpointFlags"
 		Global.TawsEditorVariables[2] = Empty Array;		
@@ -2452,6 +2491,9 @@ rule("Subroutine PeaceDecompressData")
 		Global.PeaceEditorVariables[7] = 1;
 		"Peace editor rules require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = True;
+
+		"Give credits to the original editor maker"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
 
 		Log To Inspector(Custom String("Peace Decompress Data start"));
 
