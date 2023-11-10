@@ -90,7 +90,7 @@ settings
 
 	workshop
 	{
-		Debug Mode (Inspector Recording): Off
+		Debug Mode (Inspector Recording): On
 		Edit Mode: Off
 		Server Load Widget: On
 	}
@@ -175,7 +175,7 @@ variables
 		20: GoalCoords
 		21: GoalRadius
 		22: GoalThresholds
-		23: RunTimerEnabled
+		23: DEPRECATEDRunTimerEnabled
 		24: CurrentSectionTime
 		25: BotCondition
 		26: ThirdPerson
@@ -202,7 +202,7 @@ variables
 		47: SavedCheckpoint
 		48: Cheat
 		49: PlayerNameColor
-		50: NameTemp
+		50: Temp
 }
 subroutines
 {
@@ -237,7 +237,7 @@ rule("Put your data here")
 		Ongoing - Global;
 	}
 
-	actions
+actions
 	{
 		Global.Checkpoint = Array(Array(Vector(61.666, -2.044, 40.309), 1.600, True, Array(Vector(-40.051, 0.250, -108.314), False, True),
 			False, False, Array(), Array(), Array()), Array(Vector(64.082, -2.288, 46.897), 1.600, True, Array(Vector(58.609, -1.401,
@@ -491,9 +491,9 @@ rule("VIPs / Custom player tags")
 			Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224))
 		);
 		"Add your custom names here"
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("cashhole"), Custom String("Holecash"), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Assward"), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Aeternalys"), Custom String("Baguetternalys"), Color(White));
 	}
 }
 rule("——————————————————————————Initialization Settings——————————————————————————")
@@ -938,7 +938,7 @@ rule("Create/destroy current level Orbs")
 		Else;
 			"Action: Create orb effect"
 			Create Effect(
-			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Orb, Global.Config[1], 
+			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Config[1], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -982,7 +982,7 @@ rule("Create/destroy current level RefreshOrbs")
 		Else;
 			"Action: Create RefeshOrb effect"
 			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
-			Orb, Global.Config[4], 
+			Sphere, Global.Config[4], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -1299,7 +1299,7 @@ rule("Detect Arriving on Goal or Teleport")
 				"TODO: Set a color for finish explosion in config"
 				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
-				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player, Event Player.CurrentRunTime));
+				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.PlayerName, Event Player.CurrentRunTime));
 				Call Subroutine(PlayerCompletedRun);
 			"Player finished current checkpoint"
 			Else;
@@ -1663,6 +1663,27 @@ rule("Regen ultimate in FreeMode")
 		Set Ultimate Charge(Event Player, 100);
 	}
 }
+rule("Player left the lobby, save their progress")
+{
+	event
+	{
+		Player Left Match;
+		All;
+		All;
+	}
+	actions
+	{
+		Modify Global Variable(PlayerData, 
+		Append To Array,
+		Array(Array(
+			Custom String("{0}", Event Player), 
+			Event Player.Finished,
+			Event Player.Checkpoint, 
+			Event Player.CurrentRunTime,
+			Event Player.Mistakes)
+		));
+	}
+}
 rule("——————————————————————————Subroutines——————————————————————————")
 {
 	event
@@ -1695,6 +1716,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.RGB = Array(255,0,0);
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                                                                ");
+		Global.PlayerData = Empty Array;
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -1726,15 +1748,23 @@ rule("Subroutine InitializePlayerVariables")
 		"TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
 		"TODO: Get rid of this temp variable?"
-		Event Player.NameTemp = First Of(Filtered Array(Global.VIPs, Current Array Element[0] == Custom String("{0}", Event Player)));
-		If(Count Of(Event Player.NameTemp) > 1);
-			Event Player.PlayerName = Event Player.NameTemp[1];
-			Event Player.PlayerNameColor = Event Player.NameTemp[2];
+		Event Player.Temp = First Of(Filtered Array(Global.VIPs, Current Array Element[0] == Custom String("{0}", Event Player)));
+		If(Count Of(Event Player.Temp) > 1);
+			Event Player.PlayerName = Event Player.Temp[1];
+			Event Player.PlayerNameColor = Event Player.Temp[2];
 		Else;
 			Event Player.PlayerName = Custom String("{0}", Event Player);
 			Event Player.PlayerNameColor = Global.Config[14];
 		End;
-		Event Player.NameTemp = Null;
+		Event Player.Temp = First Of(Filtered Array(Global.PlayerData, Current Array Element[0] == Custom String("{0}", Event Player)));
+		If(Count Of(Event Player.Temp) > 1);
+			Event Player.Finished = Event Player.Temp[1];
+			Event Player.Checkpoint = Event Player.Temp[2];
+			Event Player.CurrentRunTime = Event Player.Temp[3];
+			Event Player.Mistakes = Event Player.Temp[4];
+			Modify Global Variable(PlayerData, Remove From Array By Index, Index Of Array Value(Global.PlayerData, Event Player.Temp));
+			Small Message(Event Player, Custom String("Welcome Back, {0}", Event Player));
+		End;
 	}
 }
 rule("Subroutine InitializePlayerBot")
@@ -1842,7 +1872,7 @@ rule("Subroutine CreateGlobalHUD")
 		Custom String("Scoreboard:"),
 		Left, 2, Null, Null, Color(Red), Visible To and String, Default Visibility);
 		"Create Top 5 scoreboard rows"
-		For Global Variable(i, 0, 10, 1);
+		For Global Variable(i, 0, 5, 1);
 			"Insert scoreboard record"
 			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
 				Hero Icon String(
@@ -2290,7 +2320,9 @@ rule("Subroutine PlayerCompletedRun")
 		If(Event Player.BestRun == False || (Event Player.BestRun[0] > Event Player.CurrentRunTime || (Event Player.BestRun[0] == Event Player.CurrentRunTime && Event Player.BestRun[1] > Event Player.Mistakes)));
 			Event Player.BestRun = Array(Event Player.CurrentRunTime, Event Player.Mistakes);
 			If(Is True For Any(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName));
-				Set Global Variable At Index(Scoreboard, Index Of Array Value(Global.Scoreboard, Event Player.PlayerName), Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player)));
+				"TODO: Fix this bs"
+				Set Global Variable At Index(Scoreboard, Index Of Array Value(Global.Scoreboard, Filtered Array(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName)), 
+					Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player)));
 				Log To Inspector(Custom String("{0} - Modified scoreboard", Event Player));
 			Else;
 				Modify Global Variable(Scoreboard, Append To Array, Array(Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player))));
@@ -2589,7 +2621,7 @@ rule("Subroutine PeaceDecompressData")
 			Else;
 				Global.RefreshOrbs[Global.i] = Empty Array;
 				
-				"Blzz: Oh you need to use multidimensional arrays? HA"
+				"Blzz: Oh, you want easy access to multidimensional arrays?... XDDD"
 				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
 					"Extract Multi-GA level bots"
 					Modify Global Variable At Index(Bots, Global.i, Append To Array,
