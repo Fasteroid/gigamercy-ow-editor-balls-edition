@@ -115,7 +115,7 @@ variables
 		1:  DebugMode
 		2:  Colors
 		3:  HintText
-		4:  Config
+		4:  Settings
 		5:  WorkshopColorList
 		6:  Checkpoints
 		8:  Orbs
@@ -150,6 +150,7 @@ variables
 		37: Top5Colors
 		38: Top5Prefix
 		39: VIPs
+		40: Config
 
 	player:
 		0:  Checkpoint
@@ -407,7 +408,7 @@ actions
 			False, True), False, False, Array(), Array(), Array()));
 	}
 }
-rule("Global Config")
+rule("Customization options")
 {
 	event
 	{
@@ -419,45 +420,60 @@ rule("Global Config")
 		"------Colors------"
 		disabled End;
 		"Start Checkpoint Ring Color"
-		Global.Config[0] = Color(Red);
+		Global.Settings[0] = Color(Red);
 		"Goal Checkpoint Ring Color"
-		Global.Config[5] = Color(Red);
+		Global.Settings[5] = Color(Red);
 		"Goal Checkpoint text Color"
-		Global.Config[6] = Color(White);
+		Global.Settings[6] = Color(White);
 		"Teleport pad effect color"
-		Global.Config[9] = Color(Red);
+		Global.Settings[9] = Color(Red);
 		"Orb color"
-		Global.Config[1] = Color(Red);
+		Global.Settings[1] = Color(Red);
 		"Orb Icon Color"
-		Global.Config[12] = Color(White);
+		Global.Settings[12] = Color(White);
 		"Refresh Orb Color"
-		Global.Config[4] = Color(Red);
+		Global.Settings[4] = Color(Red);
 		"Refresh Orb Icon Color"
-		Global.Config[13] = Color(White);
+		Global.Settings[13] = Color(White);
 		"Anti-Orb Color"
-		Global.Config[2] = Color(Black);
+		Global.Settings[2] = Color(Black);
 		"Jump Cloud Color"
-		Global.Config[3] = Color(Red);
+		Global.Settings[3] = Color(Red);
 		"Scoreboard Top 5 colors"
 		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255), Color(White), Color(White));
 		"Default Player nameplate color"
-		Global.Config[14] = Color(White);
+		Global.Settings[14] = Color(White);
+		"Scoreboard color"
+		Global.Settings[15] = Color(Red);
+		"Goal effect color. Accepts multiple colors"
+		Global.Settings[16] = Array(Color(Red), Color(Yellow));
+		"Map title color. Disable this rule if you want rainbow effect"
+		disabled Global.Settings[18] = Color(Red);
+		"Crouch disabled bot outline color"
+		disabled Global.Settings[19] = Color(Red);
+		"Crouch enabled bot outline color"
+		Global.Settings[20] = Color(Aqua);
+		"Goal Icon Color"
+		Global.Settings[21] = Color(Green);
+
 
 		"------Texts & Icons------"
 		disabled End;
 		"Goal Checkpoint text"
-		Global.Config[7] = Custom String("Goal");
+		Global.Settings[7] = Custom String("Goal");
 		"Teleport pad Text or Icon"
-		Global.Config[8] = Icon String(Spiral);
-		"Scoreboard Top 5 prefix (1st, 2nd, 3rd place)"
+		Global.Settings[8] = Icon String(Spiral);
+		"Player leaderboard positions (1st, 2nd, 3rd place)"
 		Global.Top5Prefix = Array(Custom String("1st"), Custom String("2nd"), Custom String("3rd"),Custom String("4th"), Custom String("5th"));
+		"Scoreboard title"
+		Global.Settings[17] = Custom String("Scoreboard:");
 		
 		"------Bot & Player Settings------"
 		disabled End;
-		"Bot Hero"
-		Global.Config[10] = Hero(Mercy);
 		"Player Hero"
-		Global.Config[11] = Hero(Mercy);
+		Global.Settings[11] = Hero(Mercy);
+		"Bot Hero"
+		Global.Settings[10] = Hero(Mercy);
 		"Where to store unused bots by default"
 		Global.BotPenCoords = Vector(0, 200, 0);
 	}
@@ -475,7 +491,7 @@ rule("Creator and Code")
 		"Your workshop code here"
 		Global.CreatorAndCode[1] = Custom String("Code");
 		"Only edit this if you want a custom map title"
-		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Config[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
+		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Settings[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
 	}
 }
 rule("VIPs / Custom player tags")
@@ -492,7 +508,7 @@ rule("VIPs / Custom player tags")
 		);
 		"Add your custom names here"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("cashhole"), Custom String("Holecash"), Color(White));
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Assward"), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Platanardo"), Color(White));
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Aeternalys"), Custom String("Baguetternalys"), Color(White));
 	}
 }
@@ -552,7 +568,7 @@ rule("2. Player Initialization")
 	actions
 	{
 		Log To Inspector(Custom String("Initializing player {0}...", Event Player));
-		Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
+		Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Disable Game Mode HUD(Event Player);
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
@@ -938,7 +954,7 @@ rule("Create/destroy current level Orbs")
 		Else;
 			"Action: Create orb effect"
 			Create Effect(
-			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Config[1], 
+			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Settings[1], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -949,7 +965,7 @@ rule("Create/destroy current level Orbs")
 			Create Icon(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbIcons))] ? Null : Event Player, 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] 
 				+ Vector(0,Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1]/2, 0), 
-			Halo, Visible To and Position, Global.Config[12], True);
+			Halo, Visible To and Position, Global.Settings[12], True);
 			"Save reference for last created icon to player variable"		
 			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
 		End;
@@ -982,7 +998,7 @@ rule("Create/destroy current level RefreshOrbs")
 		Else;
 			"Action: Create RefeshOrb effect"
 			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
-			Sphere, Global.Config[4], 
+			Sphere, Global.Settings[4], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -993,7 +1009,7 @@ rule("Create/destroy current level RefreshOrbs")
 			Create Icon(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbIcons))] ? Null : Event Player, 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0]
 				+ Vector(0, Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][1]/2, 0), 
-			Recycle, Visible To and Position, Global.Config[13], True);
+			Recycle, Visible To and Position, Global.Settings[13], True);
 			"Save reference for last created icon to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbIcons, Append To Array, Last Created Entity);
 		End;
@@ -1021,7 +1037,7 @@ rule("Create/Destroy current level Antiorbs")
 			Modify Player Variable(Event Player, AntiOrbEffects, Remove from Array By Value, Last Of(Event Player.AntiOrbEffects));
 		Else;
 			"Action: Create AntiOrb effect"
-			Create Effect(Event Player, Sphere, Global.Config[2], 
+			Create Effect(Event Player, Sphere, Global.Settings[2], 
 			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][0], 
 			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][1], 
 			Visible To Position Radius and Color);
@@ -1053,7 +1069,7 @@ rule("Create/Destroy current level Jump Clouds")
 			Modify Player Variable(Event Player, CloudEffects, Remove from Array By Value, Last Of(Event Player.CloudEffects));
 		Else;
 			"Action: Create Cloud effect"
-			Create Effect(Event Player, Cloud, Global.Config[3], 
+			Create Effect(Event Player, Cloud, Global.Settings[3], 
 			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][0], 
 			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][1], 
 			Visible To Position Radius and Color);
@@ -1081,16 +1097,16 @@ rule("Create Start and Finish checkpoints")
 	actions
 	{
 		"Create start checkpoint Ring"
-		Create Effect(Event Player, Ring, Global.Config[0], Global.Checkpoints[Event Player.Checkpoint][0], 
+		Create Effect(Event Player, Ring, Global.Settings[0], Global.Checkpoints[Event Player.Checkpoint][0], 
 		Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
 		"Create Goal checkpoint Ring"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Config[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
 		"Create Goal checkpoint Sparkles"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Config[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
 		"Create Goal checkpoint Icon"
-		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Config[5], True);
+		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Settings[21], True);
 		"Create Goal checkpoint Text"
-		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Config[8] : Global.Config[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Config[6], Default Visibility);
+		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Settings[6], Default Visibility);
 	}
 }
 rule("Create Bot Icon")
@@ -1137,7 +1153,7 @@ rule("Create Teleport Effects")
 		"For now we assume theres only one teleport pad per level, no need for multiple effect handling"
 		Create Effect(Global.Teleports[Event Player.Checkpoint] ? Event Player : Null,
 		Sparkles,
-		Global.Config[9],
+		Global.Settings[9],
 		Global.Teleports[Event Player.Checkpoint][0],
 		Global.Teleports[Event Player.Checkpoint][1],
 		Visible To Position Radius and Color);
@@ -1226,7 +1242,6 @@ rule("Detect Landing Outside")
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
 		Is On Ground(Event Player) == True;
-		"TODO: Agregar logica para niveles con teleports"
 		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
 		> Global.Checkpoints[Event Player.Checkpoint][1];
 	}
@@ -1332,7 +1347,6 @@ rule("Detect Grabbing Orb")
 		Event Player.FreeMode == False;
 		Count Of(Event Player.GrabbedOrbs) > 0;
 		
-		"TODO: Encontrar un mejor algoritmo de deteccion. De momento nos basamos en Peace"
 		Is True For Any(Global.Orbs[Event Player.Checkpoint], 
 		!Event Player.GrabbedOrbs[Current Array Index] && 
 		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
@@ -1371,7 +1385,6 @@ rule("Detect Grabbing RefreshOrb")
 		Event Player.FreeMode == False;
 		Count Of(Event Player.GrabbedRefreshOrbs) > 0;
 		
-		"TODO: Encontrar un mejor algoritmo de deteccion. De momento nos basamos en Peace"
 		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], 
 		!Event Player.GrabbedRefreshOrbs[Current Array Index] && 
 		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
@@ -1432,7 +1445,6 @@ rule("Detect Touching AntiOrb")
 		Event Player.FreeMode == False;
 		Global.AntiOrbs[Event Player.Checkpoint] == True;
 		
-		"TODO: Encontrar un mejor algoritmo de deteccion. De momento nos basamos en Peace"
 		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], 
 		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
 		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
@@ -1625,7 +1637,7 @@ rule("Detect Using Mercy Resurrect")
 			"TODO: Rework this once we allow other bot ability rewards"
 			Small Message(Event Player, 
 				Custom String("{0} Resurrected!{1}",
-					Global.Config[10],
+					Global.Settings[10],
 					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? 
 					Custom String(", {0}{1}{2} also refreshed",
 						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
@@ -1754,7 +1766,7 @@ rule("Subroutine InitializePlayerVariables")
 			Event Player.PlayerNameColor = Event Player.Temp[2];
 		Else;
 			Event Player.PlayerName = Custom String("{0}", Event Player);
-			Event Player.PlayerNameColor = Global.Config[14];
+			Event Player.PlayerNameColor = Global.Settings[14];
 		End;
 		Event Player.Temp = First Of(Filtered Array(Global.PlayerData, Current Array Element[0] == Custom String("{0}", Event Player)));
 		If(Count Of(Event Player.Temp) > 1);
@@ -1778,7 +1790,7 @@ rule("Subroutine InitializePlayerBot")
 	actions
 	{
 		If(!Event Player.Bot);
-			Create Dummy Bot(Global.Config[10], 
+			Create Dummy Bot(Global.Settings[10], 
 			Team Of(Event Player), 
 			Slot Of(Event Player) + Number Of Slots(All Teams),
 			Global.BotPenCoords,
@@ -1792,7 +1804,7 @@ rule("Subroutine InitializePlayerBot")
 			Set Gravity(Event Player.Bot, 0);
 			Set Status(Event Player.Bot, Null, Invincible, 9999);
 			Set Status(Event Player.Bot, Null, Phased Out, 9999);
-			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Config[10]));
+			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Settings[10]));
 			"TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
 			Start Facing(Event Player.Bot, 
 				Direction Towards(
@@ -1860,7 +1872,7 @@ rule("Subroutine CreateGlobalHUD")
 	{
 		"Map Creator and code"
 		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Global.MapTitle,
-		Left, 0, Null, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		Left, 0, Null, Null, Global.Settings[18] ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 		
 		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Null, Left, 2, Null, Null, Null, Visible To,
 		Default Visibility);
@@ -1869,8 +1881,8 @@ rule("Subroutine CreateGlobalHUD")
 		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
 		Null, 
 		Global.EnPadding,
-		Custom String("Scoreboard:"),
-		Left, 2, Null, Null, Color(Red), Visible To and String, Default Visibility);
+		Global.Settings[17],
+		Left, 2, Null, Null, Global.Settings[15], Visible To and String, Default Visibility);
 		"Create Top 5 scoreboard rows"
 		For Global Variable(i, 0, 5, 1);
 			"Insert scoreboard record"
@@ -2254,7 +2266,7 @@ rule("Subroutine CancelUltimate")
 		Kill(Event Player, Null);
 		disabled Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
 		Resurrect(Event Player);
-		disabled Start Forcing Player To Be Hero(Event Player, Global.Config[11]);
+		disabled Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Event Player.FreeMode = Event Player.TempFreeMode;
 		disabled Set Status(Event Player, Null, Stunned, 0.008);
 	}
@@ -2366,7 +2378,6 @@ rule("Subroutine Taw'sDecompressData")
 			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
 			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
 
-			"//TODO: Extraer estas flags"
 			Global.TawsEditorVariables[2] = 
 			Mapped Array(
 				Mapped Array(
@@ -2650,7 +2661,7 @@ rule("Subroutine PeaceDecompressData")
 			End;
 			Wait(0.004, Ignore Condition);
 		End;
-
+		
 		"Cleanup"
 		Global.Checkpoint = Null;
 		Global.PeaceEditorVariables = Null;
