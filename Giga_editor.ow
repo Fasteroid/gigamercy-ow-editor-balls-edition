@@ -2,7 +2,7 @@ settings
 {
 	main
 	{
-		Description: "WIP v.20231022\n By GigaMercy"
+		Description: "WIP v.20231112\n By GigaMercy"
 		Mode Name: "Giga Parkour Engine"
 	}
 
@@ -118,6 +118,7 @@ variables
 		4:  Settings
 		5:  WorkshopColorList
 		6:  Checkpoints
+		7:  PeaceCheckpoint2
 		8:  Orbs
 		9:  AntiOrbs
 		10: RefreshOrbs
@@ -127,30 +128,39 @@ variables
 		14: CompressedData
 		15: TawsEditorVariables
 		16: DefaultCheckpointRadius
-		17: DefaultOrbRadius
-		18: DefaultRefreshOrbRadius
-		19: i
-		20: j
-		21: TempArray
-		22: WorldTexts
-		23: CheckpointInWorldText
-		24: ShowSidebarControlsPlayers
-		25: EditMode
-		26: RequireGrabAllRefreshOrbs
-		27: BotPenCoords
-		28: Checkpoint
-		29: RGB
-		30: CreatorAndCode
-		31: ServerLoad
-		32: MapTitle
-		33: PeaceEditorVariables
-		34: PlayerData
-		35: Scoreboard
-		36: EnPadding
-		37: Top5Colors
-		38: Top5Prefix
-		39: VIPs
-		40: Config
+		17: PeaceCheckpoint
+		18: DefaultOrbRadius
+		19: DefaultRefreshOrbRadius
+		20: i
+		21: j
+		22: TempArray
+		23: GWorldTexts
+		24: CheckpointInWorldText
+		25: ShowSidebarControlsPlayers
+		26: EditMode
+		27: RequireGrabAllRefreshOrbs
+		28: PeaceVips
+		29: BotPenCoords
+		30: RefreshOrbStyle
+		31: RGB
+		32: free2
+		33: ServerLoad
+		34: MapTitle
+		35: PeaceEditorVariables
+		36: CreatorAndCode
+		37: PlayerData
+		38: PeaceConfig
+		39: PeaceT5C
+		40: PeaceWorldTexts
+		41: PeaceBMsg
+		42: PeaceSMsg
+		43: PeaceTips
+		44: Scoreboard
+		45: OrbStyle
+		46: Top5Colors
+		47: Top5Prefix
+		48: VIPs
+		49: EnPadding
 
 	player:
 		0:  Checkpoint
@@ -240,172 +250,6 @@ rule("Put your data here")
 
 actions
 	{
-		Global.Checkpoint = Array(Array(Vector(61.666, -2.044, 40.309), 1.600, True, Array(Vector(-40.051, 0.250, -108.314), False, True),
-			False, False, Array(), Array(), Array()), Array(Vector(64.082, -2.288, 46.897), 1.600, True, Array(Vector(58.609, -1.401,
-			53.589), False, True), False, False, Array(Array(Vector(61.780, 1.276, 61.776), False, False, True)), Array(), Array()), Array(
-			Vector(66.198, -2.956, 65.812), 1.600, True, Array(Vector(65.800, -3.166, 74.692), False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(76.003, -3.375, 78.187), 1.600, True, Array(Vector(75.168, -2.828, 55.816), False, True),
-			False, False, Array(Array(Vector(74.248, 8.549, 50.088), False, False, True)), Array(), Array()), Array(Vector(72.597, 6.497,
-			45.549), 1.600, True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(83.028, -2.930,
-			53.714), 1.600, True, Array(Vector(82.630, -3.541, 70.745), False, True), False, False, Array(), Array(), Array()), Array(
-			Vector(97.179, -3.641, 74.593), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(
-			-33.257, 1, -115.117), 1.600, True, Array(Vector(-40.063, 0.250, -108.334), False, True), False, False, Array(), Array(),
-			Array()), Array(Vector(-46.936, 1, -101.496), 1.600, True, Array(Vector(-40.064, 0.250, -108.333), False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(-32.664, 1, -100.888), 1.600, True, Array(Vector(-46.084, 1, -92.746), False, True),
-			False, False, Array(Array(Vector(-41.642, 2.892, -90.052), False, False, True)), Array(), Array()), Array(Vector(-36.924, 1,
-			-85.442), 1.600, True, Array(Vector(-33.010, 1, -79.672), False, True), False, False, Array(), Array(), Array()), Array(Vector(
-			-27.392, 1, -89.017), 1.600, True, Array(Vector(-23.984, 1, -97.874), False, True), False, False, Array(Array(Vector(-21.133,
-			3.550, -94.988), False, False, True)), Array(), Array()), Array(Vector(-13.777, 1, -102.204), 1.600, True, Array(Vector(-3.714,
-			-0.925, -93.171), False, True), False, False, Array(), Array(), Array()), Array(Vector(-2.959, 2.540, -82.504), 1.600, True,
-			Array(False, False, True), False, False, Array(Array(Vector(-6.118, 3.920, -79.355), False, False, True)), Array(), Array()),
-			Array(Vector(-8.600, 2.540, -76.829), 1.600, True, Array(Vector(-17.014, -0.749, -90.577), False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(-16.225, 9.186, -90.003), 1.600, True, Array(Vector(-21.201, -0.925, -75.058), False, True),
-			False, False, Array(Array(Vector(-20.437, 9.992, -74.717), False, False, True)), Array(), Array()), Array(Vector(-17.394, 9,
-			-71.832), 1.600, True, Array(Vector(-8.968, 9, -61.287), False, True), False, False, Array(Array(Vector(1.065, 11.459,
-			-72.793), False, False, True)), Array(), Array()), Array(Vector(10.116, 7.010, -81.653), 1.600, True, Array(Vector(3.760,
-			7.010, -97.335), False, True), False, False, Array(Array(Vector(0.157, 8.706, -96.153), False, False, True)), Array(),
-			Array()), Array(Vector(-9.178, 1, -105.623), 1.600, True, Array(Vector(-17.957, 1, -104.218), False, True), False, False,
-			Array(Array(Vector(-15.276, 3.271, -96.200), False, False, True)), Array(), Array()), Array(Vector(-10.844, -0.925, -84.660),
-			1.600, True, Array(Vector(4.891, -1, -69.158), False, True), False, False, Array(), Array(), Array()), Array(Vector(4.987, 5,
-			-69.022), 1.600, True, Array(Vector(13.366, 4, -72.131), False, True), False, False, Array(), Array(), Array()), Array(Vector(
-			20.102, 4, -85.009), 1.600, True, Array(Vector(12.216, 7, -94.475), False, True), False, False, Array(Array(Vector(10.965,
-			8.475, -91.287), False, False, True)), Array(), Array()), Array(Vector(6.063, 7.010, -86.543), 1.600, True, Array(Vector(
-			12.822, 7.010, -83.414), False, True), False, False, Array(), Array(), Array()), Array(Vector(13.726, 9.010, -87.369), 1.600,
-			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(-0.673, -1, -97.091), 1.600, True,
-			Array(Vector(7.645, -1, -93.450), False, True), False, False, Array(Array(Vector(-1.744, 2.501, -83.677), False, False, True)),
-			Array(), Array()), Array(Vector(7.755, -1.905, -78.868), 1.600, True, Array(Vector(9.298, -5.102, -91.621), False, True),
-			False, False, Array(Array(Vector(15.063, -3.500, -87.120), False, False, True)), Array(), Array()), Array(Vector(19.436, -5,
-			-91.005), 1.600, True, Array(Vector(8.886, -5, -79.504), False, True), False, False, Array(Array(Vector(-0.375, 3.320,
-			-74.244), Vector(21.014, -5.495, -91.395), False, True)), Array(), Array()), Array(Vector(15.074, -5, -97.335), 1.600, True,
-			Array(Vector(21.397, -3, -81.395), False, True), False, False, Array(), Array(), Array()), Array(Vector(9.395, -0.920,
-			-72.995), 1.600, True, Array(Vector(2.309, 0.982, -64.152), False, True), False, False, Array(Array(Vector(1.681, 2.204,
-			-72.371), False, False, True)), Array(), Array()), Array(Vector(-3.627, -1.905, -67.534), 1.600, True, Array(False, False,
-			True), False, False, Array(Array(Vector(2.994, -0.489, -77.834), False, False, True)), Array(), Array(Array(Vector(-0.604,
-			-5.100, -74.217), 8), Array(Vector(2.491, -5.102, -77.373), 8), Array(Vector(-3.463, -5.100, -71.416), 8), Array(Vector(-6.580,
-			-5.100, -68.342), 8))), Array(Vector(-10.415, -4.920, -61.735), 1.600, True, Array(Vector(-19.477, -1, -50.992), False, True),
-			False, False, Array(Array(Vector(-30.530, 4.294, -53.276), False, False, True)), Array(), Array()), Array(Vector(-38.643, 1,
-			-61.544), 1.600, True, Array(Vector(-28.767, 1, -73.470), False, True), False, False, Array(Array(Vector(-26.206, 6.470,
-			-69.861), False, False, True)), Array(), Array()), Array(Vector(-22.085, 2.996, -66.788), 1.600, True, Array(Vector(-36.886, 1,
-			-65.452), False, True), False, False, Array(Array(Vector(-29.821, 4.073, -61.216), False, False, True)), Array(), Array()),
-			Array(Vector(-20.954, 4, -58.085), 1.600, True, Array(Vector(-16.189, 4, -53.260), False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(-16.649, -1.168, -34.377), 1.600, True, Array(Vector(-24.045, -1.029, -20.745), False, True),
-			False, False, Array(Array(Vector(-27.452, 10.010, -19.634), False, False, True)), Array(), Array()), Array(Vector(-22.849,
-			-1.254, -13.731), 1.600, True, Array(Vector(-10.626, -0.693, -10.118), False, True), False, False, Array(), Array(), Array()),
-			Array(Vector(-5.760, 7.978, -10.109), 1.600, True, Array(Vector(4.704, 7.978, -10.314), False, True), False, False, Array(
-			Array(Vector(-4.096, 8.493, -19.936), False, False, True)), Array(), Array()), Array(Vector(-9.857, 7, -23.747), 1.600, True,
-			Array(False, False, True), False, False, Array(Array(Vector(-9.967, 8.503, -28.122), False, False, True)), Array(), Array()),
-			Array(Vector(-8.630, 5, -36.147), 1.600, True, Array(Vector(1.222, 5.603, -36.807), False, True), False, False, Array(Array(
-			Vector(-4.029, 6.415, -40.951), False, False, True)), Array(), Array()), Array(Vector(-7.079, 5.611, -45.736), 1.600, True,
-			Array(Vector(-9.272, 5, -39.762), False, True), False, False, Array(Array(Vector(13.087, 6.906, -41.101), False, False, True)),
-			Array(), Array(Array(Vector(1.779, 4.683, -41.045), 12))), Array(Vector(17.587, -1.224, -49.019), 1.600, True, Array(Vector(
-			2.843, -1.800, -48.856), False, True), False, False, Array(Array(Vector(8.350, 0.071, -48.890), False, False, True)), Array(),
-			Array()), Array(Vector(-8.821, 3.960, -47.838), 1.600, True, Array(Vector(0.941, -0.600, -54.759), False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(13.066, 7.071, -48.835), 1.600, True, Array(False, False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(19.631, 4.299, -40.781), 1.600, True, Array(False, False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(8.208, 1.109, -42.809), 1.600, True, Array(False, False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(6.471, 2.109, -38.680), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
-			Array(Array(Vector(17.630, -0.681, -37.457), 12))), Array(Vector(23.785, 2.272, -34.501), 1.600, True, Array(False, False,
-			True), False, False, Array(), Array(), Array()), Array(Vector(23.656, 2.021, -41.621), 1.600, True, Array(Vector(26.443,
-			-1.660, -46.553), False, True), False, False, Array(), Array(), Array()), Array(Vector(18.659, 0.981, -58.794), 1.600, True,
-			Array(Vector(25.046, -1.875, -71.271), False, True), False, False, Array(Array(Vector(29.673, -0.044, -65.455), False, False,
-			True)), Array(), Array()), Array(Vector(36.125, -1.942, -61.410), 1.600, True, Array(Vector(43.444, -1.144, -68.219), False,
-			True), False, False, Array(), Array(), Array()), Array(Vector(42.827, 1.411, -57.077), 1.600, True, Array(False, False, True),
-			False, False, Array(Array(Vector(47.130, -0.537, -52.269), False, False, True)), Array(), Array()), Array(Vector(45.284,
-			-1.191, -45.876), 1.600, True, Array(Vector(47.013, -2.005, -61.067), False, True), False, False, Array(Array(Vector(35.298,
-			7.350, -69.193), False, False, True), Array(Vector(31.541, 7.607, -73.225), False, False, True)), Array(), Array()), Array(
-			Vector(28.245, 3, -82.924), 1.600, True, Array(Vector(23.055, 2.921, -69.652), False, True), False, False, Array(Array(Vector(
-			26.052, 4.762, -75.881), False, False, True)), Array(), Array()), Array(Vector(35.461, 3.676, -65.695), 1.600, True, Array(
-			Vector(18.463, 2.850, -51.312), False, True), False, False, Array(Array(Vector(27.861, 3.858, -60.141), Vector(34.671, 2.314,
-			-51.322), False, True), Array(Vector(31.685, 4.135, -41.447), False, False, True), Array(Vector(28.034, 4.630, -51.450), False,
-			False, True)), Array(), Array()), Array(Vector(31.653, 2.327, -37.754), 1.600, True, Array(Vector(42.980, 2, -32.902), False,
-			True), False, False, Array(Array(Vector(20.518, 4.443, -30.084), False, False, True)), Array(), Array()), Array(Vector(12.953,
-			0, -30.173), 1.600, True, Array(Vector(12.959, 2.754, -42.849), True, True), False, False, Array(), Array(), Array()), Array(
-			Vector(1.692, -1.875, -44.872), 1.600, True, Array(Vector(-9.197, -1, -46.277), False, True), False, False, Array(Array(Vector(
-			-4.768, 0.016, -44.712), False, False, True), Array(Vector(-8.294, 2.805, -40.903), False, False, True)), Array(), Array()),
-			Array(Vector(-7.975, 1.040, -34.875), 1.600, True, Array(Vector(-11.245, 1, -20.755), False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(2.225, 1, -21.913), 1.600, True, Array(False, False, True), False, True, Array(), Array(),
-			Array()), Array(Vector(22.063, 6.607, -9.755), 1.600, True, Array(Vector(26.245, 6, -24.245), False, True), False, False,
-			Array(Array(Vector(18.845, 8.361, -21.142), False, False, True)), Array(), Array()), Array(Vector(13.020, 6.736, -21.579),
-			1.600, True, Array(Vector(0.755, 7, -23.908), False, True), False, False, Array(Array(Vector(-4.179, 8.360, -20.115), False,
-			False, True)), Array(), Array()), Array(Vector(-23.208, 2.352, -11.638), 1.600, True, Array(Vector(-15.387, 1, 1.208), False,
-			True), False, False, Array(Array(Vector(-17.071, -4.572, 1.117), False, False, True), Array(Vector(-17.071, -2.549, 1.117),
-			False, False, True), Array(Vector(-17.071, -0.903, 1.117), False, False, True)), Array(), Array()), Array(Vector(-14.900,
-			3.868, 13.241), 1.600, True, Array(Vector(-17.124, 3.995, 24.259), False, True), False, False, Array(), Array(), Array()),
-			Array(Vector(3.305, 2.497, 38.235), 1.600, True, Array(Vector(-12.411, 1, 30.688), False, True), False, False, Array(Array(
-			Vector(2.074, 4.784, 30.198), False, False, True)), Array(), Array()), Array(Vector(9.990, -0.925, 28.293), 1.600, True, Array(
-			False, False, True), False, False, Array(Array(Vector(9.222, -0.547, 25.866), False, False, True)), Array(), Array()), Array(
-			Vector(19.311, -1.158, 35.166), 1.600, True, Array(Vector(21.509, 2.228, 40.573), False, True), False, False, Array(Array(
-			Vector(13.254, -1.326, 51.465), Vector(3.226, 2.501, 39.511), False, True)), Array(), Array()), Array(Vector(15.369, -0.987,
-			27.411), 1.600, True, Array(Vector(23.529, 2.467, 29.967), False, True), False, False, Array(), Array(), Array()), Array(
-			Vector(16.707, 0, 8.771), 1.600, True, Array(Vector(5.462, 0, 8.531), False, True), False, False, Array(), Array(), Array()),
-			Array(Vector(13.919, 3.998, 16.629), 1.600, True, Array(Vector(14.420, 4.593, 24.021), False, True), False, False, Array(Array(
-			Vector(8.126, 5.506, 23.095), False, False, True)), Array(), Array()), Array(Vector(3.736, 3.966, 23.022), 1.600, True, Array(
-			Vector(-12.709, 1, 29.177), False, True), False, False, Array(), Array(), Array()), Array(Vector(6.573, 10.010, 26.461), 1.600,
-			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(8.835, 11.261, 24.251), 1.600, True,
-			Array(Vector(15.622, 11.297, 17.475), False, True), False, False, Array(), Array(), Array()), Array(Vector(-3.909, 7.962,
-			11.912), 1.600, True, Array(Vector(-4.203, 1, 2.652), False, True), False, False, Array(Array(Vector(-4.041, 5.202, 10.697),
-			False, False, True)), Array(), Array()), Array(Vector(-3.797, 1, -8.924), 1.600, True, Array(Vector(28.789, 10.463, -4.107),
-			False, True), False, False, Array(Array(Vector(2.797, 4.710, -6.015), False, False, True)), Array(), Array()), Array(Vector(
-			-3.887, 4, 14.748), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(-14.006,
-			-1.026, 13.674), 1.600, True, Array(Vector(-15.366, -1, 22.270), False, True), False, False, Array(), Array(), Array()), Array(
-			Vector(1.940, -1, 23.896), 1.600, True, Array(Vector(2.024, -1.237, 28.264), False, True), False, False, Array(), Array(),
-			Array()), Array(Vector(1.797, -0.387, 13.862), 1.600, True, Array(Vector(15.325, -1, 22.270), False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(14.044, -0.434, 12.175), 1.600, True, Array(False, False, True), False, True, Array(),
-			Array(), Array()), Array(Vector(14.013, -0.002, 9.554), 1.600, True, Array(Vector(13.263, 0.999, -4.315), False, True), False,
-			False, Array(), Array(), Array()), Array(Vector(29.313, 10.456, -3.627), 1.600, True, Array(Vector(8.515, 0, 8.956), False,
-			True), False, False, Array(Array(Vector(10.473, 4.320, 8.908), False, False, True)), Array(), Array()), Array(Vector(28.555,
-			10.442, 4.336), 1.600, True, Array(Vector(45.224, 6, -7.236), False, True), False, False, Array(Array(Vector(40.020, 7.515,
-			-2.527), False, False, True), Array(Vector(39.911, 7.500, -5.443), False, False, True)), Array(), Array()), Array(Vector(
-			13.500, 0.986, -4.418), 1.600, True, Array(Vector(28.205, 0, -8.016), False, True), False, False, Array(), Array(), Array()),
-			Array(Vector(30.735, 2.524, -13.567), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(41.015, 7.077,
-			-14.445), False, False, True), Array(Vector(45.980, 7.014, -14.396), False, False, True), Array(Vector(47.198, 3.269, -24.817),
-			False, False, True)), Array(), Array(Array(Vector(30.739, 2.332, -13.566), 14))), Array(Vector(40.236, 0.039, -26.196), 1.600,
-			True, Array(Vector(39.582, 0.038, -8.873), False, True), False, False, Array(Array(Vector(43.871, 2.585, -7.802), False, False,
-			True)), Array(), Array()), Array(Vector(56.123, -1, -4.955), 1.600, True, Array(False, False, True), False, False, Array(),
-			Array(), Array()), Array(Vector(57.370, -0.143, 1.693), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
-			Array()), Array(Vector(50.620, -0.070, 0.643), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
-			Array()), Array(Vector(54.561, -0.116, -7.187), 1.600, True, Array(Vector(54.884, -1.224, 15.499), False, True), False, False,
-			Array(), Array(), Array()), Array(Vector(47.796, 6, 14.253), 1.600, True, Array(Vector(34.657, 6, 17.988), False, True), False,
-			False, Array(Array(Vector(35.446, 4.505, 17.735), Vector(47.753, 6, 6.200), False, True), Array(Vector(47.340, 4.278, 6.008),
-			False, False, True), Array(Vector(40.989, 3.191, 21.428), False, False, True)), Array(), Array()), Array(Vector(40.784, 0.324,
-			26.567), 1.600, True, Array(Vector(44.207, 0.470, 38.388), False, True), False, False, Array(), Array(), Array()), Array(
-			Vector(27.919, 3, 31.527), 1.600, True, Array(Vector(27.337, 3, 24.672), False, True), False, False, Array(), Array(),
-			Array()), Array(Vector(34.532, 13.953, 22.449), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(
-			30.932, 18.978, 20.053), False, False, True), Array(Vector(28.490, 12.350, 4.135), False, False, True), Array(Vector(39.824,
-			7.501, -2.429), False, False, True)), Array(), Array(Array(Vector(34.581, 13.458, 22.372), 11))), Array(Vector(41.478, 5.999,
-			2.229), 1.600, True, Array(Vector(49.441, 6, 2.474), False, True), False, False, Array(), Array(), Array()), Array(Vector(
-			63.774, 0.593, 4.736), 1.600, True, Array(Vector(56.613, -1.794, 18.224), False, True), False, False, Array(Array(Vector(
-			66.468, 10.169, 22.502), False, False, True), Array(Vector(65.680, 10.198, 30.173), False, False, True)), Array(), Array()),
-			Array(Vector(61.222, 0.334, 35.752), 1.600, True, Array(Vector(62.301, 6, -2.312), False, True), False, False, Array(Array(
-			Vector(62.982, 4.425, 6.438), False, False, True)), Array(), Array()), Array(Vector(61.551, 6, -12.940), 1.600, True, Array(
-			Vector(51.221, 6, -12.397), False, True), False, False, Array(Array(Vector(56.694, 4.066, -12.766), Vector(27.438, 12.607,
-			-12.185), False, True), Array(Vector(33.195, 10.660, -12.449), False, False, True), Array(Vector(52.989, 13.983, -13.862),
-			False, False, True)), Array(), Array()), Array(Vector(72.676, -1.970, -0.078), 1.600, True, Array(False, False, True), False,
-			True, Array(), Array(), Array()), Array(Vector(76.485, -1.979, 0.044), 1.600, True, Array(Vector(83.789, -2.999, 5.137), False,
-			True), False, False, Array(), Array(), Array()), Array(Vector(93.164, -1.897, -6.207), 1.600, True, Array(Vector(99.687,
-			-0.051, 0.125), False, True), True, False, Array(Array(Vector(85.496, 3.481, -7.720), False, False, True), Array(Vector(84.623,
-			9.426, -7.781), False, False, True), Array(Vector(100.248, 14.511, 0.210), False, False, True), Array(Vector(93.414, 11.601,
-			-6.283), False, False, True), Array(Vector(93.417, 6.397, -4.341), False, False, True), Array(Vector(93.355, 1.513, -2.235),
-			False, False, True), Array(Vector(106.438, 3.395, -0.163), False, False, True)), Array(), Array()), Array(Vector(113.057, 1,
-			0.069), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(99.316, 12, 7.177),
-			1.600, True, Array(Vector(85.167, 12, 9.802), False, True), False, False, Array(Array(Vector(86.334, 14.758, -6.994), False,
-			False, True)), Array(), Array()), Array(Vector(84.868, 7, -3.968), 1.600, True, Array(Vector(84.756, 7, -4.601), False, True),
-			False, False, Array(Array(Vector(84.785, 8.603, -6.551), Vector(102.809, 5.163, 7.550), False, True), Array(Vector(87.946,
-			6.503, -5.759), False, False, True), Array(Vector(91.847, 6.610, -5.461), False, False, True), Array(Vector(94.699, 6.398,
-			-1.111), False, False, True), Array(Vector(94.740, 6.562, 3.788), False, False, True), Array(Vector(99.975, 6.765, 4.007),
-			False, False, True)), Array(), Array()), Array(Vector(91.903, 2, -0.622), 1.600, True, Array(Vector(93.246, 2, 12.243), False,
-			True), False, False, Array(), Array(), Array()), Array(Vector(75.946, 2, 7.196), 1.600, True, Array(Vector(79.805, -1.870,
-			35.959), False, True), False, False, Array(Array(Vector(81.995, -1.422, 15.094), False, False, True), Array(Vector(78.486,
-			0.326, 27.190), False, False, True)), Array(), Array()), Array(Vector(81.916, -3, 10.078), 1.600, True, Array(False, False,
-			True), False, True, Array(), Array(), Array()), Array(Vector(52.946, -3.083, 80.260), 1.600, True, Array(Vector(78.853, -3.023,
-			58), False, True), False, False, Array(Array(Vector(76.181, 11.386, 81.913), False, False, True), Array(Vector(85.198, 11.603,
-			82.931), False, False, True), Array(Vector(94.308, 8.876, 86.019), False, False, True), Array(Vector(88.745, 16.134, 55.849),
-			False, False, True), Array(Vector(87.706, 16.165, 49.759), False, False, True), Array(Vector(88.912, 13.380, 41.231), False,
-			False, True), Array(Vector(88.958, 0.633, 56.154), False, False, True)), Array(), Array(Array(Vector(52.946, -3.083, 80.260),
-			26), Array(Vector(88.794, -3.481, 56.788), 25))), Array(Vector(94.310, -2, 19.419), 1.600, True, Array(False, False, True),
-			False, True, Array(), Array(), Array()), Array(Vector(0.352, 3.528, -58.549), 1.600, True, Array(Vector(13.094, 15.267,
-			-48.771), True, True), False, False, Array(), Array(), Array()), Array(Vector(12.891, 0, -23.966), 2.500, True, Array(False,
-			False, True), False, False, Array(), Array(), Array()));
 	}
 }
 rule("Customization options")
@@ -420,23 +264,23 @@ rule("Customization options")
 		"------Colors------"
 		disabled End;
 		"Start Checkpoint Ring Color"
-		Global.Settings[0] = Color(Red);
+		Global.Settings[0] = Color(Aqua);
 		"Goal Checkpoint Ring Color"
-		Global.Settings[5] = Color(Red);
+		Global.Settings[5] = Color(Blue);
 		"Goal Checkpoint text Color"
 		Global.Settings[6] = Color(White);
 		"Teleport pad effect color"
-		Global.Settings[9] = Color(Red);
+		Global.Settings[9] = Color(Orange);
 		"Orb color"
-		Global.Settings[1] = Color(Red);
+		Global.Settings[1] = Color(Yellow);
 		"Orb Icon Color"
-		Global.Settings[12] = Color(White);
+		Global.Settings[12] = Color(Yellow);
 		"Refresh Orb Color"
-		Global.Settings[4] = Color(Red);
+		Global.Settings[4] = Color(Violet);
 		"Refresh Orb Icon Color"
-		Global.Settings[13] = Color(White);
+		Global.Settings[13] = Color(Violet);
 		"Anti-Orb Color"
-		Global.Settings[2] = Color(Black);
+		Global.Settings[2] = Color(Red);
 		"Jump Cloud Color"
 		Global.Settings[3] = Color(Red);
 		"Scoreboard Top 5 colors"
@@ -450,7 +294,7 @@ rule("Customization options")
 		"Map title color. Disable this rule if you want rainbow effect"
 		disabled Global.Settings[18] = Color(Red);
 		"Crouch disabled bot outline color"
-		disabled Global.Settings[19] = Color(Red);
+		Global.Settings[19] = Color(Red);
 		"Crouch enabled bot outline color"
 		Global.Settings[20] = Color(Aqua);
 		"Goal Icon Color"
@@ -486,10 +330,12 @@ rule("Creator and Code")
 	}
 	actions
 	{
-		"Your author(s) here"
-		Global.CreatorAndCode[0] = Custom String("Author");
-		"Your workshop code here"
-		Global.CreatorAndCode[1] = Custom String("Code");
+		If(Count Of(Global.CreatorAndCode) == 0);
+			"Your author(s) here"
+			Global.CreatorAndCode[0] = Custom String("Author");
+			"Your workshop code here"
+			Global.CreatorAndCode[1] = Custom String("Code");
+		End;
 		"Only edit this if you want a custom map title"
 		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Settings[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
 	}
@@ -606,7 +452,11 @@ rule("3. Decompress Data")
 		"Detect Taw's Editor data"
 		Else If (Global.CompressedData);
 			Call Subroutine(TawsDecompressData);
-		Else If (Global.Checkpoint);
+		Else If (Global.PeaceCheckpoint || Global.PeaceCheckpoint2);
+			If(Global.PeaceCheckpoint2 == True);
+				Global.PeaceCheckpoint = Global.PeaceCheckpoint2;
+				Global.PeaceCheckpoint2 = Null;
+			End;
 			Call Subroutine(PeaceDecompressData);
 		End;
 		Log To Inspector(Custom String("Decompression ended"));
@@ -713,6 +563,8 @@ rule("Press [Reload] to reset current checkpoint")
 		Is Button Held(Event Player, Button(Ultimate)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
 	}
 	actions
 	{
@@ -953,11 +805,19 @@ rule("Create/destroy current level Orbs")
 			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Value, Last Of(Event Player.OrbIcons));
 		Else;
 			"Action: Create orb effect"
-			Create Effect(
-			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Settings[1], 
-			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
-			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
-			Visible To Position Radius and Color);
+			If(Global.OrbStyle == 1);
+				Create Effect(
+				Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Orb, Global.Settings[1], 
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
+				Visible To Position Radius and Color);
+			Else;
+				Create Effect(
+				Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Settings[1], 
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
+				Visible To Position Radius and Color);
+			End;
 			"Save reference for last created orb to player variable"		
 			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
 			
@@ -993,17 +853,40 @@ rule("Create/destroy current level RefreshOrbs")
 		If(Count Of(Event Player.RefreshOrbEffects) > Count Of(Global.RefreshOrbs[Event Player.Checkpoint]));
 			Destroy Effect(Last Of(Event Player.RefreshOrbEffects));
 			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
-			Modify Player Variable(Event Player, RefreshOrbEffects, Remove from Array By Value, Last Of(Event Player.RefreshOrbEffects));
-			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Value, Last Of(Event Player.RefreshOrbIcons));
+			Modify Player Variable(Event Player, RefreshOrbEffects, Remove from Array By Index, Count Of(Event Player.RefreshOrbEffects) - 1);
+			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Index, Count Of(Event Player.RefreshOrbIcons) - 1);
 		Else;
-			"Action: Create RefeshOrb effect"
-			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
-			Sphere, Global.Settings[4], 
-			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
-			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
-			Visible To Position Radius and Color);
+			If(Global.RefreshOrbStyle == 1);
+				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+				Orb, Global.Settings[4], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+				Visible To Position Radius and Color);
 			"Save reference for last created RefeshOrb to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
+			Else If(Global.RefreshOrbStyle == 2);
+				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+				Sphere, Global.Settings[4], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+				Visible To Position Radius and Color);
+			"Save reference for last created RefeshOrb to player variable"		
+			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
+			Else;
+				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+				Cloud, Global.Settings[4], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+				Visible To Position Radius and Color);
+				Event Player.Temp = Last Created Entity;
+				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+				Sparkles, Global.Settings[4], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+				Visible To Position Radius and Color);
+				"Save reference for last created RefeshOrb to player variable"		
+				Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Array(Array(Event Player.Temp, Last Created Entity)));
+			End;
 			
 			"Action: Create RefeshOrb icon"
 			Create Icon(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbIcons))] ? Null : Event Player, 
@@ -1101,8 +984,10 @@ rule("Create Start and Finish checkpoints")
 		Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
 		"Create Goal checkpoint Ring"
 		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
-		"Create Goal checkpoint Sparkles"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		"Create Goal checkpoint effects"
+		For Global Variable(i, 0, Count Of(Global.Settings[16]), 1);
+			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Evaluate Once(Global.Settings[16][Global.i]), Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		End;
 		"Create Goal checkpoint Icon"
 		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Settings[21], True);
 		"Create Goal checkpoint Text"
@@ -1130,7 +1015,7 @@ rule("Create Bot Icon")
 		Eye Position(Event Player.Bot) + Vector(0, 0.5, 0), 
 		Arrow: Down, 
 		Visible To Position and Color, 
-		Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), 
+		Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], 
 		True);
 		Modify Player Variable(Event Player, BotIcons, Append To Array, Last Created Entity);
 	}
@@ -1152,7 +1037,7 @@ rule("Create Teleport Effects")
 	{
 		"For now we assume theres only one teleport pad per level, no need for multiple effect handling"
 		Create Effect(Global.Teleports[Event Player.Checkpoint] ? Event Player : Null,
-		Sparkles,
+		Bad Aura,
 		Global.Settings[9],
 		Global.Teleports[Event Player.Checkpoint][0],
 		Global.Teleports[Event Player.Checkpoint][1],
@@ -1355,7 +1240,7 @@ rule("Detect Grabbing Orb")
 	}
 	actions
 	{
-		If(Event Player.BotCondition || True);
+		If(Event Player.BotCondition);
 			Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint],
 				Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
 				Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700
@@ -1396,8 +1281,8 @@ rule("Detect Grabbing RefreshOrb")
 		If(Event Player.BotCondition);
 			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
 				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] &&
-				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700 ||
-				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700));
+				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700 ||
+				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700));
 
 					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
 					Small Message(Event Player, 
@@ -1424,6 +1309,7 @@ rule("Detect Grabbing RefreshOrb")
 					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ultimate;					
 					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 				End;
+			End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Call Subroutine(ResetWithMistake);
@@ -1446,8 +1332,8 @@ rule("Detect Touching AntiOrb")
 		Global.AntiOrbs[Event Player.Checkpoint] == True;
 		
 		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
-		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] ||
+		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1]))
 		== True;
 	}
 	actions
@@ -1717,6 +1603,8 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"), False, 0);
 		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);		
 		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 0);	
+		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
+		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 0);	
 
 		Call Subroutine(CreateGlobalHUD);
 		Global.Checkpoints = Empty Array;
@@ -1833,7 +1721,7 @@ rule("Subroutine UpdateBotPosition")
 				Event Player.Bot,
 				Event Player,
 				True,
-				Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), Always);
+				Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], Always);
 		Else;
 			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
 			"TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
@@ -1872,18 +1760,18 @@ rule("Subroutine CreateGlobalHUD")
 	{
 		"Map Creator and code"
 		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Global.MapTitle,
-		Left, 0, Null, Null, Global.Settings[18] ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		Left, 0, Null, Null, Global.Settings[18] != Null ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 		
 		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Null, Left, 2, Null, Null, Null, Visible To,
 		Default Visibility);
 			
-		"Scoreboard"
+		"Scoreboard Title"
 		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
 		Null, 
 		Global.EnPadding,
 		Global.Settings[17],
-		Left, 2, Null, Null, Global.Settings[15], Visible To and String, Default Visibility);
-		"Create Top 5 scoreboard rows"
+		Left, 2, Null, Null, Global.Settings[15], Visible To String and Color, Default Visibility);
+		"Top 5 scoreboard rows"
 		For Global Variable(i, 0, 5, 1);
 			"Insert scoreboard record"
 			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
@@ -2507,6 +2395,13 @@ rule("Subroutine Taw'sDecompressData")
 
 			Wait(0.016, Ignore Condition);
 		End;
+		
+		If(Global.OrbStyle == 0);
+			Global.OrbStyle = 2;
+		End;
+		If(Global.RefreshOrbStyle == 0);
+			Global.RefreshOrbStyle = 3;
+		End;
 		Global.CompressedData = Null;
 		Global.TawsEditorVariables = Null;
 		Global.TempArray = Null;
@@ -2528,20 +2423,21 @@ rule("Subroutine PeaceDecompressData")
 		Global.PeaceEditorVariables[0] = False;
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = True;
-		"Default orb radius. If some orbs are impossible to grab increase this number in 0.1 increments"
-		Global.PeaceEditorVariables[4] = 0.7;
+		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.5"
+		Global.PeaceEditorVariables[4] = 0.8;
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
 		Global.PeaceEditorVariables[7] = 1;
 		"Peace editor rules require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = True;
+		"Peace editor stores unused bots near these coordinates"
+		Global.BotPenCoords = Vector(-500, -500, -500);
 
 		"Give credits to the original editor maker"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
 
 		Log To Inspector(Custom String("Peace Decompress Data start"));
-
 		"Filter all checkpoints that are not teleport levels"
-		Global.PeaceEditorVariables[2] = Filtered Array(Global.Checkpoint, Current Array Element[5] == False);
+		Global.PeaceEditorVariables[2] = Filtered Array(Global.PeaceCheckpoint, Current Array Element[5] == False);
 
 		"Extract all non-teleport checkpoints. Assume facingdirection=false, Landing thresholds = 1"
 		Global.Checkpoints = Mapped Array(Global.PeaceEditorVariables[2], 
@@ -2605,13 +2501,13 @@ rule("Subroutine PeaceDecompressData")
 
 			
 			"Create a teleport pad in levels where the next cp has the teleport flag enabled"
-			If(Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][5] == True);
+			If(Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][5] == True);
 				Global.Teleports[Global.i] = Array(
-						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
-						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
+						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
 						False,
-						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
-						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1]
+						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1]
 					);
 				Global.PeaceEditorVariables[6] += 1;
 			Else;
@@ -2661,10 +2557,42 @@ rule("Subroutine PeaceDecompressData")
 			End;
 			Wait(0.004, Ignore Condition);
 		End;
-		
+
+		"Translate Peace's customization options"
+		If(Global.PeaceConfig == True);
+			Global.PeaceEditorVariables = Array(0, 42, 40, 41, 44, 7, 4, -1, -1, 9, -1, -1, 43, 45, -1, 25, 6, -1, 12, -1, 1, 5);
+			For Global Variable(i, 0, Count Of(Global.PeaceEditorVariables), 1);
+				Skip If(Global.PeaceEditorVariables[Global.i] == -1, 1);
+				Global.Settings[Global.i] = Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]];
+			End;
+			"Extract default Goal CP text, multilanguage support coming soon"
+			Global.Settings[7] = Global.PeaceConfig[2][0];
+			"Goal checkpoint effect color"
+			Global.Settings[16] = Array(Global.PeaceConfig[6]);
+			"Modify scoreboard text if the mapmaker changed it"
+			Global.Settings[17] = String Length(Global.PeaceConfig[24]) > 1 ? Global.PeaceConfig[24] : Global.Settings[17];
+			Modify Global Variable(VIPs, Append To Array, Global.PeaceVips);
+		End;
+		If(Global.PeaceT5C == True);
+			Global.Top5Colors = Global.PeaceT5C;
+		End;
+		If(Global.OrbStyle == 0);
+			Global.OrbStyle = 1;
+		End;
+		If(Global.RefreshOrbStyle == 0);
+			Global.RefreshOrbStyle = 1;
+		End;
 		"Cleanup"
-		Global.Checkpoint = Null;
+		Global.PeaceCheckpoint = Null;
+		Global.PeaceVips = Null;
 		Global.PeaceEditorVariables = Null;
+		Global.PeaceConfig = Null;
+		Global.PeaceT5C = Null;
+		Global.PeaceWorldTexts = Null;
+		Global.PeaceBMsg = Null;
+		Global.PeaceSMsg = Null;
+		Global.PeaceTips = Null;
+
 		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
 }
