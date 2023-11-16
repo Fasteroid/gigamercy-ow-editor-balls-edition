@@ -50,7 +50,7 @@ settings
 		{
 			enabled maps
 			{
-				Hanamura 0
+				Workshop Expanse 0
 			}
 		}
 
@@ -118,49 +118,59 @@ variables
 		4:  Settings
 		5:  WorkshopColorList
 		6:  Checkpoints
-		7:  PeaceCheckpoint2
-		8:  Orbs
-		9:  AntiOrbs
-		10: RefreshOrbs
-		11: Bots
-		12: Clouds
-		13: Teleports
-		14: CompressedData
-		15: TawsEditorVariables
-		16: DefaultCheckpointRadius
-		17: PeaceCheckpoint
+		7:  PeaceCheckpoint
+		8:  TawsCompressedData
+		9:  TawsCheckpointHintText
+		10: TawsCheckpointInWorldText
+		11: TawsNoHintText
+		12: BotPenCoords
+		13: TawsCPProps
+		14: TawsMaxPlayerCount
+		15: TawsVIPs
+		16: PeaceEditorVariables
+		17: PeaceCheckpoint2
 		18: DefaultOrbRadius
 		19: DefaultRefreshOrbRadius
-		20: i
-		21: j
+		20: free1
+		21: TawsCheckpointInstructionText
 		22: TempArray
 		23: GWorldTexts
 		24: CheckpointInWorldText
 		25: ShowSidebarControlsPlayers
 		26: EditMode
 		27: RequireGrabAllRefreshOrbs
-		28: PeaceVips
-		29: BotPenCoords
+		28: Vips
+		29: DefaultCheckpointRadius
 		30: RefreshOrbStyle
 		31: RGB
 		32: free2
-		33: ServerLoad
-		34: MapTitle
-		35: PeaceEditorVariables
+		33: MapTitle
+		34: ServerLoad
+		35: free3
 		36: CreatorAndCode
 		37: PlayerData
-		38: PeaceConfig
-		39: PeaceT5C
-		40: PeaceWorldTexts
-		41: PeaceBMsg
-		42: PeaceSMsg
-		43: PeaceTips
+		38: Config
+		39: Top5Color
+		40: WorldTexts
+		41: BigMessages
+		42: SmallMessages
+		43: PeaceOrTawsVar
 		44: Scoreboard
 		45: OrbStyle
 		46: Top5Colors
 		47: Top5Prefix
 		48: VIPs
 		49: EnPadding
+		50:  Orbs
+		51:  AntiOrbs
+		52: RefreshOrbs
+		53: Bots
+		54: Clouds
+		55: Teleports
+		56: CompressedData
+		57: TawsEditorVariables
+		58: i
+		59: j
 
 	player:
 		0:  Checkpoint
@@ -241,6 +251,13 @@ subroutines
 }
 
 
+rule("——————————————————————————Giga Parkour Engine v0.1——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
 rule("Put your data here")
 {
 	event
@@ -1127,11 +1144,11 @@ rule("Detect Landing Outside")
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
 		Is On Ground(Event Player) == True;
-		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
-		> Global.Checkpoints[Event Player.Checkpoint][1];
+		Event Player.LeftCheckpoint == True;
 	}
 	actions
 	{
+		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
 		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&
 		((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
 		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True);
@@ -1144,7 +1161,12 @@ rule("Detect Landing Outside")
 		"Too Annoying"
 		disabled Small Message(Event Player, Custom String("You need to land inside the Goal!"));
 		disabled Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-		Call Subroutine(ResetWithMistake);
+		If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		< Global.Checkpoints[Event Player.Checkpoint][1]);
+			Call Subroutine(ResetCheckpoint);
+		Else;
+			Call Subroutine(ResetWithMistake);
+		End;
 	}
 }
 rule("Detect Arriving on Goal or Teleport")
@@ -1251,6 +1273,7 @@ rule("Detect Grabbing Orb")
 			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		End;
 	}
@@ -1312,6 +1335,7 @@ rule("Detect Grabbing RefreshOrb")
 			End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		End;
 	}
@@ -1409,28 +1433,36 @@ rule("Update Bot Status")
 	actions
 	{
 		Event Player.BotUpdate = False;
-		Call Subroutine(CancelMomentum);
+		disabled Call Subroutine(CancelMomentum);
 		
 		"TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
-		If(Is Using Ultimate(Event Player) && False);
+		If(Is Using Ultimate(Event Player));
 			Call Subroutine(CancelUltimate);
 		End;
-
+		"TODO: Only used for peace rez levels for now"
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4]);
+			Kill(Event Player, Null);
+		Else;
+			Resurrect(Event Player);
+		End;
+		"Bot Gravity"
 		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3]);
 			Stop Holding Button(Event Player, Button(Jump));
 			disabled Clear Status(Event Player, Rooted);
 			Set Gravity(Event Player, 100);
-			Else;
-				If(Hero Of(Event Player) == Hero(Mercy));
-					Start Holding Button(Event Player, Button(Jump));
-				End;
-				Set Gravity(Event Player, 0);
-				disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
-				"TODO: Refactor this to use the same function as the player, dont copy paste"
-				Call Subroutine(CancelMomentum);
+		"Bot Floating on this level, also affects when bot goes to storage"
+		Else;
+			If(Hero Of(Event Player) == Hero(Mercy));
+				Start Holding Button(Event Player, Button(Jump));
 			End;
+			Set Gravity(Event Player, 0);
+			disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
+			"TODO: Refactor this to use the same function as the player, dont copy paste"
+			Call Subroutine(CancelMomentum);
+		End;
+		If(Global.Bots[Event Player.Checkpoint] != False);
 			Teleport(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
-			Wait(0.016, Ignore Condition);
+			Wait(0.008, Ignore Condition);
 		Else;
 			Teleport(Event Player, Global.BotPenCoords);
 		End;
@@ -1439,12 +1471,7 @@ rule("Update Bot Status")
 		Else;
 			Stop Holding Button(Event Player, Button(Crouch));
 		End;
-		"TODO: Only used for peace rez levels for now"
-		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4]);
-			Kill(Event Player, Null);
-		Else;
-			Resurrect(Event Player);
-		End;
+
 		Loop If Condition Is True;
 	}
 }
@@ -2420,9 +2447,9 @@ rule("Subroutine PeaceDecompressData")
 	actions
 	{
 		"Workshop setting: Bot Floating?"
-		Global.PeaceEditorVariables[0] = False;
+		Global.PeaceEditorVariables[0] = True;
 		"Workshop setting: Land On Arrival Point?"
-		Global.PeaceEditorVariables[1] = True;
+		Global.PeaceEditorVariables[1] = False;
 		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.5"
 		Global.PeaceEditorVariables[4] = 0.8;
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
@@ -2430,7 +2457,8 @@ rule("Subroutine PeaceDecompressData")
 		"Peace editor rules require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = True;
 		"Peace editor stores unused bots near these coordinates"
-		Global.BotPenCoords = Vector(-500, -500, -500);
+		Global.BotPenCoords = Nearest Walkable Position(
+			Vector(-500, -500, -500));
 
 		"Give credits to the original editor maker"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
@@ -2455,7 +2483,7 @@ rule("Subroutine PeaceDecompressData")
 		"Extract initial bots. TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
 		Global.Bots = 
 			Mapped Array(Global.PeaceEditorVariables[2],
-			Count Of(Current Array Element[3]) > 0 ? Array(Array(
+			Current Array Element[3] != False ? Array(Array(
 				Current Array Element[3][0],
 				False,
 				False,
@@ -2559,22 +2587,22 @@ rule("Subroutine PeaceDecompressData")
 		End;
 
 		"Translate Peace's customization options"
-		If(Global.PeaceConfig == True);
+		If(Global.Config == True);
 			Global.PeaceEditorVariables = Array(0, 42, 40, 41, 44, 7, 4, -1, -1, 9, -1, -1, 43, 45, -1, 25, 6, -1, 12, -1, 1, 5);
 			For Global Variable(i, 0, Count Of(Global.PeaceEditorVariables), 1);
 				Skip If(Global.PeaceEditorVariables[Global.i] == -1, 1);
-				Global.Settings[Global.i] = Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]];
+				Global.Settings[Global.i] = Global.Config[Global.PeaceEditorVariables[Global.i]];
 			End;
 			"Extract default Goal CP text, multilanguage support coming soon"
-			Global.Settings[7] = Global.PeaceConfig[2][0];
+			Global.Settings[7] = Global.Config[2][0];
 			"Goal checkpoint effect color"
-			Global.Settings[16] = Array(Global.PeaceConfig[6]);
+			Global.Settings[16] = Array(Global.Config[6]);
 			"Modify scoreboard text if the mapmaker changed it"
-			Global.Settings[17] = String Length(Global.PeaceConfig[24]) > 1 ? Global.PeaceConfig[24] : Global.Settings[17];
-			Modify Global Variable(VIPs, Append To Array, Global.PeaceVips);
+			Global.Settings[17] = String Length(Global.Config[24]) > 1 ? Global.Config[24] : Global.Settings[17];
+			Modify Global Variable(VIPs, Append To Array, Global.Vips);
 		End;
-		If(Global.PeaceT5C == True);
-			Global.Top5Colors = Global.PeaceT5C;
+		If(Global.Top5Color == True);
+			Global.Top5Colors = Global.Top5Color;
 		End;
 		If(Global.OrbStyle == 0);
 			Global.OrbStyle = 1;
@@ -2584,14 +2612,13 @@ rule("Subroutine PeaceDecompressData")
 		End;
 		"Cleanup"
 		Global.PeaceCheckpoint = Null;
-		Global.PeaceVips = Null;
+		Global.Vips = Null;
 		Global.PeaceEditorVariables = Null;
-		Global.PeaceConfig = Null;
-		Global.PeaceT5C = Null;
-		Global.PeaceWorldTexts = Null;
-		Global.PeaceBMsg = Null;
-		Global.PeaceSMsg = Null;
-		Global.PeaceTips = Null;
+		Global.Config = Null;
+		Global.Top5Color = Null;
+		Global.WorldTexts = Null;
+		Global.BigMessages = Null;
+		Global.SmallMessages = Null;
 
 		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
