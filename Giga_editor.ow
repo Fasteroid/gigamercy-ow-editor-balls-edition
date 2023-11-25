@@ -126,7 +126,7 @@ variables
 		12: BotPenCoords
 		13: TawsCPProps
 		14: TawsMaxPlayerCount
-		15: TawsVIPs
+		15: VIPs
 		16: PeaceEditorVariables
 		17: PeaceCheckpoint2
 		18: DefaultOrbRadius
@@ -135,7 +135,7 @@ variables
 		21: TawsCheckpointInstructionText
 		22: TempArray
 		23: GWorldTexts
-		24: CheckpointInWorldText
+		24: free5
 		25: ShowSidebarControlsPlayers
 		26: EditMode
 		27: RequireGrabAllRefreshOrbs
@@ -159,15 +159,15 @@ variables
 		45: OrbStyle
 		46: Top5Colors
 		47: Top5Prefix
-		48: VIPs
+		48: free6
 		49: EnPadding
-		50:  Orbs
-		51:  AntiOrbs
+		50: Orbs
+		51: AntiOrbs
 		52: RefreshOrbs
 		53: Bots
 		54: Clouds
 		55: Teleports
-		56: CompressedData
+		56: free4
 		57: TawsEditorVariables
 		58: i
 		59: j
@@ -196,7 +196,7 @@ variables
 		20: GoalCoords
 		21: GoalRadius
 		22: GoalThresholds
-		23: DEPRECATEDRunTimerEnabled
+		23: free
 		24: CurrentSectionTime
 		25: BotCondition
 		26: ThirdPerson
@@ -224,6 +224,9 @@ variables
 		48: Cheat
 		49: PlayerNameColor
 		50: Temp
+		51: SpectatorMode
+		52: BhopActive
+		53: BhopReady
 }
 subroutines
 {
@@ -345,6 +348,11 @@ rule("Creator and Code")
 	{
 		Ongoing - Global;
 	}
+	conditions
+	{
+		"These settings wont apply if you imported the configuration from Taw's"
+		Global.MapTitle == Null;
+	}
 	actions
 	{
 		If(Count Of(Global.CreatorAndCode) == 0);
@@ -366,9 +374,7 @@ rule("VIPs / Custom player tags")
 	actions
 	{
 		"BNet name, Nickname, Color"
-		Global.VIPs = Array(
-			Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224))
-		);
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224));
 		"Add your custom names here"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("cashhole"), Custom String("Holecash"), Color(White));
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Platanardo"), Color(White));
@@ -382,7 +388,6 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-
 rule("1. Global Initialization")
 {
 	event
@@ -400,7 +405,7 @@ rule("1. Global Initialization")
 		Disable Built-In Game Mode Music;
 		Disable Built-In Game Mode Scoring;
 		Disable Built-In Game Mode Respawning(All Players(All Teams));		
-		"TODO: Figure why match time is setup like this in taws and peace"
+		"// TODO: Figure why match time is setup like this in taws and peace"
 		disabled If(Current Game Mode != Game Mode(Skirmish));
 		disabled 	Set Match Time(1);
 		disabled Else;
@@ -412,7 +417,6 @@ rule("1. Global Initialization")
 
 	}
 }
-
 rule("2. Player Initialization")
 {
 	event
@@ -436,8 +440,8 @@ rule("2. Player Initialization")
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
 		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
-		disabled Start Forcing Spawn Room(Team 1, Color(Red));
-		disabled Start Forcing Spawn Room(Team 2, Color(Red));
+		Start Forcing Spawn Room(Team 1, Color(Red));
+		Start Forcing Spawn Room(Team 2, Color(Red));
 		Set Status(Event Player, Null, Invincible, 9999);
 		Disable Movement Collision With Players(Event Player);
 		Call Subroutine(InitializePlayerVariables);
@@ -453,7 +457,6 @@ rule("2. Player Initialization")
 		Call Subroutine(SetUpCheckpoint);
 	}
 }
-
 rule("3. Decompress Data")
 {
 	event
@@ -467,7 +470,7 @@ rule("3. Decompress Data")
 		If (Global.MapData);
 			Call Subroutine(DecompressMapData);
 		"Detect Taw's Editor data"
-		Else If (Global.CompressedData);
+		Else If (Global.TawsCompressedData);
 			Call Subroutine(TawsDecompressData);
 		Else If (Global.PeaceCheckpoint || Global.PeaceCheckpoint2);
 			If(Global.PeaceCheckpoint2 == True);
@@ -479,8 +482,6 @@ rule("3. Decompress Data")
 		Log To Inspector(Custom String("Decompression ended"));
 	}
 }
-
-
 rule("——————————————————————————Controls——————————————————————————")
 {
 	event
@@ -502,7 +503,7 @@ rule("Press [Interact] twice to view/hide controls")
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Crouch)) == False;
 		Is Button Held(Event Player, Button(Melee)) == False;
-		"TODO: Disabled because it caused issues when gliding, consider reenabling"
+		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
 		disabled Is Button Held(Event Player, Button(Jump)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
@@ -619,17 +620,17 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 	actions
 	{
 		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
-		"Anti abuse measure"
-		If(Event Player.Checkpoint == 0);
-			Abort;
-		End;
-		Event Player.Checkpoint = 0;
 		Event Player.Mistakes = 0;
-		"TODO: reset player timers, bots, etc."
 		Event Player.FreeMode = True;
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		"Anti abuse measure"
+		If(Event Player.Checkpoint == 0);
+			Call Subroutine(ResetCheckpoint);
+		Else;
+			Event Player.Checkpoint = 0;
+			Call Subroutine(SetUpCheckpoint);
+		End;
 		Event Player.FreeMode = False;
-		Call Subroutine(SetUpCheckpoint);
 	}
 }
 rule("Press [Reload] + [Jump] to toggle 3rd person camera")
@@ -717,6 +718,7 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	{
 		Wait(0.6, Abort When False);
 		Small Message(Event Player, Custom String("Spectator mode not implemented yet"));
+		disabled Event Player.SpectatorMode = !Event Player.SpectatorMode;
 	}
 }
 rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
@@ -750,7 +752,7 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 			Call Subroutine(ResetCheckpoint);
 			disabled Set Ultimate Charge(Event Player, 0);
 		Else;
-			"TODO: Move to subroutine setcurrentabilities?"
+			"// TODO: Move to subroutine setcurrentabilities?"
 			Call Subroutine(EnableAllAbilities);
 			Event Player.FreeMode = !Event Player.FreeMode;
 		End;
@@ -798,7 +800,6 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-
 rule("Create/destroy current level Orbs")
 {
 	event
@@ -866,7 +867,7 @@ rule("Create/destroy current level RefreshOrbs")
 	}
 	actions
 	{
-		"TODO: Implement Taw's/Peace editor switch to reuse a single refresh orb or render all"
+		"// TODO: Implement Taw's/Peace editor switch to reuse a single refresh orb or render all"
 		If(Count Of(Event Player.RefreshOrbEffects) > Count Of(Global.RefreshOrbs[Event Player.Checkpoint]));
 			Destroy Effect(Last Of(Event Player.RefreshOrbEffects));
 			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
@@ -1061,7 +1062,7 @@ rule("Create Teleport Effects")
 		Visible To Position Radius and Color);
 	}
 }
-rule("Calculate rainbow")
+rule("Calculate RGB values for rainbow text")
 {
 	event
 	{
@@ -1100,6 +1101,18 @@ rule("Calculate rainbow")
 		Loop;
 	}
 }
+rule("Create Bunnyhop effect")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		Create Effect(Local Player.BhopActive ? Local Player : Null, Ana Nano Boosted Effect , Null, Local Player, 1,
+			Visible To Position and Radius);
+	}
+}
 rule("——————————————————————————Parkour Engine rules——————————————————————————")
 {
 	event
@@ -1107,7 +1120,6 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-
 rule("Detect Leaving checkpoint")
 {
 	event
@@ -1184,7 +1196,7 @@ rule("Detect Arriving on Goal or Teleport")
 		Event Player.FreeMode == False;
 		Event Player.LeftCheckpoint == True;
 
-		"TODO: Get OnGround flag from current goal in case the level has a teleport"
+		"// TODO: Get OnGround flag from current goal in case the level has a teleport"
 		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
 		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
 		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
@@ -1211,14 +1223,14 @@ rule("Detect Arriving on Goal or Teleport")
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
 				Event Player.FreeMode = True;
-				"TODO: Consider not duplicating this block if possible"
+				"// TODO: Consider not duplicating this block if possible"
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					Call Subroutine(TeleportToCurrentCheckpoint);
 					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
 				End;
 				Call Subroutine(EnableAllAbilities);
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
-				"TODO: Set a color for finish explosion in config"
+				"// TODO: Set a color for finish explosion in config"
 				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.PlayerName, Event Player.CurrentRunTime));
@@ -1227,7 +1239,7 @@ rule("Detect Arriving on Goal or Teleport")
 			Else;
 				Small Message(Event Player, Custom String("Reached the goal:D"));
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
-					"TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
+					"// TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
 					disabled Call Subroutine(TeleportToCurrentCheckpoint);
 					Call Subroutine(CancelMomentum);
 					Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
@@ -1394,7 +1406,7 @@ rule("Detect Touching Jump Cloud")
 		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.500)))[2], To World, Cancel Contrary Motion);
 	}
 }
-disabled rule("TODO: Bot Condition")
+disabled rule("// TODO: Bot Condition")
 {
 	event
 	{
@@ -1435,11 +1447,11 @@ rule("Update Bot Status")
 		Event Player.BotUpdate = False;
 		disabled Call Subroutine(CancelMomentum);
 		
-		"TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
+		"// TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
 		If(Is Using Ultimate(Event Player));
 			Call Subroutine(CancelUltimate);
 		End;
-		"TODO: Only used for peace rez levels for now"
+		"// TODO: Only used for peace rez levels for now"
 		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4]);
 			Kill(Event Player, Null);
 		Else;
@@ -1457,7 +1469,7 @@ rule("Update Bot Status")
 			End;
 			Set Gravity(Event Player, 0);
 			disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
-			"TODO: Refactor this to use the same function as the player, dont copy paste"
+			"// TODO: Refactor this to use the same function as the player, dont copy paste"
 			Call Subroutine(CancelMomentum);
 		End;
 		If(Global.Bots[Event Player.Checkpoint] != False);
@@ -1475,7 +1487,6 @@ rule("Update Bot Status")
 		Loop If Condition Is True;
 	}
 }
-
 rule("Detect Using Ability 1")
 {
 	event
@@ -1547,7 +1558,7 @@ rule("Detect Using Mercy Resurrect")
 
 		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
 			Resurrect(Event Player.Bot);
-			"TODO: Rework this once we allow other bot ability rewards"
+			"// TODO: Rework this once we allow other bot ability rewards"
 			Small Message(Event Player, 
 				Custom String("{0} Resurrected!{1}",
 					Global.Settings[10],
@@ -1607,6 +1618,158 @@ rule("Player left the lobby, save their progress")
 			Event Player.CurrentRunTime,
 			Event Player.Mistakes)
 		));
+	}
+}
+rule("Resurrect Player after dying")
+{
+	event
+	{
+		Player Died;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.SpectatorMode == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - died, resurrecting", Event Player)); 
+		If(Event Player.Finished || Event Player.FreeMode);
+			Teleport(Event Player, Nearest Walkable Position(Position Of(Event Player)));
+		Else;
+			Call Subroutine(ResetWithMistake);
+		End;
+		Resurrect(Event Player);
+	}
+}
+rule("BunnyHop: Standing on ground resets the bhop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is On Ground(Event Player) == True;
+		Is Button Held(Event Player, Button(Jump)) == False;
+	}
+	actions
+	{
+		Event Player.BhopReady = True;
+		Event Player.BhopActive = False;
+	}
+}
+rule("BunnyHop: Jumping loses the bhop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Button Held(Event Player, Button(Jump)) == True;
+		Event Player.BhopReady == True;
+	}
+	actions
+	{
+		Event Player.BhopReady = False;
+	}
+}
+rule("BunnyHop: Leaving the ground enables Bunny Hop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is In Air(Event Player) == True;
+		Event Player.BhopReady == True;
+	}
+	actions
+	{
+		Event Player.BhopActive = True;
+		Event Player.BhopReady = False;
+	}
+}
+rule("BunnyHop: Detect using bhop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Jumping(Event Player) == True;
+		Event Player.BhopActive == True;
+	}
+	actions
+	{
+		Event Player.BhopActive = False;
+	}
+}
+rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Using Ability 1(Event Player) == True;
+		Event Player.BhopActive == True;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
+		"Ignore Crouch-GA starting crouch"
+		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 9999);
+		Wait Until(
+			(Is Using Ability 1(Event Player) == False) ||
+			(
+				(Is Button Held(Event Player, Button(Jump)) && Event Player.Jump)|| 
+				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
+			) == True, 9999);
+		If(Is Using Ability 1(Event Player) && !Is Button Held(Event Player, Button(Ability 1)));
+			Event Player.BhopActive = False;
+			disabled Small Message(Event Player, Custom String("Lost Bhop"));
+		Else;
+			disabled Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
+		End;
+	}
+}
+rule("BunnyHop: Mercy SJ while touching ground resets bhop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Using Ability 1(Event Player) == True;
+		(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == True;
+		Is Button Held(Event Player, Button(Ability 1)) == True;
+		Is Crouching(Event Player) == True;
+		Event Player.BhopReady == False;
+	}
+	actions
+	{
+		Small Message(Event Player, Custom String("Regen bhop!", Event Player));
+		Event Player.BhopActive = True;
 	}
 }
 rule("——————————————————————————Subroutines——————————————————————————")
@@ -1672,9 +1835,10 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.BotEffects = Empty Array;
 		Event Player.BotIcons = Empty Array;
 		Event Player.Scale = 1;
-		"TODO: Cleanup, maybe not needed"
+		Event Player.SpectatorMode = False;
+		"// TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
-		"TODO: Get rid of this temp variable?"
+		"// TODO: Get rid of this temp variable?"
 		Event Player.Temp = First Of(Filtered Array(Global.VIPs, Current Array Element[0] == Custom String("{0}", Event Player)));
 		If(Count Of(Event Player.Temp) > 1);
 			Event Player.PlayerName = Event Player.Temp[1];
@@ -1720,7 +1884,7 @@ rule("Subroutine InitializePlayerBot")
 			Set Status(Event Player.Bot, Null, Invincible, 9999);
 			Set Status(Event Player.Bot, Null, Phased Out, 9999);
 			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Settings[10]));
-			"TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
+			"// TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
 			Start Facing(Event Player.Bot, 
 				Direction Towards(
 					Update Every Frame(Eye Position(Event Player.Bot)), 
@@ -1742,7 +1906,7 @@ rule("Subroutine UpdateBotPosition")
 		"Call for a bot update"
 		Set Player Variable(Event Player.Bot, BotUpdate, True);
 		Wait(0.016, Ignore Condition);
-		"TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
+		"// TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
 		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
 			Start Forcing Player Outlines(
 				Event Player.Bot,
@@ -1751,13 +1915,13 @@ rule("Subroutine UpdateBotPosition")
 				Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], Always);
 		Else;
 			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
-			"TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
+			"// TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
 			disabled If(Hero Of(Event Player) == Hero(Mercy));
 				disabled Cancel Primary Action(Event Player);
 			disabled End;
 		End;
 
-		"TODO: Idk use bot rewards or something, this is bad"	
+		"// TODO: Idk use bot rewards or something, this is bad"	
 		If(Hero Of(Event Player) == Hero(Mercy));
 			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
 			Set Ability 2 Enabled(Event Player, Event Player.Ability2);
@@ -1826,7 +1990,7 @@ rule("Subroutine CreateGlobalHUD")
 		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
 			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
 
-		"TODO: Break up into blocks that use no more than 4 input binding string per custom string"
+		"// TODO: Break up into blocks that use no more than 4 input binding string per custom string"
 		disabled End;
 
 		"Controls pt1"
@@ -1895,7 +2059,7 @@ rule("Subroutine CreateGlobalHUD")
 			),  Null,
 		Right, 15, Null, Color(White), Null, Visible To and String, Default Visibility);
 		
-		"TODO: Move to player init and use preferred language"
+		"// TODO: Move to player init and use preferred language"
 		Create HUD Text(All Players(All Teams), Null, 
 		Custom String("Elapsed time: {0} minutes {1} seconds",
 		Round To Integer(Total Time Elapsed / 60, Down), Round To Integer(Total Time Elapsed % 60, Down)),
@@ -1963,7 +2127,7 @@ rule("Subroutine SetUpCheckpoint")
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
-		"TODO: Refactor to use compressed abilities"
+		"// TODO: Refactor to use compressed abilities"
 		Event Player.StartingAbilities = 
 			Array(
 				Global.Checkpoints[Event Player.Checkpoint][3],
@@ -1976,7 +2140,7 @@ rule("Subroutine SetUpCheckpoint")
 				True
 			);
 		
-		"TODO: Enable abilities for non mercy heroes"
+		"// TODO: Enable abilities for non mercy heroes"
 		If(Hero Of(Event Player) != Hero(Mercy));
 			Event Player.StartingAbilities[2] = True;
 		End;
@@ -1997,7 +2161,7 @@ rule("Subroutine ResetWithMistake")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Reset with mistake", Event Player));
-		"TODO: Toggle this if you want glitch levels like in taws or peace"
+		"// TODO: Toggle this if you want glitch levels like in taws or peace"
 		Cancel Primary Action(Event Player);
 		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
 		Call Subroutine(TeleportToCurrentCheckpoint);
@@ -2028,7 +2192,7 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.Ability1 = Event Player.StartingAbilities[2];
 		Event Player.Ability2 = Event Player.StartingAbilities[3];
 		Event Player.Ultimate = Event Player.StartingAbilities[4];
-		"TODO: Temporarily enabled here, should come from cp flags"
+		"// TODO: Temporarily enabled here, should come from cp flags"
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
 		Event Player.Resetting = False;
@@ -2045,7 +2209,6 @@ rule("Subroutine TeleportToCurrentCheckpoint")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Teleport Player", Event Player));
-		"TODO: Check if its better to move this to TeleportToCurrentCheckpoint subroutine"
 		Set Status(Event Player, Null, Rooted, 0.2);
 		Call Subroutine(CancelMomentum);
 		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
@@ -2136,7 +2299,7 @@ rule("Subroutine CreatePlayerEditModeHUD")
 			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
 		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
 
-		"TODO: Create debug HUD and move this there"
+		"// TODO: Create debug HUD and move this there"
 		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
 		Event Player.Ability1, 
 		Ability Cooldown(Event Player, Button(Ability 1)), 
@@ -2146,6 +2309,18 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		), 
 		Right, 99, Null, Null, 
 		Color(Orange), Visible To String and Color, Default Visibility);
+
+		"// TODO: Create debug HUD and move this there"
+		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nIs On Ground: {0}\nIs In Air: {1}\nIs Crouching: {2}", 
+		Is On Ground(Event Player), 
+		Is In Air(Event Player), 
+		Custom String("{0}\nIs Jumping: {1}\nBHop ready?: {2}", 
+			Is Crouching(Event Player),
+			Is Jumping(Event Player),
+			Event Player.BhopReady)
+		), 
+		Right, 100, Null, Null, 
+		Color(White), Visible To String and Color, Default Visibility);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -2207,7 +2382,7 @@ rule("Subroutine SetCurrentAbilities")
 		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
 		Set Jump Enabled(Event Player, Event Player.Jump);
-		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
+		"// TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
 		Else;
@@ -2247,7 +2422,7 @@ rule("Subroutine PlayerCompletedRun")
 		If(Event Player.BestRun == False || (Event Player.BestRun[0] > Event Player.CurrentRunTime || (Event Player.BestRun[0] == Event Player.CurrentRunTime && Event Player.BestRun[1] > Event Player.Mistakes)));
 			Event Player.BestRun = Array(Event Player.CurrentRunTime, Event Player.Mistakes);
 			If(Is True For Any(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName));
-				"TODO: Fix this bs"
+				"// TODO: Fix this bs"
 				Set Global Variable At Index(Scoreboard, Index Of Array Value(Global.Scoreboard, Filtered Array(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName)), 
 					Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player)));
 				Log To Inspector(Custom String("{0} - Modified scoreboard", Event Player));
@@ -2273,7 +2448,7 @@ rule("Subroutine Taw'sDecompressData")
 		Global.TawsEditorVariables[0] = False;
 		"Workshop Setting: Default Checkpoint Radius"
 		Global.TawsEditorVariables[1] = 2;
-		"Taw's editor rules don't require player to grab all refresh orbs"
+		"Taw's maps don't require that you grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = False;
 
 		"Give credits to the original editor maker"
@@ -2281,22 +2456,21 @@ rule("Subroutine Taw'sDecompressData")
 
 		Log To Inspector(Custom String("Decompressing Taw's Data..."));
 		"CheckpointFlags"
-		Global.TawsEditorVariables[2] = Empty Array;		
-		"ctemp"
-		Global.i = 0;
-		"Orb/Refresh Orb index"
-		Global.j = 0;
+		Global.TawsEditorVariables[2] = Empty Array;
+
+
 		"Compression V2"
-		If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 2);
-			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+		If(Global.TawsCompressedData[Count Of(Global.TawsCompressedData) - 1] == 2);
+			Global.TawsCompressedData = Array Slice(Global.TawsCompressedData, 0, Count Of(Global.TawsCompressedData) - 1);
+
 			"Extract Teleport pads"
-			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
+			Global.Teleports = Mapped Array(Global.TawsCompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
 			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
 
 			Global.TawsEditorVariables[2] = 
 			Mapped Array(
 				Mapped Array(
-					Global.CompressedData, 
+					Global.TawsCompressedData, 
 					Array(
 						(Current Array Element[4] - Round To Integer(Current Array Element[4] / 10, Down) * 10) % 8, 
 						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, 
@@ -2314,55 +2488,54 @@ rule("Subroutine Taw'sDecompressData")
 			);
 		
 		"Compression V1"
-		Else If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 1);
-			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+		Else If(Global.TawsCompressedData[Count Of(Global.TawsCompressedData) - 1] == 1);
+			Global.TawsCompressedData = Array Slice(Global.TawsCompressedData, 0, Count Of(Global.TawsCompressedData) - 1);
 			"Extract Teleport pads"
-			Global.Teleports = Mapped Array(Global.CompressedData, 
+			Global.Teleports = Mapped Array(Global.TawsCompressedData, 
 				Array(Current Array Element[0][2],
 				Global.TawsEditorVariables[1], 
 				False, 
 				Global.TawsEditorVariables[1], 
 				Global.TawsEditorVariables[1]));
 
-			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+			Global.TawsEditorVariables[2] = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
 		"Compression V0"
 		Else;	
 			"Extract Teleports"
-			Global.Teleports = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.TawsEditorVariables[1],
+			Global.Teleports = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[0][1], Global.TawsEditorVariables[1],
 				Global.TawsEditorVariables[1], Global.TawsEditorVariables[1], False));
-			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+			Global.TawsEditorVariables[2] = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
 				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
 				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
 		End;
 
 		"Extract Checkpoint coordinates, radius and facing direction"
-			Global.Checkpoints = Mapped Array(
-				Global.CompressedData, 
-				Array(
-					Current Array Element[0][0],
-					Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
-					Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
-				);                                       
+		Global.Checkpoints = Mapped Array(
+			Global.TawsCompressedData, 
+			Array(
+				Current Array Element[0][0],
+				Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
+				Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
+			);                                       
 
 		"Extract Bots, Orbs, Flags"
 		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
 			Global.TempArray = Empty Array;
-			"If first bot in array has 0 instead of vector, assume there are no bots in this level"
-			If(Global.CompressedData[Global.i][1][0] == 0);
+			If(Global.TawsCompressedData[Global.i][1][0] == 0);
 				Global.TempArray = False;
 			Else;
-				For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][1]), 2);
+				For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][1]), 2);
 					"Translate bot data and flags -> Array(Coords, CrouchEnabled, GravityEnabled)"
 					Global.TempArray[Global.j / 2] =
 						Array(
-							Global.CompressedData[Global.i][1][Global.j],
+							Global.TawsCompressedData[Global.i][1][Global.j],
 							False,
-							((Global.CompressedData[Global.i][1][Global.j + 1] - Global.CompressedData[Global.i][1][Global.j + 1] % 2) % 4 == 0),
-							(Global.CompressedData[Global.i][1][Global.j + 1] % 2 != 0),
+							((Global.TawsCompressedData[Global.i][1][Global.j + 1] - Global.TawsCompressedData[Global.i][1][Global.j + 1] % 2) % 4 == 0),
+							(Global.TawsCompressedData[Global.i][1][Global.j + 1] % 2 != 0),
 							False,
 							False
 						);
@@ -2373,16 +2546,16 @@ rule("Subroutine Taw'sDecompressData")
 			Global.TempArray = Empty Array;			
 
 			"Extract Orbs/Antiorbs for this level"
-			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][2]), 2);
+			For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][2]), 2);
 				"Transform orb data"
 				Global.TempArray[Global.j / 2] =  Array(
-					Global.CompressedData[Global.i][2][Global.j],
-					Global.CompressedData[Global.i][2][Global.j + 1]);
+					Global.TawsCompressedData[Global.i][2][Global.j],
+					Global.TawsCompressedData[Global.i][2][Global.j + 1]);
 				
 			End;
 			"Store Orb Array to global data"
 			Global.Orbs[Global.i] = Filtered Array(Global.TempArray, Current Array Element[1] > 0);
-			"TODO: Search for more efficient cleanup operation"
+			"// TODO: Search for more efficient cleanup operation"
 			If(Count Of(Global.Orbs[Global.i]) == 0);
 				Global.Orbs[Global.i] = False;
 			End;
@@ -2390,20 +2563,20 @@ rule("Subroutine Taw'sDecompressData")
 			Global.AntiOrbs[Global.i] = Mapped Array(
 				Filtered Array(Global.TempArray, Current Array Element[1] < 0), 
 				Array(Current Array Element[0], Current Array Element[1] * -1));
-			"TODO: Search for more efficient cleanup operation"
+			"// TODO: Search for more efficient cleanup operation"
 			If(Count Of(Global.AntiOrbs[Global.i]) == 0);
 				Global.AntiOrbs[Global.i] = False;
 			End;
 			Global.TempArray = Empty Array;		
 
 			"Extract Refresh Orbs"
-			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][3]), 2);
+			For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][3]), 2);
 				"Assume Refresh orbs with coordinates of 0 are not valid"
-				If(Global.CompressedData[Global.i][3][Global.j] != 0);
+				If(Global.TawsCompressedData[Global.i][3][Global.j] != 0);
 				"Transform Refresh Orb data"
 				Global.TempArray[Count Of(Global.TempArray)] = Array(
-					Global.CompressedData[Global.i][3][Global.j],
-					Global.CompressedData[Global.i][3][Global.j + 1],
+					Global.TawsCompressedData[Global.i][3][Global.j],
+					Global.TawsCompressedData[Global.i][3][Global.j + 1],
 					Count Of(Global.TempArray),
 					True,
 					False,
@@ -2429,7 +2602,16 @@ rule("Subroutine Taw'sDecompressData")
 		If(Global.RefreshOrbStyle == 0);
 			Global.RefreshOrbStyle = 3;
 		End;
-		Global.CompressedData = Null;
+		If(Global.TawsCPProps != Null);
+			"Translate Taw's CPProps to Giga editor settings"
+			Global.TawsEditorVariables = Array(0, 10, 13, Null, 11, 01, 07, 05, Null, 12, Null, Null, 10, 11, Null, Null, 02, Null, Null, 09, 08, 03);
+			For Global Variable(i, 0, Count Of(Global.TawsEditorVariables), 1);
+				If(Global.TawsEditorVariables[Global.i] != Null);
+					Global.Settings[Global.i] = Global.TawsCPProps[Global.TawsEditorVariables[Global.i]];
+				End;
+			End;
+		End;
+		Global.TawsCompressedData = Null;
 		Global.TawsEditorVariables = Null;
 		Global.TempArray = Null;
 		Global.i = 0;
@@ -2480,7 +2662,7 @@ rule("Subroutine PeaceDecompressData")
 			Current Array Element[4])
 		);
 
-		"Extract initial bots. TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
+		"Extract initial bots. // TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
 		Global.Bots = 
 			Mapped Array(Global.PeaceEditorVariables[2],
 			Current Array Element[3] != False ? Array(Array(
