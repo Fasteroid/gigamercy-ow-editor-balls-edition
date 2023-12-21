@@ -442,7 +442,6 @@ rule("2. Player Initialization")
 		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
 		Start Forcing Spawn Room(Team 1, Color(Red));
 		Start Forcing Spawn Room(Team 2, Color(Red));
-		Set Status(Event Player, Null, Invincible, 9999);
 		Disable Movement Collision With Players(Event Player);
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
@@ -480,6 +479,23 @@ rule("3. Decompress Data")
 			Call Subroutine(PeaceDecompressData);
 		End;
 		Log To Inspector(Custom String("Decompression ended"));
+	}
+}
+rule("4. Set player Invincible")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Status(Event Player, Invincible) == False;
+	}
+	actions
+	{
+		Set Status(Event Player, Null, Invincible, 9999);
 	}
 }
 rule("——————————————————————————Controls——————————————————————————")
@@ -622,7 +638,9 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
 		Event Player.Mistakes = 0;
 		Event Player.FreeMode = True;
-		Call Subroutine(TeleportToCurrentCheckpoint);
+		If(Is Using Ultimate(Event Player));
+			Call Subroutine(CancelUltimate);
+		End;
 		"Anti abuse measure"
 		If(Event Player.Checkpoint == 0);
 			Call Subroutine(ResetCheckpoint);
@@ -630,6 +648,7 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 			Event Player.Checkpoint = 0;
 			Call Subroutine(SetUpCheckpoint);
 		End;
+		Call Subroutine(TeleportToCurrentCheckpoint);
 		Event Player.FreeMode = False;
 	}
 }
@@ -1012,7 +1031,7 @@ rule("Create Start and Finish checkpoints")
 		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Settings[6], Default Visibility);
 	}
 }
-rule("Create Bot Icon")
+rule("Create Bot Icons")
 {
 	event
 	{
@@ -1165,10 +1184,6 @@ rule("Detect Landing Outside")
 		((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
 		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True);
 
-		If(Event Player.Checkpoint == 0);
-			Stop Chasing Player Variable(Event Player, CurrentRunTime);
-			Event Player.CurrentRunTime = 0;
-		End;
 
 		"Too Annoying"
 		disabled Small Message(Event Player, Custom String("You need to land inside the Goal!"));
@@ -1274,6 +1289,7 @@ rule("Detect Grabbing Orb")
 	}
 	actions
 	{
+		Log To Inspector(Custom String("{0} - Grabbed Orb", Event Player));
 		If(Event Player.BotCondition);
 			Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint],
 				Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
@@ -1314,10 +1330,12 @@ rule("Detect Grabbing RefreshOrb")
 	actions
 	{
 		If(Event Player.BotCondition);
+			Event Player.i = 0;
 			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
 				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] &&
 				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700 ||
 				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700));
+					Log To Inspector(Custom String("{0} - Grabbed R.O. index {1} with section {2}", Event Player, Event Player.i, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]));
 
 					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
 					Small Message(Event Player, 
@@ -1335,14 +1353,18 @@ rule("Detect Grabbing RefreshOrb")
 					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
 						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
 						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
-						Call Subroutine(UpdateBotPosition);
+						"// TODO: Test to see what happens when many refresh orbs are close together"
+						disabled Call Subroutine(UpdateBotPosition);
+						Start Rule(UpdateBotPosition, Restart Rule);
 					End;
 					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
 					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;					
 					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
-					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ultimate;					
+					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Event Player.Ultimate;					
 					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+					"Needed to fix small message issue with stacked orbs"
+					Wait(0.016, Ignore Condition);
 				End;
 			End;
 		Else;
@@ -1472,11 +1494,11 @@ rule("Update Bot Status")
 			"// TODO: Refactor this to use the same function as the player, dont copy paste"
 			Call Subroutine(CancelMomentum);
 		End;
-		If(Global.Bots[Event Player.Checkpoint] != False);
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] != False);
 			Teleport(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
 			Wait(0.008, Ignore Condition);
 		Else;
-			Teleport(Event Player, Global.BotPenCoords);
+			Teleport(Event Player, Nearest Walkable Position(Global.BotPenCoords));
 		End;
 		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2]);
 			Start Holding Button(Event Player, Button(Crouch));
@@ -1511,7 +1533,9 @@ rule("Detect Using Ability 1")
 
 			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
 			If(Hero Of(Event Player) == Hero(Mercy) && 
-				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
+				!Is True For Any(
+					Global.RefreshOrbs[Event Player.Checkpoint], 
+					Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
 				Event Player.BotCondition == True &&
 				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
 					Log To Inspector(Custom String("{0} - Used GA & no refresh orb. advancing bot now", Event Player));
@@ -1736,6 +1760,8 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 		Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
 		"Ignore Crouch-GA starting crouch"
 		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 9999);
+		"Ignore Gliding"
+		Wait Until((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) == False, 9999);
 		Wait Until(
 			(Is Using Ability 1(Event Player) == False) ||
 			(
@@ -1746,7 +1772,7 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 			Event Player.BhopActive = False;
 			disabled Small Message(Event Player, Custom String("Lost Bhop"));
 		Else;
-			disabled Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
+			Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
 		End;
 	}
 }
@@ -1821,7 +1847,7 @@ rule("Subroutine InitializePlayerVariables")
 	{
 		Event Player.Checkpoint = 0;
 		Event Player.Finished = False;
-		Event Player.FreeMode = False;
+		Event Player.FreeMode = False; 
 		Event Player.ThirdPerson = False;
 		Event Player.CurrentRunTime = 0;
 		Event Player.Mistakes = 0;
@@ -1872,7 +1898,7 @@ rule("Subroutine InitializePlayerBot")
 			Create Dummy Bot(Global.Settings[10], 
 			Team Of(Event Player), 
 			Slot Of(Event Player) + Number Of Slots(All Teams),
-			Global.BotPenCoords,
+			Nearest Walkable Position(Global.BotPenCoords),
 			Null);
 			Event Player.Bot = Last Created Entity;
 			Disable Built-In Game Mode Respawning(Event Player.Bot);
@@ -2108,7 +2134,7 @@ rule("Subroutine SetUpCheckpoint")
 
 	actions
 	{
-		Log To Inspector(Custom String("{0} - SetUpCheckpoint", Event Player));
+		Log To Inspector(Custom String("{0} - SetUpCheckpoint {1}", Event Player, Event Player.Checkpoint));
 		Event Player.Finished = Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1;
 
 		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
@@ -2117,7 +2143,7 @@ rule("Subroutine SetUpCheckpoint")
 		
 		"Set facing direction"
 		If(Global.Checkpoints[Event Player.Checkpoint][2]);
-			"FIXME: Added this to see if face direction bug is fixed or not"
+			"TODO FIXME: Added this to see if face direction bug is fixed or not"
 			Wait(0.016, Ignore Condition);
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
 			"DEBUG"
@@ -2180,9 +2206,15 @@ rule("Subroutine ResetCheckpoint")
 	{
 		Event Player.Resetting = True;
 		Log To Inspector(Custom String("{0} - Reset Checkpoint", Event Player));
+		
+		If(Event Player.Checkpoint == 0);
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.CurrentRunTime = 0;
+		End;
+
 		"Reset all orbs to not grabbed"
-		Event Player.GrabbedOrbs = Global.Orbs[Event Player.Checkpoint] ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
-		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
+		Event Player.GrabbedOrbs = Count Of(Global.Orbs[Event Player.Checkpoint]) > 0 ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
+		Event Player.GrabbedRefreshOrbs = Count Of(Global.RefreshOrbs[Event Player.Checkpoint]) > 0 ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
 		Event Player.LeftCheckpoint = False;	
 		Event Player.CurrentBotSection = 0;
 		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
@@ -2604,12 +2636,13 @@ rule("Subroutine Taw'sDecompressData")
 		End;
 		If(Global.TawsCPProps != Null);
 			"Translate Taw's CPProps to Giga editor settings"
-			Global.TawsEditorVariables = Array(0, 10, 13, Null, 11, 01, 07, 05, Null, 12, Null, Null, 10, 11, Null, Null, 02, Null, Null, 09, 08, 03);
+			Global.TawsEditorVariables = Array(0, 10, 13, Null, 11, 01, 07, 05, Null, 12, Null, Null, 10, 11, Null, Null, Null, Null, Null, 09, 08, 03);
 			For Global Variable(i, 0, Count Of(Global.TawsEditorVariables), 1);
 				If(Global.TawsEditorVariables[Global.i] != Null);
 					Global.Settings[Global.i] = Global.TawsCPProps[Global.TawsEditorVariables[Global.i]];
 				End;
 			End;
+			Global.Settings[16] = Array(Global.TawsCPProps[2]);
 		End;
 		Global.TawsCompressedData = Null;
 		Global.TawsEditorVariables = Null;
@@ -2639,8 +2672,7 @@ rule("Subroutine PeaceDecompressData")
 		"Peace editor rules require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = True;
 		"Peace editor stores unused bots near these coordinates"
-		Global.BotPenCoords = Nearest Walkable Position(
-			Vector(-500, -500, -500));
+		Global.BotPenCoords = Vector(-500, -500, -500);
 
 		"Give credits to the original editor maker"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
