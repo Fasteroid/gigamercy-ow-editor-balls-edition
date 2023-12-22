@@ -187,7 +187,7 @@ variables
 		11: CloudEffects
 		12: CheckpointEffects
 		13: CheckpointIcons
-		14: CheckpointText
+		14: CheckpointWorldTexts
 		15: ToggleControls
 		16: Mistakes
 		17: Scale
@@ -251,6 +251,7 @@ subroutines
 	18: SetCurrentAbilities
 	19: EnableAllAbilities
 	20: PlayerCompletedRun
+	21: CreateCurrentWorldTexts
 }
 
 
@@ -1798,6 +1799,27 @@ rule("BunnyHop: Mercy SJ while touching ground resets bhop")
 		Event Player.BhopActive = True;
 	}
 }
+rule("Crouch disabled message")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Crouch)) == True;
+		Event Player.Crouch == False;
+		(Event Player.Finished == False || Event Player.FreeMode == False) == True;
+	}
+	actions
+	{
+		Small Message(Event Player, Custom String("Crouch not allowed for this level"));
+		Wait(1, Ignore Condition);
+	}
+}
 rule("——————————————————————————Subroutines——————————————————————————")
 {
 	event
@@ -2173,6 +2195,7 @@ rule("Subroutine SetUpCheckpoint")
 
 		"Set Bot checkpoint too"
 		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
+		Call Subroutine(CreateCurrentWorldTexts);
 		Call Subroutine(ResetCheckpoint);
 	}
 }
@@ -2644,6 +2667,16 @@ rule("Subroutine Taw'sDecompressData")
 			End;
 			Global.Settings[16] = Array(Global.TawsCPProps[2]);
 		End;
+		If(Global.TawsCheckpointInWorldText != Null);
+			Global.WorldTexts = Mapped Array(
+				Global.TawsCheckpointInWorldText, 
+				Current Array Element != 0 ?
+				Array(
+					Current Array Element[0],
+					Current Array Element[1],
+					Current Array Element[3],
+					Current Array Element[2]) : False);
+		End;
 		Global.TawsCompressedData = Null;
 		Global.TawsEditorVariables = Null;
 		Global.TempArray = Null;
@@ -2835,6 +2868,20 @@ rule("Subroutine PeaceDecompressData")
 		Global.SmallMessages = Null;
 
 		Log To Inspector(Custom String("Peace Decompress Data End"));
+	}
+}
+rule("Subroutine CreateCurrentWorldTexts")
+{
+	event
+	{
+		Subroutine;
+		CreateCurrentWorldTexts;
+	}
+	actions
+	{
+		Destroy In-World Text(Event Player.CheckpointWorldTexts);
+		Create In-World Text(Event Player, Global.WorldTexts[Event Player.Checkpoint][0], Global.WorldTexts[Event Player.Checkpoint][1], Global.WorldTexts[Event Player.Checkpoint][2], Do Not Clip, Visible To And String, Global.WorldTexts[Event Player.Checkpoint][3], Default Visibility);
+		Event Player.CheckpointWorldTexts = Last Text Id;
 	}
 }
 rule("——————————————————————————Add-ons——————————————————————————")
