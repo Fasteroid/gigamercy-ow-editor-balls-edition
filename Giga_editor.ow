@@ -114,7 +114,7 @@ variables
 		0:  MapData
 		1:  DebugMode
 		2:  Colors
-		3:  HintText
+		3:  HintTexts
 		4:  Settings
 		5:  WorkshopColorList
 		6:  Checkpoints
@@ -644,13 +644,16 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 		End;
 		"Anti abuse measure"
 		If(Event Player.Checkpoint == 0);
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = False;
 			Call Subroutine(ResetCheckpoint);
 		Else;
 			Event Player.Checkpoint = 0;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = False;
 			Call Subroutine(SetUpCheckpoint);
 		End;
-		Call Subroutine(TeleportToCurrentCheckpoint);
-		Event Player.FreeMode = False;
+		Wait(1, Ignore Condition);
 	}
 }
 rule("Press [Reload] + [Jump] to toggle 3rd person camera")
@@ -1129,8 +1132,23 @@ rule("Create Bunnyhop effect")
 	}
 	actions
 	{
-		Create Effect(Local Player.BhopActive ? Local Player : Null, Ana Nano Boosted Effect , Null, Local Player, 1,
+		Create Effect(Local Player.BhopActive ? Local Player : Null, Baptiste Immortality Field Protected Effect, Null, Local Player, 1,
 			Visible To Position and Radius);
+	}
+}
+rule("Create HUD Tips/Hints")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		"Separator from top of screen (default 22 new lines)"
+		Create Hud Text(Local Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
+
+		"TODO: Support translations"
+		Create Hud Text(Global.HintTexts[Local Player.Checkpoint] != False ? Local Player : Null, Custom String("{0} :{1}\n  {2}  \n", Hero Icon String(Hero(Mercy)), String Slice(Global.EnPadding, 0, 20), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 21,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To And String, Default Visibility);
 	}
 }
 rule("——————————————————————————Parkour Engine rules——————————————————————————")
@@ -1253,7 +1271,8 @@ rule("Detect Arriving on Goal or Teleport")
 				Call Subroutine(PlayerCompletedRun);
 			"Player finished current checkpoint"
 			Else;
-				Small Message(Event Player, Custom String("Reached the goal:D"));
+				"Too annoying"
+				disabled Small Message(Event Player, Custom String("Level Cleared!"));
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					"// TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
 					disabled Call Subroutine(TeleportToCurrentCheckpoint);
@@ -1771,8 +1790,7 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 			) == True, 9999);
 		If(Is Using Ability 1(Event Player) && !Is Button Held(Event Player, Button(Ability 1)));
 			Event Player.BhopActive = False;
-			disabled Small Message(Event Player, Custom String("Lost Bhop"));
-		Else;
+		Else If(Global.DebugMode == True);
 			Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
 		End;
 	}
@@ -2168,8 +2186,9 @@ rule("Subroutine SetUpCheckpoint")
 			"TODO FIXME: Added this to see if face direction bug is fixed or not"
 			Wait(0.016, Ignore Condition);
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
-			"DEBUG"
-			Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+			If(Global.DebugMode == True);
+				Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+			End;
 		End;
 		If(Event Player.Checkpoint == 0);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
@@ -2455,6 +2474,7 @@ rule("Subroutine EnableAllAbilities")
 
 	actions
 	{
+		Log To Inspector(Custom String("{0} - Enabled All Abilities", Event Player));
 		Set Ability 1 Enabled(Event Player, True);
 		Set Ability 2 Enabled(Event Player, True);
 		Set Ultimate Ability Enabled(Event Player, True);
@@ -2857,15 +2877,19 @@ rule("Subroutine PeaceDecompressData")
 		If(Global.RefreshOrbStyle == 0);
 			Global.RefreshOrbStyle = 1;
 		End;
+		If(Count Of(Global.PeaceOrTawsVar) > 0 && String Length(Global.PeaceOrTawsVar[0]) > 0);
+			Global.HintTexts = Mapped Array(Global.PeaceOrTawsVar, Current Array Element == 0 ? False : Current Array Element);
+		End;
 		"Cleanup"
 		Global.PeaceCheckpoint = Null;
 		Global.Vips = Null;
 		Global.PeaceEditorVariables = Null;
 		Global.Config = Null;
 		Global.Top5Color = Null;
-		Global.WorldTexts = Null;
-		Global.BigMessages = Null;
-		Global.SmallMessages = Null;
+		disabled Global.WorldTexts = Null;
+		disabled Global.BigMessages = Null;
+		disabled Global.SmallMessages = Null;
+		Global.PeaceOrTawsVar = Null;
 
 		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
