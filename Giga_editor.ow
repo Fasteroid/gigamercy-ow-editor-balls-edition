@@ -20,17 +20,6 @@ settings
 
 	modes
 	{
-		Capture the Flag
-		{
-			Flag Dropped Lock Time: 5.0
-			Flag Return Time: 4.0
-			Flag Score Respawn Time: 15.0
-
-			
-			enabled maps
-			{
-			}
-		}
 
 		Hybrid
 		{
@@ -111,7 +100,7 @@ settings
 variables
 {
 	global:
-		0:  MapData
+		0:  EditMode
 		1:  DebugMode
 		2:  Colors
 		3:  HintTexts
@@ -134,23 +123,23 @@ variables
 		20: free1
 		21: TawsCheckpointInstructionText
 		22: TempArray
-		23: GWorldTexts
-		24: free5
+		23: i
+		24: j
 		25: ShowSidebarControlsPlayers
-		26: EditMode
+		26: MapData
 		27: RequireGrabAllRefreshOrbs
-		28: Vips
+		28: PeaceVips
 		29: DefaultCheckpointRadius
 		30: RefreshOrbStyle
 		31: RGB
 		32: free2
 		33: MapTitle
 		34: ServerLoad
-		35: free3
+		35: TawsEditorVariables
 		36: CreatorAndCode
 		37: PlayerData
-		38: Config
-		39: Top5Color
+		38: PeaceConfig
+		39: PeaceTop5Color
 		40: WorldTexts
 		41: BigMessages
 		42: SmallMessages
@@ -158,19 +147,14 @@ variables
 		44: Scoreboard
 		45: OrbStyle
 		46: Top5Colors
-		47: Top5Prefix
-		48: free6
-		49: EnPadding
-		50: Orbs
-		51: AntiOrbs
-		52: RefreshOrbs
-		53: Bots
-		54: Clouds
-		55: Teleports
-		56: free4
-		57: TawsEditorVariables
-		58: i
-		59: j
+		47: Top5Prefix 
+		48: EnPadding
+		49: Orbs
+		50: AntiOrbs
+		51: RefreshOrbs
+		52: Bots
+		53: Clouds
+		54: Teleports
 
 	player:
 		0:  Checkpoint
@@ -836,6 +820,7 @@ rule("Create/destroy current level Orbs")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.OrbEffects) != Count Of(Global.Orbs[Event Player.Checkpoint]);	
+		Event Player.OrbEffects != Null;
 	}
 	actions
 	{
@@ -887,6 +872,7 @@ rule("Create/destroy current level RefreshOrbs")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Count Of(Event Player.RefreshOrbEffects) != Count Of(Global.RefreshOrbs[Event Player.Checkpoint]);	
+		Event Player.RefreshOrbEffects != Null;
 	}
 	actions
 	{
@@ -952,7 +938,8 @@ rule("Create/Destroy current level Antiorbs")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		Count Of(Event Player.AntiOrbEffects) != Count Of(Global.AntiOrbs[Event Player.Checkpoint]);	
+		Count Of(Event Player.AntiOrbEffects) != Count Of(Global.AntiOrbs[Event Player.Checkpoint]);
+		Event Player.AntiOrbEffects != Null;	
 	}
 	actions
 	{
@@ -984,7 +971,8 @@ rule("Create/Destroy current level Jump Clouds")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		Count Of(Event Player.CloudEffects) != Count Of(Global.Clouds[Event Player.Checkpoint]);	
+		Count Of(Event Player.CloudEffects) != Count Of(Global.Clouds[Event Player.Checkpoint]);
+		Event Player.CloudEffects != Null;	
 	}
 	actions
 	{
@@ -2216,6 +2204,11 @@ rule("Subroutine SetUpCheckpoint")
 		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
 		Call Subroutine(CreateCurrentWorldTexts);
 		Call Subroutine(ResetCheckpoint);
+
+		If(Global.BigMessages[Event Player.Checkpoint] != False);
+			"Display current level Big message"
+			Big Message(Event Player, Global.BigMessages[Event Player.Checkpoint]);
+		End;
 	}
 }
 rule("Subroutine ResetWithMistake")
@@ -2539,9 +2532,18 @@ rule("Subroutine Taw'sDecompressData")
 			Global.TawsCompressedData = Array Slice(Global.TawsCompressedData, 0, Count Of(Global.TawsCompressedData) - 1);
 
 			"Extract Teleport pads"
-			Global.Teleports = Mapped Array(Global.TawsCompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
-			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
+			Global.Teleports = Mapped Array(
+				Global.TawsCompressedData, 
+				Current Array Element[0][3][0]!= 0 ? 
+					Array(
+						Current Array Element[0][3][0],
+						Current Array Element[0][3][1], 
+						False, 
+						Current Array Element[0][3][2],
+						Current Array Element[0][3][3]
+					) : False);
 
+			"Temp extract level flags"
 			Global.TawsEditorVariables[2] = 
 			Mapped Array(
 				Mapped Array(
@@ -2549,8 +2551,9 @@ rule("Subroutine Taw'sDecompressData")
 					Array(
 						(Current Array Element[4] - Round To Integer(Current Array Element[4] / 10, Down) * 10) % 8, 
 						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, 
-						Round To Integer(Current Array Element[4] / 1000, Down) / 10)
-					), 
+						Round To Integer(Current Array Element[4] / 1000, Down) / 10
+					)
+				), 
 				Array(
 					Current Array Element[0] % 2 != 0, 
 					0, 
@@ -2573,10 +2576,18 @@ rule("Subroutine Taw'sDecompressData")
 				Global.TawsEditorVariables[1], 
 				Global.TawsEditorVariables[1]));
 
-			Global.TawsEditorVariables[2] = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
-				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
+			Global.TawsEditorVariables[2] = Mapped Array(
+				Global.TawsCompressedData, 
+				Array(
+					Current Array Element[4] % 2 != 0, 
+					0, 
+					(Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, 
+					(Current Array Element[4] - Current Array Element[4] % 4) % 8 != 0,
+					0, 
+					Global.TawsEditorVariables[1], 
+					(Current Array Element[4] - Current Array Element[4] % 4) % 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]
+				)
+			);
 		"Compression V0"
 		Else;	
 			"Extract Teleports"
@@ -2679,9 +2690,9 @@ rule("Subroutine Taw'sDecompressData")
 		End;
 		If(Global.TawsCPProps != Null);
 			"Translate Taw's CPProps to Giga editor settings"
-			Global.TawsEditorVariables = Array(0, 10, 13, Null, 11, 01, 07, 05, Null, 12, Null, Null, 10, 11, Null, Null, Null, Null, Null, 09, 08, 03);
+			Global.TawsEditorVariables = Array(0, 10, 13, -1, 11, 01, 07, 05, -1, 12, -1, -1, 10, 11, -1, -1, -1, -1, -1, 09, 08, 03);
 			For Global Variable(i, 0, Count Of(Global.TawsEditorVariables), 1);
-				If(Global.TawsEditorVariables[Global.i] != Null);
+				If(Global.TawsEditorVariables[Global.i] != -1);
 					Global.Settings[Global.i] = Global.TawsCPProps[Global.TawsEditorVariables[Global.i]];
 				End;
 			End;
@@ -2823,7 +2834,7 @@ rule("Subroutine PeaceDecompressData")
 			Else;
 				Global.RefreshOrbs[Global.i] = Empty Array;
 				
-				"Blzz: Oh, you want easy access to multidimensional arrays?... XDDD"
+				"Blzz: Oh, you wanted to easily access multidimensional arrays?... XDDD no"
 				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
 					"Extract Multi-GA level bots"
 					Modify Global Variable At Index(Bots, Global.i, Append To Array,
@@ -2854,22 +2865,22 @@ rule("Subroutine PeaceDecompressData")
 		End;
 
 		"Translate Peace's customization options"
-		If(Global.Config == True);
+		If(Global.PeaceConfig == True);
 			Global.PeaceEditorVariables = Array(0, 42, 40, 41, 44, 7, 4, -1, -1, 9, -1, -1, 43, 45, -1, 25, 6, -1, 12, -1, 1, 5);
 			For Global Variable(i, 0, Count Of(Global.PeaceEditorVariables), 1);
 				Skip If(Global.PeaceEditorVariables[Global.i] == -1, 1);
-				Global.Settings[Global.i] = Global.Config[Global.PeaceEditorVariables[Global.i]];
+				Global.Settings[Global.i] = Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]];
 			End;
 			"Extract default Goal CP text, multilanguage support coming soon"
-			Global.Settings[7] = Global.Config[2][0];
+			Global.Settings[7] = Global.PeaceConfig[2][0];
 			"Goal checkpoint effect color"
-			Global.Settings[16] = Array(Global.Config[6]);
+			Global.Settings[16] = Array(Global.PeaceConfig[6]);
 			"Modify scoreboard text if the mapmaker changed it"
-			Global.Settings[17] = String Length(Global.Config[24]) > 1 ? Global.Config[24] : Global.Settings[17];
-			Modify Global Variable(VIPs, Append To Array, Global.Vips);
+			Global.Settings[17] = String Length(Global.PeaceConfig[24]) > 1 ? Global.PeaceConfig[24] : Global.Settings[17];
+			Modify Global Variable(VIPs, Append To Array, Global.PeaceVips);
 		End;
-		If(Global.Top5Color == True);
-			Global.Top5Colors = Global.Top5Color;
+		If(Global.PeaceTop5Color == True);
+			Global.Top5Colors = Global.PeaceTop5Color;
 		End;
 		If(Global.OrbStyle == 0);
 			Global.OrbStyle = 1;
@@ -2882,10 +2893,10 @@ rule("Subroutine PeaceDecompressData")
 		End;
 		"Cleanup"
 		Global.PeaceCheckpoint = Null;
-		Global.Vips = Null;
+		Global.PeaceVips = Null;
 		Global.PeaceEditorVariables = Null;
-		Global.Config = Null;
-		Global.Top5Color = Null;
+		Global.PeaceConfig = Null;
+		Global.PeaceTop5Color = Null;
 		disabled Global.WorldTexts = Null;
 		disabled Global.BigMessages = Null;
 		disabled Global.SmallMessages = Null;
