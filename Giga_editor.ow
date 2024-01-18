@@ -169,18 +169,18 @@ variables
 		9:  BotEffects
 		10: BotIcons
 		11: CloudEffects
-		12: CheckpointEffects
-		13: CheckpointIcons
-		14: CheckpointWorldTexts
-		15: ToggleControls
-		16: Mistakes
-		17: Scale
+		12: BhopReady
+		13: BhopActive
+		14: CheckpointEffects
+		15: CheckpointIcons
+		16: CheckpointWorldTexts
+		17: ToggleControls
 		18: GrabbedOrbs
 		19: GrabbedRefreshOrbs
 		20: GoalCoords
 		21: GoalRadius
 		22: GoalThresholds
-		23: free
+		23: Scale
 		24: CurrentSectionTime
 		25: BotCondition
 		26: ThirdPerson
@@ -209,8 +209,8 @@ variables
 		49: PlayerNameColor
 		50: Temp
 		51: SpectatorMode
-		52: BhopActive
-		53: BhopReady
+		52: Mistakes
+		53: Collision
 }
 subroutines
 {
@@ -613,7 +613,7 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Ability 2)) == True;		
 		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == False;
 		Is Button Held(Event Player, Button(Reload)) == False;
@@ -754,16 +754,21 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 			If(Is Using Ultimate(Event Player));
 				Call Subroutine(CancelUltimate);
 			End;
+			If(Event Player.Collision == False);
+				Event Player.Collision = True;
+				Enable Movement Collision with Environment(Event Player);
+			End;
+			
 			Call Subroutine(TeleportToCurrentCheckpoint);
-			Event Player.FreeMode = !Event Player.FreeMode;
+			Event Player.FreeMode = False;
 			Call Subroutine(ResetCheckpoint);
 			disabled Set Ultimate Charge(Event Player, 0);
 		Else;
 			"// TODO: Move to subroutine setcurrentabilities?"
 			Call Subroutine(EnableAllAbilities);
-			Event Player.FreeMode = !Event Player.FreeMode;
+			Event Player.FreeMode = True;
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 		End;
-		Stop Chasing Player Variable(Event Player, CurrentRunTime);
 		Small Message(Event Player, Custom String("Free Mode {0}", Event Player.FreeMode ? Custom String("Enabled") : Custom String("Disabled")));
 		Wait(0.600, Ignore Condition);
 	}
@@ -781,8 +786,8 @@ rule("Press [Melee] twice to cancel ultimate")
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Melee)) == True;
 		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
+		disabled Is Button Held(Event Player, Button(Crouch)) == False;
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == False;
@@ -798,6 +803,41 @@ rule("Press [Melee] twice to cancel ultimate")
 		End;
 		"Anti Abuse wait"
 		Wait(1, Ignore Condition);
+	}
+}
+rule("Hold [Reload] to toggle collision (Free Mode only)")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Event Player.FreeMode == True;
+	}
+	actions
+	{
+		Wait(1, Abort When False);
+		If(Event Player.Collision == True);
+			Disable Movement Collision with Environment(Event Player, False);
+		Else;
+			Enable Movement Collision with Environment(Event Player);
+		End;
+		
+		Event Player.Collision = !Event Player.Collision;
+		Small Message(Event Player, Custom String("Collision with environment {0}", Event Player.Collision ? Custom String("Enabled") : Custom String("Disabled")));
+
 	}
 }
 rule("——————————————————————————Effects——————————————————————————")
@@ -1664,11 +1704,12 @@ rule("Resurrect Player after dying")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Event Player.SpectatorMode == False;
+		Event Player.Resetting == False;
 	}
 	actions
 	{
 		Log To Inspector(Custom String("{0} - died, resurrecting", Event Player)); 
-		If(Event Player.Finished || Event Player.FreeMode);
+		If((Event Player.Finished || Event Player.FreeMode) == True);
 			Teleport(Event Player, Nearest Walkable Position(Position Of(Event Player)));
 		Else;
 			Call Subroutine(ResetWithMistake);
@@ -1770,10 +1811,15 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 9999);
 		"Ignore Gliding"
 		Wait Until((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) == False, 9999);
+
+		"Release GA button first"
+		Wait Until(Is Button Held(Event Player, Button(Ability 1)) == False, 9999);
+
+		
 		Wait Until(
 			(Is Using Ability 1(Event Player) == False) ||
 			(
-				(Is Button Held(Event Player, Button(Jump)) && Event Player.Jump)|| 
+				(Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) || 
 				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
 			) == True, 9999);
 		If(Is Using Ability 1(Event Player) && !Is Button Held(Event Player, Button(Ability 1)));
@@ -1818,7 +1864,8 @@ rule("Crouch disabled message")
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Crouch)) == True;
 		Event Player.Crouch == False;
-		(Event Player.Finished == False || Event Player.FreeMode == False) == True;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
 	}
 	actions
 	{
@@ -1890,6 +1937,7 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.BotIcons = Empty Array;
 		Event Player.Scale = 1;
 		Event Player.SpectatorMode = False;
+		Event Player.Collision = True;
 		"// TODO: Cleanup, maybe not needed"
 		Event Player.CurrentBotSection = 0;
 		"// TODO: Get rid of this temp variable?"
@@ -2420,11 +2468,14 @@ rule("Subroutine CancelUltimate")
 		Log To Inspector(Custom String("{0} - Cancelled Ultimate", Event Player));
 		Event Player.TempFreeMode = Event Player.FreeMode;
 		Event Player.FreeMode = True;
+		Event Player.Resetting = True;
 		Kill(Event Player, Null);
 		disabled Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
 		Resurrect(Event Player);
 		disabled Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
+		Wait(0.04, Ignore Condition);
 		Event Player.FreeMode = Event Player.TempFreeMode;
+		Event Player.Resetting = False;
 		disabled Set Status(Event Player, Null, Stunned, 0.008);
 	}
 }
