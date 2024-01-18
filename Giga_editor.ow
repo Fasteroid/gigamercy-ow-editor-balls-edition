@@ -723,9 +723,18 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	}
 	actions
 	{
-		Wait(0.6, Abort When False);
-		Small Message(Event Player, Custom String("Spectator mode not implemented yet"));
-		disabled Event Player.SpectatorMode = !Event Player.SpectatorMode;
+		Wait(1, Abort When False);
+		Event Player.SpectatorMode = !Event Player.SpectatorMode;
+
+		If(!Event Player.SpectatorMode);
+			Resurrect(Event Player);
+			Call Subroutine(ResetCheckpoint);
+			Enable Built-In Game Mode Respawning(Event Player);
+		Else;
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Disable Built-In Game Mode Respawning(Event Player);
+			Kill(Event Player, Null);
+		End;
 	}
 }
 rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
@@ -847,7 +856,7 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-rule("Create/destroy current level Orbs")
+rule("Create/Destroy current level Orbs")
 {
 	event
 	{
@@ -899,7 +908,7 @@ rule("Create/destroy current level Orbs")
 		Loop If Condition Is True;
 	}
 }
-rule("Create/destroy current level RefreshOrbs")
+rule("Create/Destroy current level RefreshOrbs")
 {
 	event
 	{
