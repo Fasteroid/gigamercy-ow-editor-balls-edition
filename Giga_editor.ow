@@ -226,7 +226,7 @@ subroutines
 	9:  TawsDecompressData
 	10: PeaceDecompressData
 	11: CreateCheckpoints
-	12: CreateGlobalEditModeHUD
+	12: CreatePlayerDebugModeHUD
 	13: CreatePlayerEditModeHUD
 	14: InitializePlayerBot
 	15: UpdateBotPosition
@@ -268,10 +268,10 @@ rule("Customization options")
 	{
 		"------Colors------"
 		disabled End;
-		"Start Checkpoint Ring Color"
-		Global.Settings[0] = Color(Aqua);
-		"Goal Checkpoint Ring Color"
-		Global.Settings[5] = Color(Blue);
+		"Start Checkpoint Ring Color. Accepts multiple Colors"
+		Global.Settings[0] = Array(Color(Red),Color(Yellow),Color(Green),Color(Blue),Color(Purple));
+		"Goal Checkpoint Ring Color. Accepts multiple colors"
+		Global.Settings[5] = Array(Color(Green),Color(White),Color(Red));
 		"Goal Checkpoint text Color"
 		Global.Settings[6] = Color(White);
 		"Teleport pad effect color"
@@ -288,7 +288,7 @@ rule("Customization options")
 		Global.Settings[2] = Color(Red);
 		"Jump Cloud Color"
 		Global.Settings[3] = Color(Red);
-		"Scoreboard Top 5 colors"
+		"Scoreboard Top 5 colors. Accepts multiple colors"
 		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255), Color(White), Color(White));
 		"Default Player nameplate color"
 		Global.Settings[14] = Color(White);
@@ -435,6 +435,9 @@ rule("2. Player Initialization")
 			Call Subroutine(InitializePlayerBot);
 		Else If(Is True for Any(Global.Bots, Current Array Element == True));
 			Call Subroutine(InitializePlayerBot);
+		End;
+		If(Global.DebugMode); 
+			Call Subroutine(CreatePlayerDebugModeHUD);
 		End;
 		Enable Messages(Event Player.Bot);
 		Call Subroutine(TeleportToCurrentCheckpoint);
@@ -1058,10 +1061,13 @@ rule("Create Start and Finish checkpoints")
 	actions
 	{
 		"Create start checkpoint Ring"
-		Create Effect(Event Player, Ring, Global.Settings[0], Global.Checkpoints[Event Player.Checkpoint][0], 
-		Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
+		For Global Variable(i, 0, Count Of(Global.Settings[0]), 1);
+			Create Effect(Event Player, Ring, Global.Settings[0][Evaluate Once(Global.i)], Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1] - Evaluate Once(Global.i*0.2), Visible To Position Radius and Color);
+		End;
 		"Create Goal checkpoint Ring"
-		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		For Global Variable(i, 0, Count Of(Global.Settings[5]), 1);
+			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Settings[5][Evaluate Once(Global.i)], Event Player.GoalCoords, Event Player.GoalRadius - Evaluate Once(Global.i*0.2), Visible To Position Radius and Color);
+		End;
 		"Create Goal checkpoint effects"
 		For Global Variable(i, 0, Count Of(Global.Settings[16]), 1);
 			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Evaluate Once(Global.Settings[16][Global.i]), Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
@@ -2025,7 +2031,7 @@ rule("Subroutine UpdateBotPosition")
 				True,
 				Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], Always);
 		Else;
-			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
+			Stop Forcing Player Outlines(Event Player.Bot, Event Player);
 			"// TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
 			disabled If(Hero Of(Event Player) == Hero(Mercy));
 				disabled Cancel Primary Action(Event Player);
@@ -2105,8 +2111,8 @@ rule("Subroutine CreateGlobalHUD")
 		disabled End;
 
 		"Controls pt1"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
-			Custom String("--------------------------------------\n{0}\n{1}",
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+			Custom String("— — — — — — — — — — — — — — —\n{0}\n{1}",
 				Custom String("Reset level: {0}", 
 					Input Binding String(Button(Reload))
 				),
@@ -2115,11 +2121,11 @@ rule("Subroutine CreateGlobalHUD")
 					Input Binding String(Button(Interact)),
 					Input Binding String(Button(Ability 2))
 				)
-			), Null,
-		Right, 12, Null, Color(White), Null, Visible To and String, Default Visibility);
+			), 
+		Right, 12, Null,  Null, Color(White), Visible To and String, Default Visibility);
 		
 		"Controls pt2. Lord forgive me for this hack"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("Switch Level: {0} + {1} + {2}", 
 				Input Binding String(Button(Ability 2)), 
 				Input Binding String(Button(Melee)), 
@@ -2144,31 +2150,31 @@ rule("Subroutine CreateGlobalHUD")
 					Custom String("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&~\"#'{([-|`_\\^@)]=}^$%*,?.;/:>²ÉÈÇÀÙ+¤^ßÜÖÄÑ¡´¿ÒÌСЛП↓←→↑스아좌왼숫우오위空回退大下左暂右上；，向數"),
 					Char In String(Input Binding String(Current Array Element), 0))) ? Custom String("    ") : Custom String(" ")
 				)
-			), Null,
-		Right, 13, Null, Color(White), Null, Visible To and String, Default Visibility);
+			),
+		Right, 13, Null, Null, Color(White),  Visible To and String, Default Visibility);
 		
 		"Controls pt3"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("Free Mode: {0} + {1} + {2}  ", 
 				String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
 				Input Binding String(Button(Reload)),
 				Custom String("{0}{1}", Input Binding String(Button(Melee)), String Length(Input Binding String(Button(Crouch))) < 4 ? Custom String("  ") : Empty Array)
-			), Null,
-		Right, 14, Null, Color(White), Null, Visible To and String, Default Visibility);
+			),
+		Right, 14, Null, Null, Color(White), Visible To and String, Default Visibility);
 		
 		"Controls pt4"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
-			Custom String("{0}\n{1}",
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+			Custom String("{0}\n{1}\n— — — — — — — — — — — — — — —",
 				Custom String("3rd Person: {0} + {1}", 
-					Input Binding String(Button(Reload)), 
-					Input Binding String(Button(Jump)) 
+					Input Binding String(Button(Jump)), 
+					Input Binding String(Button(Reload)) 
 				),
-				Custom String("Spectate: {0} + {1}\n--------------------------------------", 
+				Custom String("Spectate: {0} + {1}", 
 					Input Binding String(Button(Ultimate)), 
 					Input Binding String(Button(Ability 2))
 				)
-			),  Null,
-		Right, 15, Null, Color(White), Null, Visible To and String, Default Visibility);
+			),
+		Right, 15, Null,  Null, Color(White), Visible To and String, Default Visibility);
 		
 		"// TODO: Move to player init and use preferred language"
 		Create HUD Text(All Players(All Teams), Null, 
@@ -2266,6 +2272,11 @@ rule("Subroutine SetUpCheckpoint")
 			"Display current level Big message"
 			Big Message(Event Player, Global.BigMessages[Event Player.Checkpoint]);
 		End;
+		"// TODO: Consider removing small messages as they are hard to notice"
+		If(Global.SmallMessages[Event Player.Checkpoint] != False);
+			"Display current level Big message"
+			Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
+		End;
 	}
 }
 rule("Subroutine ResetWithMistake")
@@ -2338,17 +2349,60 @@ rule("Subroutine TeleportToCurrentCheckpoint")
 		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 	}
 }
-rule("Subroutine CreateGlobalEditModeHUD")
+rule("Subroutine CreatePlayerDebugModeHUD")
 {
 	event
 	{
 		Subroutine;
-		CreateGlobalEditModeHUD;
+		CreatePlayerDebugModeHUD;
 	}
 
 	actions
 	{
+		"Ability 1 related info"
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
+		Event Player.Ability1, 
+		Ability Cooldown(Event Player, Button(Ability 1)), 
+		Custom String("{0}\nAbility Charge: {1}", 
+			Is Using Ability 1(Event Player) || False,
+			Ability Charge(Event Player, Button(Ability 1)))
+		), 
+		Right, 99, Null, Null, 
+		Color(Orange), Visible To String and Color, Default Visibility);
 		
+		"Ability 2 related info"
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nVar Ability2: {0}\nAbility 2 CD: {1}\nIsUsingAbility2: {2}", 
+		Event Player.Ability2, 
+		Ability Cooldown(Event Player, Button(Ability 2)), 
+		Custom String("{0}\nAbility Charge: {1}", 
+			Is Using Ability 2(Event Player) || False,
+			Ability Charge(Event Player, Button(Ability 2)))
+		), 
+		Right, 100, Null, Null, 
+		Color(Aqua), Visible To String and Color, Default Visibility);
+
+		"Bunnyhop related info"
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nIs On Ground: {0}\nIs In Air: {1}\nIs Crouching: {2}", 
+		Is On Ground(Event Player), 
+		Is In Air(Event Player), 
+		Custom String("{0}\nIs Jumping: {1}\nBHop ready?: {2}", 
+			Is Crouching(Event Player),
+			Is Jumping(Event Player),
+			Event Player.BhopReady)
+		), 
+		Right, 101, Null, Null, 
+		Color(Blue), Visible To String and Color, Default Visibility);
+
+		"Checkpoint landing debug"
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nDistance to Goal: {0}\nPlayer Y: {1}\nGoal Y: {2}", 
+		Distance Between(Event Player, Event Player.GoalCoords), 
+		Y Component Of(Position Of(Event Player)), 
+		Y Component Of(Event Player.GoalCoords)), 
+		Right, 102, Null, Null, 
+		(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && 
+			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
+		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
 	}
 }
 rule("Subroutine CreatePlayerEditModeHUD")
@@ -2412,39 +2466,6 @@ rule("Subroutine CreatePlayerEditModeHUD")
 		Y Component Of(Position Of(Event Player)),
 		Z Component Of(Position Of(Event Player))),
 		Top, 0, Null, Null, Color(White), String, Default Visibility);
-
-		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoal Y: {2}", 
-		Distance Between(Event Player, Event Player.GoalCoords), 
-		Y Component Of(Position Of(Event Player)), 
-		Y Component Of(Event Player.GoalCoords)), 
-		Right, 99, Null, Null, 
-		(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && 
-			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
-			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
-		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
-
-		"// TODO: Create debug HUD and move this there"
-		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
-		Event Player.Ability1, 
-		Ability Cooldown(Event Player, Button(Ability 1)), 
-		Custom String("{0}\nAbility Charge:{1}", 
-			Is Using Ability 1(Event Player),
-			Ability Charge(Event Player, Button(Ability 1)))
-		), 
-		Right, 99, Null, Null, 
-		Color(Orange), Visible To String and Color, Default Visibility);
-
-		"// TODO: Create debug HUD and move this there"
-		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nIs On Ground: {0}\nIs In Air: {1}\nIs Crouching: {2}", 
-		Is On Ground(Event Player), 
-		Is In Air(Event Player), 
-		Custom String("{0}\nIs Jumping: {1}\nBHop ready?: {2}", 
-			Is Crouching(Event Player),
-			Is Jumping(Event Player),
-			Event Player.BhopReady)
-		), 
-		Right, 100, Null, Null, 
-		Color(White), Visible To String and Color, Default Visibility);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -2742,21 +2763,31 @@ rule("Subroutine Taw'sDecompressData")
 			Wait(0.016, Ignore Condition);
 		End;
 		
+		If(Global.TawsCPProps != Null);
+			If(Global.TawsCPProps[0] != Null);
+				Global.Settings[0] = Array(Global.TawsCPProps[0]);
+			End;
+			"Translate Taw's CPProps to Giga editor settings"
+			Global.TawsEditorVariables = Array(False, 10, 13, False, 11, -1, 7, 5, False, 12, False, False, 10, 11, False, False, -2, False, False, 9, 8, 3);
+			For Global Variable(i, 1, Count Of(Global.TawsEditorVariables), 1);
+				If(Global.TawsCPProps[Absolute Value(Global.TawsEditorVariables[Global.i])] != Null && Global.TawsEditorVariables[Global.i] != False);
+					Global.Settings[Global.i] = Global.TawsEditorVariables[Global.i] > 0 ? 
+						Global.TawsCPProps[Global.TawsEditorVariables[Global.i]] :
+						Array(Global.TawsCPProps[Absolute Value(Global.TawsEditorVariables[Global.i])]);
+				End;
+			End;
+			disabled If(Global.TawsCPProps[1] != Null);
+			disabled 	Global.Settings[5] = Array(Global.TawsCPProps[1]);
+			disabled End;
+			disabled If(Global.TawsCPProps[2] != Null);
+			disabled 	Global.Settings[16] = Array(Global.TawsCPProps[2]);
+			disabled End;
+		End;
 		If(Global.OrbStyle == 0);
 			Global.OrbStyle = 2;
 		End;
 		If(Global.RefreshOrbStyle == 0);
 			Global.RefreshOrbStyle = 3;
-		End;
-		If(Global.TawsCPProps != Null);
-			"Translate Taw's CPProps to Giga editor settings"
-			Global.TawsEditorVariables = Array(0, 10, 13, -1, 11, 01, 07, 05, -1, 12, -1, -1, 10, 11, -1, -1, -1, -1, -1, 09, 08, 03);
-			For Global Variable(i, 0, Count Of(Global.TawsEditorVariables), 1);
-				If(Global.TawsEditorVariables[Global.i] != -1);
-					Global.Settings[Global.i] = Global.TawsCPProps[Global.TawsEditorVariables[Global.i]];
-				End;
-			End;
-			Global.Settings[16] = Array(Global.TawsCPProps[2]);
 		End;
 		If(Global.TawsCheckpointInWorldText != Null);
 			Global.WorldTexts = Mapped Array(
@@ -2925,21 +2956,27 @@ rule("Subroutine PeaceDecompressData")
 		End;
 
 		"Translate Peace's customization options"
-		If(Global.PeaceConfig == True);
-			Global.PeaceEditorVariables = Array(0, 42, 40, 41, 44, 7, 4, -1, -1, 9, -1, -1, 43, 45, -1, 25, 6, -1, 12, -1, 1, 5);
-			For Global Variable(i, 0, Count Of(Global.PeaceEditorVariables), 1);
-				Skip If(Global.PeaceEditorVariables[Global.i] == -1, 1);
-				Global.Settings[Global.i] = Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]];
+		If(Global.PeaceConfig != Null);
+			Global.PeaceEditorVariables = Array(False, 42, 40, 41, 44, -7, 4, False, False, 9, False, False, 43, 45, False, 25, -6, False, 12, False, 1, 5);
+			If(Global.PeaceConfig[0] != Null);
+				Global.Settings[0] = Array(Global.PeaceConfig[0]);
+			End;
+			For Global Variable(i, 1, Count Of(Global.PeaceEditorVariables), 1);
+				If(Global.PeaceConfig[Absolute Value(Global.PeaceEditorVariables[Global.i])] != Null && Global.PeaceEditorVariables[Global.i] != False);
+					Global.Settings[Global.i] = Global.PeaceEditorVariables[Global.i] > 0 ? 
+						Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]] : 
+						Array(Global.PeaceConfig[Absolute Value(Global.PeaceEditorVariables[Global.i])]);
+				End;
 			End;
 			"Extract default Goal CP text, multilanguage support coming soon"
 			Global.Settings[7] = Global.PeaceConfig[2][0];
 			"Goal checkpoint effect color"
-			Global.Settings[16] = Array(Global.PeaceConfig[6]);
+			disabled Global.Settings[16] = Array(Global.PeaceConfig[6]);
 			"Modify scoreboard text if the mapmaker changed it"
 			Global.Settings[17] = String Length(Global.PeaceConfig[24]) > 1 ? Global.PeaceConfig[24] : Global.Settings[17];
 			Modify Global Variable(VIPs, Append To Array, Global.PeaceVips);
 		End;
-		If(Global.PeaceTop5Color == True);
+		If(Global.PeaceTop5Color != Null);
 			Global.Top5Colors = Global.PeaceTop5Color;
 		End;
 		If(Global.OrbStyle == 0);
