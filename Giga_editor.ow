@@ -39,7 +39,7 @@ settings
 		{
 			enabled maps
 			{
-				Workshop Expanse 0
+				Hanamura
 			}
 		}
 
@@ -80,7 +80,7 @@ settings
 	workshop
 	{
 		Debug Mode (Inspector Recording): On
-		Edit Mode: Off
+		Edit Mode: On
 		Server Load Widget: On
 	}
 
@@ -118,9 +118,9 @@ variables
 		15: VIPs
 		16: PeaceEditorVariables
 		17: PeaceCheckpoint2
-		18: DefaultOrbRadius
-		19: DefaultRefreshOrbRadius
-		20: free1
+		18: UNUSEDDefaultOrbRadius
+		19: UNUSEDDefaultRefreshOrbRadius
+		20: RGB
 		21: TawsCheckpointInstructionText
 		22: TempArray
 		23: i
@@ -129,10 +129,10 @@ variables
 		26: MapData
 		27: RequireGrabAllRefreshOrbs
 		28: PeaceVips
-		29: DefaultCheckpointRadius
+		29: UNUSEDDefaultCheckpointRadius
 		30: RefreshOrbStyle
-		31: RGB
-		32: free2
+		31: MenuOptions
+		32: PaletteMenu
 		33: MapTitle
 		34: ServerLoad
 		35: TawsEditorVariables
@@ -155,6 +155,7 @@ variables
 		52: Bots
 		53: Clouds
 		54: Teleports
+		55: MenuOptionsNames
 
 	player:
 		0:  Checkpoint
@@ -171,10 +172,10 @@ variables
 		11: CloudEffects
 		12: BhopReady
 		13: BhopActive
-		14: CheckpointEffects
-		15: CheckpointIcons
+		14: UNUSEDCheckpointEffects
+		15: UNUSEDCheckpointIcons
 		16: CheckpointWorldTexts
-		17: ToggleControls
+		17: NewObjectDefaults
 		18: GrabbedOrbs
 		19: GrabbedRefreshOrbs
 		20: GoalCoords
@@ -201,7 +202,7 @@ variables
 		41: Resetting
 		42: MercyRezTimer
 		43: StartingAbilities
-		44: TempCheckpoint
+		44: UNUSEDTempCheckpoint
 		45: PlayerName
 		46: BestRun
 		47: SavedCheckpoint
@@ -211,6 +212,13 @@ variables
 		51: SpectatorMode
 		52: Mistakes
 		53: Collision
+		54: MenuOpen
+		55: MenuPage
+		56: MenuCursor
+		57: MenuTempData
+		58: ObjectIndex
+		59: ObjectSelectTemp
+		60: ObjectSelectAura
 }
 subroutines
 {
@@ -225,7 +233,7 @@ subroutines
 	8:  TeleportToCurrentCheckpoint
 	9:  TawsDecompressData
 	10: PeaceDecompressData
-	11: CreateCheckpoints
+	11: SetEditModeObjectIndex
 	12: CreatePlayerDebugModeHUD
 	13: CreatePlayerEditModeHUD
 	14: InitializePlayerBot
@@ -236,10 +244,11 @@ subroutines
 	19: EnableAllAbilities
 	20: PlayerCompletedRun
 	21: CreateCurrentWorldTexts
+	22: GetEditMenuTempData
+	23: UpdateSelectObjAura
 }
 
-
-rule("——————————————————————————Giga Parkour Engine v0.1——————————————————————————")
+rule("——————————————————————————Giga Parkour Editor v0.1——————————————————————————")
 {
 	event
 	{
@@ -422,6 +431,7 @@ rule("2. Player Initialization")
 		Log To Inspector(Custom String("Initializing player {0}...", Event Player));
 		Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Disable Game Mode HUD(Event Player);
+		"// TODO: Check if needed"
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
 		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
@@ -430,6 +440,7 @@ rule("2. Player Initialization")
 		Disable Movement Collision With Players(Event Player);
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
+		"TODO: Optimize"
 		If(Global.EditMode);
 			Call Subroutine(CreatePlayerEditModeHUD);
 			Call Subroutine(InitializePlayerBot);
@@ -878,9 +889,10 @@ rule("Create/Destroy current level Orbs")
 	{
 		If(Count Of(Event Player.OrbEffects) > Count Of(Global.Orbs[Event Player.Checkpoint]));
 			Destroy Effect(Last Of(Event Player.OrbEffects));
+			Modify Player Variable(Event Player, OrbEffects, Remove from Array By Index, Count Of(Event Player.OrbEffects) - 1);
+			Wait(0.016, Ignore Condition);
 			Destroy Icon(Last Of(Event Player.OrbIcons));
-			Modify Player Variable(Event Player, OrbEffects, Remove from Array By Value, Last Of(Event Player.OrbEffects));
-			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Value, Last Of(Event Player.OrbIcons));
+			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Index, Count Of(Event Player.OrbIcons) - 1);
 		Else;
 			"Action: Create orb effect"
 			If(Global.OrbStyle == 1);
@@ -899,6 +911,7 @@ rule("Create/Destroy current level Orbs")
 			"Save reference for last created orb to player variable"		
 			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
 			
+			Wait(0.016, Ignore Condition);
 			"Action: Create orb icon"
 			Create Icon(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbIcons))] ? Null : Event Player, 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] 
@@ -931,8 +944,9 @@ rule("Create/Destroy current level RefreshOrbs")
 		"// TODO: Implement Taw's/Peace editor switch to reuse a single refresh orb or render all"
 		If(Count Of(Event Player.RefreshOrbEffects) > Count Of(Global.RefreshOrbs[Event Player.Checkpoint]));
 			Destroy Effect(Last Of(Event Player.RefreshOrbEffects));
-			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
 			Modify Player Variable(Event Player, RefreshOrbEffects, Remove from Array By Index, Count Of(Event Player.RefreshOrbEffects) - 1);
+			Wait(0.016, Ignore Condition);
+			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
 			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Index, Count Of(Event Player.RefreshOrbIcons) - 1);
 		Else;
 			If(Global.RefreshOrbStyle == 1);
@@ -967,6 +981,7 @@ rule("Create/Destroy current level RefreshOrbs")
 				Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Array(Array(Event Player.Temp, Last Created Entity)));
 			End;
 			
+			Wait(0.016, Ignore Condition);
 			"Action: Create RefeshOrb icon"
 			Create Icon(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbIcons))] ? Null : Event Player, 
 			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0]
@@ -1188,7 +1203,7 @@ rule("Create HUD Tips/Hints")
 	actions
 	{
 		"Separator from top of screen (default 22 new lines)"
-		Create Hud Text(Local Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
+		disabled Create Hud Text(Local Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
 
 		"TODO: Support translations"
 		Create Hud Text(Global.HintTexts[Local Player.Checkpoint] != False ? Local Player : Null, Custom String("{0} :{1}\n  {2}  \n", Hero Icon String(Hero(Mercy)), String Slice(Global.EnPadding, 0, 20), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 21,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To And String, Default Visibility);
@@ -1888,6 +1903,537 @@ rule("Crouch disabled message")
 		Wait(1, Ignore Condition);
 	}
 }
+rule("<FGa366ffFF>——————————————————————————Giga Editor - Edit Mode——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		
+	}
+}
+rule("EditMode: Menu option definitions")
+{
+    event
+    {
+        Ongoing - Global;
+    }
+    conditions
+    {
+        
+    }
+    actions
+    {
+        "Main Screen"
+        Global.PaletteMenu[0] = Array(
+			Custom String("{0}\nCheckpoints", Icon String(Flag)),
+			Custom String("{0}\nOrbs", Icon String(Circle)),
+			Custom String("{0}\nBots", Ability Icon String(Hero(Ashe), Button(Ultimate))), 
+			Custom String("{0}\nJump pads", Ability Icon String(Hero(Baptiste), Button(Crouch))),
+			Custom String("{0}\nDecoration", Icon String(Dizzy)),
+			Custom String("{0}\nTools", Icon String(Bolt)), 
+			Custom String("{0}\nGeneral Options", Ability Icon String(Hero(Torbjörn), Button(Ability 2))));
+		
+		Global.MenuOptionsNames = Array(
+			Custom String("Checkpoint"),
+			Custom String("Orb"),
+			Custom String("Refresh Orb"),
+			Custom String("Bot"),
+			Custom String("AntiOrb"),
+			Custom String("Cloud"),
+			Custom String("Teleport"));
+		"Checkpoint Screen"
+		Global.MenuOptions[0] = Custom String(
+			"Position:\nRadius:\nFacing:\nCrouch:\nRequire ground:\nThreshold Above:\nThreshold Below:\nUnlimited GA:\n"
+		);
+        "Orbs Screen"
+        Global.MenuOptions[1] = Custom String(
+			"Position:\nRadius:\n");
+		
+		"Refresh Orbs Screen"
+		Global.MenuOptions[2] = Custom String(
+			"Position:\nRadius:\nBot section:\nRefresh A1:\nRefresh A2:\nRefresh Ult:\n");
+
+        "Bots Screen"
+        Global.MenuOptions[3] = Custom String(
+			"Position:\nFacing:\nCrouch:\nGravity:\nRequire Kill/Rez:\nRefresh GA:\nUse Ability1:\nUse Ability 2:\nUse Ult:\nShoot:\nHold:\n{0}", Custom String("-----Level Overrides-----\nScale:\nHealth:\n"));
+		
+        "AntiOrbs Screen"
+        Global.MenuOptions[4] = Custom String(
+			"Position:\nRadius:\n");
+		
+        "Clouds Screen"
+        Global.MenuOptions[5] = Custom String(
+			"Position:\nRadius:\nMagnitude:\n");
+
+		"Teleports Screen"
+        Global.MenuOptions[6] = Custom String(
+			"Position:\nRadius:\nTP Coords:\nThreshold Above:\nThreshold Below:\n");
+
+        "Create menu background. Width 54, 18 lines"
+        Create Hud Text(Local Player.MenuOpen ? Local Player : Null, Custom String("     {0} {1}\n{2}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", Global.MenuOptionsNames[Local Player.MenuPage], Local Player.ObjectIndex, Evaluate Once(String Slice(Global.EnPadding, 0, 54))), Null, Null, Top, 10, Custom Color(0,255,0,128), Color(White), Color(White), Visible To And String, Default Visibility);
+
+    }
+}
+rule("EditMode: Hold [Interact] to open menu")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Toggle menu", Event Player));
+		Wait(0.2, Abort When False);
+		Event Player.MenuOpen = !Event Player.MenuOpen;
+		If(Event Player.MenuOpen);
+			disabled Start Facing(Event Player, Facing Direction Of(Event Player), 9999, To Player, None);
+			Set Move Speed(Event Player, 0);
+		Else;
+			disabled Stop Facing(Event Player);
+			Set Move Speed(Event Player, 100);
+		End;
+		Set Primary Fire Enabled(Event Player, !Event Player.MenuOpen);
+		Set Secondary Fire Enabled(Event Player, !Event Player.MenuOpen);
+		Call Subroutine(GetEditMenuTempData);
+	}
+}
+rule("EditMode: Use [Movement Keys] to navigate the menu")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.MenuOpen == True;
+		Z Component Of(Throttle Of(Event Player)) != 0;
+	}
+	actions
+	{
+		If (Z Component Of(Throttle Of(Event Player)) < 0);
+			Event Player.MenuCursor = (Event Player.MenuCursor + 1) % Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage);
+		Else If (Z Component Of(Throttle Of(Event Player)) > 0);
+			Event Player.MenuCursor = (Event Player.MenuCursor + (Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage)) -1) % Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage);
+		End;
+		Play Effect(Event Player, Widowmaker Venom Mine Explosion Sound , Null, Position Of(Event Player), 60);
+		Wait(0.15, Abort When False);
+		Loop If Condition Is True;
+	}
+}
+rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/previous object")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == True;
+		"Mind == Blown"
+		(Is Button Held(Event Player, Button(Primary Fire)) !=
+		Is Button Held(Event Player, Button(Secondary Fire))) == True;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+	}
+	actions
+	{
+		Event Player.ObjectIndex += (Is Button Held(Event Player, Button(Primary Fire)) ? 1 : -1);
+		Call Subroutine(SetEditModeObjectIndex);
+
+		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Small Message(Event Player, Custom String("Selected {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+		
+		If(Event Player.MenuOpen);
+			Call Subroutine(GetEditMenuTempData);
+		End;
+		Wait(0.2, Ignore Condition);
+	}
+}
+rule("EditMode: Press [Interact] + [Melee] to insert object")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+	}
+	actions
+	{
+		"TODO: BERI DAENDARIS"
+		Event Player.Temp = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
+		Event Player.Temp[0] = Position Of(Event Player);
+
+		"Heres hoping blzz wont change this broken method and also that they add real switch/case"
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Small Message(Event Player, Custom String("Inserting checkpoint too hard yet sry :/"));
+			Else;
+			Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+			Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+			Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+			Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+			Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Else;
+		End;
+		Event Player.ObjectIndex = -1;
+		Call Subroutine(SetEditModeObjectIndex);
+
+		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+		
+		If(Event Player.MenuOpen);
+			Call Subroutine(GetEditMenuTempData);
+		End;
+		Wait(0.25, Ignore Condition);
+	}
+}
+rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/object type")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		((Is Button Held(Event Player, Button(Primary Fire)) == True) ||
+		(Is Button Held(Event Player, Button(Secondary Fire)) == True)) == True;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Switch page", Event Player));
+		If(Is Button Held(Event Player, Button(Primary Fire)));
+			Event Player.MenuPage = (Event Player.MenuPage + 1) % Evaluate Once(Count Of(Global.MenuOptions));
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Else;
+			Event Player.MenuPage = (Event Player.MenuPage + Evaluate Once(Count Of(Global.MenuOptions) - 1)) % Evaluate Once(Count Of(Global.MenuOptions));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+		End;
+		Event Player.MenuCursor = 0;
+		Event Player.ObjectIndex = 0;
+		Call Subroutine(UpdateSelectObjAura);
+		Small Message(Event Player, Custom String("Page {0}: {1}", Event Player.MenuPage, Global.MenuOptionsNames[Event Player.MenuPage]));
+		Call Subroutine(GetEditMenuTempData);
+		Wait(0.2, Ignore Condition);
+	}
+}
+rule("EditMode: Create Global Edit mode HUD")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	conditions
+	{
+		Global.EditMode == True;
+	}
+	actions
+	{
+		"Selected object indicator"
+		Create HUD Text(Local Player, Null, String Slice(Global.EnPadding, 0, 85), Custom String("\nCurrent Mode: {0}", Global.MenuOptionsNames[Local Player.MenuPage]),
+			Left, 1, Null, Null, Color(Green), Visible To String And Color, Default Visibility);
+		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
+		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85), 
+			Custom String("— — — — — Edit Mode Controls — — — — —\nInsert: {0} + {1} (Hold to open palette)\n{2}", 
+				Input Binding String(Button(Interact)), 
+				Input Binding String(Button(Melee)), 
+				Custom String("Edit: Hold {0}", 
+					Input Binding String(Button(Interact))
+				)
+			),
+			Left, 10, Null, Null, Color(Green), Visible To String And Color, Default Visibility);
+		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
+		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
+			Custom String("Select: {0} + {1}/{2}",
+				Input Binding String(Button(Ability 2)), 
+				Input Binding String(Button(Primary Fire)), 
+				Input Binding String(Button(Secondary Fire))
+			),
+			Left, 11, Null, Null, Color(Purple), Visible To String And Color, Default Visibility);
+		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
+		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
+			Custom String("Move: {0} + {1}\n{2}\n— — — — — — — — — — — — — — — — — — — ", 
+				Input Binding String(Button(Interact)),  
+				Input Binding String(Button(Ability 2)), 
+				Custom String("Delete: Hold {0} + {1}",
+					Input Binding String(Button(Interact)), 
+					Input Binding String(Button(Crouch))
+				)
+			),
+			Left, 12, Null, Null, Color(Orange), Visible To String And Color, Default Visibility);
+		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
+		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
+			Custom String("--------------------------------------\n{0}{1}", 
+				Global.MenuOptions[Local Player.MenuPage], 
+				String Slice(
+					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
+					0, 
+					17 - Count Of(
+						String Split(Global.MenuOptions[Local Player.MenuPage], 
+						Custom String("\n"))
+					)
+				)
+			), 
+			Eye Position(Local Player) + 
+			100 * (-0.5 * World Vector Of(Right, Local Player, Rotation) + 
+			(-0.9) * Direction From Angles(
+				Horizontal Angle From Direction(Facing Direction Of(Local Player)), 
+				Vertical Angle From Direction(Facing Direction Of(Local Player)) - 90)
+			+ 3 * Facing Direction Of(Local Player)), 
+			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
+
+
+		"View object data"
+		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
+			Custom String("\n{0}{1}", Local Player.MenuTempData, 
+				String Slice(
+					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
+					0, 
+					17 - Count Of(
+						String Split(Local Player.MenuTempData, 
+						Custom String("\n"))
+					)
+				)
+			), 			
+			Eye Position(Local Player) + 
+			100 * (0.55 * World Vector Of(Right, Local Player, Rotation) + 
+			(-0.9) * Direction From Angles(
+				Horizontal Angle From Direction(Facing Direction Of(Local Player)), 
+				Vertical Angle From Direction(Facing Direction Of(Local Player)) - 90)
+			+ 3 * Facing Direction Of(Local Player)), 
+			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
+		
+		"Menu cursor"
+		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
+			Custom String("\n{0}{1}{2}", 
+				String Slice(
+					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
+					0, 
+					Local Player.MenuCursor),
+				Icon String(Arrow: Right),
+				String Slice(
+					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
+					0, 
+					16 - Local Player.MenuCursor
+				)
+			), 
+			Eye Position(Local Player) + 
+			100 * (-1.4 * World Vector Of(Right, Local Player, Rotation) + 
+			(-0.9) * Direction From Angles(
+				Horizontal Angle From Direction(Facing Direction Of(Local Player)), 
+				Vertical Angle From Direction(Facing Direction Of(Local Player)) - 90)
+			+ 3 * Facing Direction Of(Local Player)), 
+			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
+
+		"Create highlighted object aura"
+		Create Effect(Local Player.ObjectSelectAura ? Local Player : Null, Good Aura, Color(Green), Local Player.ObjectSelectAura[0], Local Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+		Create Icon(Local Player.ObjectSelectAura ? Local Player : Null, Local Player.ObjectSelectAura[0] + Vector(0, Local Player.ObjectSelectAura[1], 0), Arrow: Down, Visible To and Position, Color(Green), True);
+	}
+}
+rule("EditMode: Subroutine GetEditMenuTempData")
+{
+	event
+	{
+		Subroutine;
+		GetEditMenuTempData;
+	}
+
+	actions
+	{
+		Event Player.MenuTempData = Empty Array;
+		For Player Variable(Event Player, i, 0, Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage), 1);
+			Skip(Event Player.MenuPage * 2);
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Checkpoints[Event Player.Checkpoint][Event Player.i]);
+		Continue;
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Orbs[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
+		Continue;
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
+		Continue;
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
+		Continue;
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
+		Continue;
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Clouds[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
+		Continue;	
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Teleports[Event Player.Checkpoint][Event Player.i]);
+		End;	
+	}
+}
+rule("EditMode: Subroutine CreatePlayerEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerEditModeHUD;
+	}
+
+	actions
+	{
+
+		Create In-World Text(Event Player,
+		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
+			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
+				Global.Checkpoints[Event Player.Checkpoint][2], 
+				Global.Checkpoints[Event Player.Checkpoint][3], 
+				Custom String("Require Ground: {0}\n{1}\nUnlimited GA: {2}", 
+					Global.Checkpoints[Event Player.Checkpoint][4],
+					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",
+						Global.Checkpoints[Event Player.Checkpoint][5], 
+						Global.Checkpoints[Event Player.Checkpoint][6], 
+						Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
+					),
+					Global.Checkpoints[Event Player.Checkpoint][7]
+				)
+			)
+		),
+		Global.Checkpoints[Event Player.Checkpoint][0],
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Green),
+		Default Visibility
+		);
+		"Create Bot text"
+		Create In-World Text(Global.Bots[Event Player.Checkpoint] ? Event Player : Null,
+		Custom String("{0}\nFacing: {1}\n{2}", 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0], 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1], 
+			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2],
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3], 
+				Custom String("Resurrect: {0}\nRefresh GA after Rez: {1}\nCurrentPos: {2}", 
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4],
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
+					Position Of(Event Player.Bot)
+				)
+			)
+		),
+		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0,1,0),
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Aqua),
+		Default Visibility
+		);
+		"Debug landing threshold and goal condition"
+		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
+		X Component Of(Position Of(Event Player)),
+		Y Component Of(Position Of(Event Player)),
+		Z Component Of(Position Of(Event Player))),
+		Top, 0, Null, Null, Color(White), String, Default Visibility);
+		
+	}
+}
+rule("Subroutine SetEditModeObjectIndex")
+{
+	event
+	{
+		Subroutine;
+		SetEditModeObjectIndex;
+	}
+
+	actions
+	{
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Event Player.ObjectSelectTemp = Count Of(Global.Checkpoints);
+			Else;
+			Event Player.ObjectSelectTemp = Count Of(Global.Orbs[Event Player.Checkpoint]);
+			Else;
+			Event Player.ObjectSelectTemp = Count Of(Global.RefreshOrbs[Event Player.Checkpoint]);
+			Else;
+			Event Player.ObjectSelectTemp = Count Of(Global.Bots[Event Player.Checkpoint]);
+			Else;
+			Event Player.ObjectSelectTemp = Count Of(Global.AntiOrbs[Event Player.Checkpoint]);
+			Else;
+			Event Player.ObjectSelectTemp = Count Of(Global.Clouds[Event Player.Checkpoint]);
+			Else;
+			"TODO: Multiple teleports not supported yet, update this when they are"
+			Event Player.ObjectSelectTemp = Global.Teleports[Event Player.Checkpoint] != False ? 1 : 0;
+			Else;
+		End;
+		
+		Event Player.ObjectIndex = (Event Player.ObjectIndex + Event Player.ObjectSelectTemp) % Event Player.ObjectSelectTemp;
+		Call Subroutine(UpdateSelectObjAura);
+	}
+}
+rule("Subroutine UpdateSelectObjAura")
+{
+	event
+	{
+		Subroutine;
+		UpdateSelectObjAura;
+	}
+
+	actions
+	{
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Event Player.ObjectSelectAura = Global.Checkpoints[Event Player.Checkpoint] != Null ? Array Slice(Global.Checkpoints[Event Player.Checkpoint], 0 , 2) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.Orbs[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.Orbs[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array(Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex][0] + Vector(0,1.7,0), 1.7) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.Clouds[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.Clouds[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
+			Else;
+			Event Player.ObjectSelectAura = Global.Teleports[Event Player.Checkpoint] != Null ? Array Slice(Global.Teleports[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
+			Else;
+		End;
+	}
+}
 rule("——————————————————————————Subroutines——————————————————————————")
 {
 	event
@@ -1895,7 +2441,6 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-
 rule("Subroutine InitializeGlobalVariables")
 {
 	event
@@ -1941,7 +2486,6 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.ThirdPerson = False;
 		Event Player.CurrentRunTime = 0;
 		Event Player.Mistakes = 0;
-		Event Player.ToggleControls = False;
 		Event Player.OrbEffects = Empty Array;
 		Event Player.OrbIcons = Empty Array;
 		Event Player.RefreshOrbEffects = Empty Array;
@@ -1972,6 +2516,17 @@ rule("Subroutine InitializePlayerVariables")
 			Event Player.Mistakes = Event Player.Temp[4];
 			Modify Global Variable(PlayerData, Remove From Array By Index, Index Of Array Value(Global.PlayerData, Event Player.Temp));
 			Small Message(Event Player, Custom String("Welcome Back, {0}", Event Player));
+		End;
+		If(Global.EditMode);
+			Event Player.NewObjectDefaults = Array(
+				Array(Null, 1.6, False, True, False, 1.6, 1.6, False),
+				Array(Null, 0.8),
+				Array(Null, 0.8, False, True, False, False),
+				Array(Null, False, False, True, False, True),
+				Array(Null, 2),
+				Array(Null, 1, 8),
+				Array(Null, 1.6, False, 1.6, 1.6)
+			);
 		End;
 	}
 }
@@ -2067,18 +2622,17 @@ rule("Subroutine CreateGlobalHUD")
 	actions
 	{
 		"Map Creator and code"
-		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Global.MapTitle,
-		Left, 0, Null, Null, Global.Settings[18] != Null ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85), Custom String("{0}{1}", Global.MapTitle, Global.EditMode == False ? Custom String("\n\n") : Empty Array),
+		Left, 0, Null, Color(Red), Global.Settings[18] != Null ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 		
-		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Null, Left, 2, Null, Null, Null, Visible To,
-		Default Visibility);
 			
 		"Scoreboard Title"
 		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
 		Null, 
-		Global.EnPadding,
+		String Slice(Global.EnPadding, 0, 85),
 		Global.Settings[17],
 		Left, 2, Null, Null, Global.Settings[15], Visible To String and Color, Default Visibility);
+		
 		"Top 5 scoreboard rows"
 		For Global Variable(i, 0, 5, 1);
 			"Insert scoreboard record"
@@ -2092,7 +2646,7 @@ rule("Subroutine CreateGlobalHUD")
 				Global.Scoreboard[Evaluate Once(Global.i)][1],
 				Global.Scoreboard[Evaluate Once(Global.i)][2],
 				String Slice(
-					Global.EnPadding, 0, 107 - String Length(Custom String("{0}{1}",
+					Global.EnPadding, 0, 85 - 21 - String Length(Custom String("{0}{1}",
 						Global.Scoreboard[Evaluate Once(Global.i)][1],
 						Global.Scoreboard[Evaluate Once(Global.i)][2])
 					)
@@ -2100,7 +2654,7 @@ rule("Subroutine CreateGlobalHUD")
 			)
 			),
 			Null,
-			Left, 2 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
+			Left, 3 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
 		End;
 
 		"Instructions"
@@ -2197,16 +2751,16 @@ rule("Subroutine CreatePlayerHUD")
 	{
 		"Top HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
-			Top, 10, Null, Color(White), Null, Visible To and String, Default Visibility);
+			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
 		Create HUD Text(
-			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Event Player : Null, 
+			Event Player, 
 			Null,
-			Custom String("Collected Orbs:\n{0}{1}", 
+			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("Collected Orbs:\n{0}{1}", 
 				Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)) : Empty Array,
 				Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("  {0}: {1}/{2}", Icon String(Recycle), Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
-		Count Of(Event Player.GrabbedRefreshOrbs)) : Empty Array),
+		Count Of(Event Player.GrabbedRefreshOrbs)) : Empty Array) : Custom String("\n"),
 			Null,
-			Top, 10, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
+			Top, 2, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
 		"Right HUD Elements"
 		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
 			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
@@ -2403,69 +2957,9 @@ rule("Subroutine CreatePlayerDebugModeHUD")
 			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
 			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
 		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
-	}
-}
-rule("Subroutine CreatePlayerEditModeHUD")
-{
-	event
-	{
-		Subroutine;
-		CreatePlayerEditModeHUD;
-	}
-
-	actions
-	{
-		Create In-World Text(Event Player,
-		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
-			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
-				Global.Checkpoints[Event Player.Checkpoint][2], 
-				Global.Checkpoints[Event Player.Checkpoint][3], 
-				Custom String("Require Ground: {0}\n{1}\nUnlimited GA: {2}", 
-					Global.Checkpoints[Event Player.Checkpoint][4],
-					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",
-						Global.Checkpoints[Event Player.Checkpoint][5], 
-						Global.Checkpoints[Event Player.Checkpoint][6], 
-						Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
-					),
-					Global.Checkpoints[Event Player.Checkpoint][7]
-				)
-			)
-		),
-		Global.Checkpoints[Event Player.Checkpoint][0],
-		1, 
-		Do Not Clip,
-		Visible To Position and String,
-		Color(Green),
-		Default Visibility
-		);
-		"Create Bot text"
-		Create In-World Text(Global.Bots[Event Player.Checkpoint] ? Event Player : Null,
-		Custom String("{0}\nFacing: {1}\n{2}", 
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0], 
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1], 
-			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2],
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3], 
-				Custom String("Resurrect: {0}\nRefresh GA after Rez: {1}\nCurrentPos: {2}", 
-					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4],
-					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
-					Position Of(Event Player.Bot)
-				)
-			)
-		),
-		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0,1,0),
-		1, 
-		Do Not Clip,
-		Visible To Position and String,
-		Color(Aqua),
-		Default Visibility
-		);
-		"Debug landing threshold and goal condition"
-		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
-		X Component Of(Position Of(Event Player)),
-		Y Component Of(Position Of(Event Player)),
-		Z Component Of(Position Of(Event Player))),
-		Top, 0, Null, Null, Color(White), String, Default Visibility);
+		
+		"Throttle debug"
+		Create Hud Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nThrottle: {0}", Throttle Of(Event Player)),  Right, 103, Color(White), Color(White), Color(White), Visible To And String, Default Visibility);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -2925,7 +3419,7 @@ rule("Subroutine PeaceDecompressData")
 			Else;
 				Global.RefreshOrbs[Global.i] = Empty Array;
 				
-				"Blzz: Oh, you wanted to easily access multidimensional arrays?... XDDD no"
+				"Mapped array wont work with multidimensional arrays... why blizz? :/"
 				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
 					"Extract Multi-GA level bots"
 					Modify Global Variable At Index(Bots, Global.i, Append To Array,
@@ -3035,10 +3529,16 @@ rule("Server load widget by GigaMercy")
 	}
 	actions
 	{
-		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
-		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		"Color depends on AVG server load. Red > 75% | Orange > 50% | Green < 50%"
+		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%", Round To Integer(Server Load * 0.39, Up), Round To Integer(Server Load Average * 0.39, Up), Round To Integer(Server Load Peak* 0.39, Up)),
+		Null, Right, 0, Null, Server Load Average > 192 ? Color(Red) : Server Load Average > 128 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		
+		"Color depends on % used effects. Red > 75% | Orange > 50% | Green < 50%"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
-		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
-	
+		Null, Right, 0, Null, Entity Count > 192 ? Color(Red) : Entity Count > 128 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		
+		"Color depends on % used texts. Red > 75% | Orange > 50% | Green < 50%"
+		Create HUD Text(All Players(All Teams), Null, Custom String("Text count {0}/128", Text Count),
+		Null, Right, 0, Null, Text Count > 96 ? Color(Red) : Text Count > 64 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);	
 	}
-} 
+}
