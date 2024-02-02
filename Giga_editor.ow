@@ -219,6 +219,7 @@ variables
 		58: ObjectIndex
 		59: ObjectSelectTemp
 		60: ObjectSelectAura
+		61: ObjectMoveGhost
 }
 subroutines
 {
@@ -247,7 +248,6 @@ subroutines
 	22: GetEditMenuTempData
 	23: UpdateSelectObjAura
 }
-
 rule("——————————————————————————Giga Parkour Editor v0.1——————————————————————————")
 {
 	event
@@ -407,7 +407,8 @@ rule("1. Global Initialization")
 				 	disabled Start Game Mode;	
 		disabled End;
 		Pause Match Time;
-		Stop Forcing Spawn Room(All Teams);
+		"TODO: useless right?"
+		disabled Stop Forcing Spawn Room(All Teams);
 
 	}
 }
@@ -1988,6 +1989,8 @@ rule("EditMode: Hold [Interact] to open menu")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
@@ -2000,10 +2003,8 @@ rule("EditMode: Hold [Interact] to open menu")
 		Wait(0.2, Abort When False);
 		Event Player.MenuOpen = !Event Player.MenuOpen;
 		If(Event Player.MenuOpen);
-			disabled Start Facing(Event Player, Facing Direction Of(Event Player), 9999, To Player, None);
 			Set Move Speed(Event Player, 0);
 		Else;
-			disabled Stop Facing(Event Player);
 			Set Move Speed(Event Player, 100);
 		End;
 		Set Primary Fire Enabled(Event Player, !Event Player.MenuOpen);
@@ -2022,6 +2023,8 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
 		Event Player.MenuOpen == True;
 		Z Component Of(Throttle Of(Event Player)) != 0;
 	}
@@ -2048,6 +2051,8 @@ rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/prev
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Ability 2)) == True;
 		"Mind == Blown"
 		(Is Button Held(Event Player, Button(Primary Fire)) !=
@@ -2067,12 +2072,12 @@ rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/prev
 		Call Subroutine(SetEditModeObjectIndex);
 
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Small Message(Event Player, Custom String("Selected {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
-		Wait(0.2, Ignore Condition);
+		Wait(0.2, Restart When True);
+		Small Message(Event Player, Custom String("Selected {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 	}
 }
 rule("EditMode: Press [Interact] + [Melee] to insert object")
@@ -2086,6 +2091,8 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Melee)) == True;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
@@ -2104,19 +2111,33 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 
 		"Heres hoping blzz wont change this broken method and also that they add real switch/case"
 		If(True);
-			Skip(Event Player.MenuPage * 2);
+			Skip(Event Player.MenuPage * 4);
 			Small Message(Event Player, Custom String("Inserting checkpoint too hard yet sry :/"));
+			disabled End;
+			disabled End;
 			Else;
+			Skip If(Global.Orbs[Event Player.Checkpoint] != False, 1);
+			Global.Orbs[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
+			Skip If(Global.RefreshOrbs[Event Player.Checkpoint] != False, 1);
+			Global.RefreshOrbs[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
+			Skip If(Global.Bots[Event Player.Checkpoint] != False, 1);
+			Global.Bots[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
+			Skip If(Global.AntiOrbs[Event Player.Checkpoint] != False, 1);
+			Global.AntiOrbs[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
+			Skip If(Global.Clouds[Event Player.Checkpoint] != False, 1);
+			Global.Clouds[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
+			Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
+			Global.Teleports[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
 		End;
@@ -2129,7 +2150,7 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
-		Wait(0.25, Ignore Condition);
+		Wait(0.2, Ignore Condition);
 	}
 }
 rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/object type")
@@ -2143,6 +2164,8 @@ rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		((Is Button Held(Event Player, Button(Primary Fire)) == True) ||
 		(Is Button Held(Event Player, Button(Secondary Fire)) == True)) == True;
@@ -2160,9 +2183,100 @@ rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/
 		Event Player.MenuCursor = 0;
 		Event Player.ObjectIndex = 0;
 		Call Subroutine(UpdateSelectObjAura);
-		Small Message(Event Player, Custom String("Page {0}: {1}", Event Player.MenuPage, Global.MenuOptionsNames[Event Player.MenuPage]));
 		Call Subroutine(GetEditMenuTempData);
-		Wait(0.2, Ignore Condition);
+		Wait(0.2, Restart When True);
+		Small Message(Event Player, Custom String("Page {0}: {1}", Event Player.MenuPage, Global.MenuOptionsNames[Event Player.MenuPage]));
+	}
+}
+rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected object")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Ability 2)) == True;
+	}
+	actions
+	{
+		If(Event Player.ObjectSelectAura == Null);
+			Small Message(Event Player, Custom String("No object selected"));
+			Abort;
+		End;
+		If(Event Player.ObjectMoveGhost == Null);
+			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 10);
+				Small Message(Event Player, Custom String("Selected object is too far to move"));
+				Abort;
+			End;
+			If(True);
+				Event Player.ObjectSelectAura[2] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
+				Skip(Value In Array(Array(0,2,2,4,4,6,0), Event Player.MenuPage));
+				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Else;
+				Create Effect(Event Player, Orb, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Else;
+				Create Effect(Event Player, Sphere,  Event Player.MenuPage != 3 ? Color(Turquoise) : Color(Blue), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.MenuPage != 3 ? Event Player.ObjectSelectAura[1] : 0.25, Visible To Position Radius and Color);
+				Else;
+				Create Effect(Event Player, Cloud, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Else;
+			End;
+			Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+			Play Effect(Event Player, Brigitte Repair Pack Impact Sound, Null, Position Of(Event Player), 100);
+			Small Message(Event Player, Custom String("Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuOptionsNames[Event Player.MenuPage], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
+
+		Else;
+			disabled Event Player.ObjectSelectTemp = Null;
+			Small Message(Event Player, Custom String("Moved object!"));
+			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+			Destroy Effect(Event Player.ObjectMoveGhost);
+			Event Player.ObjectMoveGhost = Null;
+		End;
+	}
+}
+rule("EditMode: Press [Primary/Secondary fire] while grabbing an object to adjust its position")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
+		Event Player.ObjectMoveGhost != Null;
+		Event Player.ObjectSelectAura != Null;
+		(Is Button Held(Event Player, Button(Primary Fire)) != Is Button Held(Event Player, Button(Secondary Fire))) == True;
+	}
+	actions
+	{
+		Event Player.ObjectSelectAura[2] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.1 : -0.1;
+		
+		If(Event Player.ObjectSelectAura[2] > 24);
+			Event Player.ObjectSelectAura[2] = 24;
+			Abort;
+		Else If(Event Player.ObjectSelectAura[2] < (Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectSelectAura[1]/2));
+			Event Player.ObjectSelectAura[2] = Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectSelectAura[1]/2;
+			Abort;
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
 	}
 }
 rule("EditMode: Create Global Edit mode HUD")
@@ -2178,7 +2292,7 @@ rule("EditMode: Create Global Edit mode HUD")
 	actions
 	{
 		"Selected object indicator"
-		Create HUD Text(Local Player, Null, String Slice(Global.EnPadding, 0, 85), Custom String("\nCurrent Mode: {0}", Global.MenuOptionsNames[Local Player.MenuPage]),
+		Create HUD Text(Local Player, Null, String Slice(Global.EnPadding, 0, 85), Custom String("Current Mode: {0}", Global.MenuOptionsNames[Local Player.MenuPage]),
 			Left, 1, Null, Null, Color(Green), Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85), 
@@ -2193,16 +2307,16 @@ rule("EditMode: Create Global Edit mode HUD")
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
 			Custom String("Select: {0} + {1}/{2}",
-				Input Binding String(Button(Ability 2)), 
+				Input Binding String(Button(Reload)), 
 				Input Binding String(Button(Primary Fire)), 
 				Input Binding String(Button(Secondary Fire))
 			),
 			Left, 11, Null, Null, Color(Purple), Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
-			Custom String("Move: {0} + {1}\n{2}\n— — — — — — — — — — — — — — — — — — — ", 
-				Input Binding String(Button(Interact)),  
-				Input Binding String(Button(Ability 2)), 
+			Custom String("Grab selection: {0} + {1}\n{2}\n— — — — — — — — — — — — — — — — — — — ", 
+				Input Binding String(Button(Melee)),  
+				Input Binding String(Button(Primary Fire)), 
 				Custom String("Delete: Hold {0} + {1}",
 					Input Binding String(Button(Interact)), 
 					Input Binding String(Button(Crouch))
@@ -2423,7 +2537,7 @@ rule("Subroutine UpdateSelectObjAura")
 			Else;
 			Event Player.ObjectSelectAura = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
 			Else;
-			Event Player.ObjectSelectAura = Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array(Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex][0] + Vector(0,1.7,0), 1.7) : Null;
+			Event Player.ObjectSelectAura = Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array(Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex][0], 1.7) : Null;
 			Else;
 			Event Player.ObjectSelectAura = Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex] != Null ? Array Slice(Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
 			Else;
@@ -2522,7 +2636,7 @@ rule("Subroutine InitializePlayerVariables")
 				Array(Null, 1.6, False, True, False, 1.6, 1.6, False),
 				Array(Null, 0.8),
 				Array(Null, 0.8, False, True, False, False),
-				Array(Null, False, False, True, False, True),
+				Array(Null, False, False, False, False, True),
 				Array(Null, 2),
 				Array(Null, 1, 8),
 				Array(Null, 1.6, False, 1.6, 1.6)
@@ -3529,16 +3643,16 @@ rule("Server load widget by GigaMercy")
 	}
 	actions
 	{
-		"Color depends on AVG server load. Red > 75% | Orange > 50% | Green < 50%"
+		"Color depends on AVG server load. Red: >75% | Orange: >50% | Green: below 50%"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%", Round To Integer(Server Load * 0.39, Up), Round To Integer(Server Load Average * 0.39, Up), Round To Integer(Server Load Peak* 0.39, Up)),
 		Null, Right, 0, Null, Server Load Average > 192 ? Color(Red) : Server Load Average > 128 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
 		
-		"Color depends on % used effects. Red > 75% | Orange > 50% | Green < 50%"
+		"Color depends on % used effects. Red: >75% | Orange: >50% | Green: below 50%"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
 		Null, Right, 0, Null, Entity Count > 192 ? Color(Red) : Entity Count > 128 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
 		
-		"Color depends on % used texts. Red > 75% | Orange > 50% | Green < 50%"
-		Create HUD Text(All Players(All Teams), Null, Custom String("Text count {0}/128", Text Count),
+		"No need to enable this unless your map has a lot of in-world texts or icons\nColor depends on % used texts. Red: >75% | Orange: >50% | Green: below 50%"
+		disabled Create HUD Text(All Players(All Teams), Null, Custom String("Text count {0}/128", Text Count),
 		Null, Right, 0, Null, Text Count > 96 ? Color(Red) : Text Count > 64 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);	
 	}
 }
