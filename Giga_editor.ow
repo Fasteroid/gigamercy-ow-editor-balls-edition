@@ -202,7 +202,7 @@ variables
 		41: Resetting
 		42: MercyRezTimer
 		43: StartingAbilities
-		44: UNUSEDTempCheckpoint
+		44: EditTempArray
 		45: PlayerName
 		46: BestRun
 		47: SavedCheckpoint
@@ -220,6 +220,7 @@ variables
 		59: ObjectSelectTemp
 		60: ObjectSelectAura
 		61: ObjectMoveGhost
+		62: EditTempObject
 }
 subroutines
 {
@@ -247,6 +248,7 @@ subroutines
 	21: CreateCurrentWorldTexts
 	22: GetEditMenuTempData
 	23: UpdateSelectObjAura
+	24: EditSelectedObject
 }
 rule("——————————————————————————Giga Parkour Editor v0.1——————————————————————————")
 {
@@ -2004,8 +2006,10 @@ rule("EditMode: Hold [Interact] to open menu")
 		Event Player.MenuOpen = !Event Player.MenuOpen;
 		If(Event Player.MenuOpen);
 			Set Move Speed(Event Player, 0);
+			Set Jump Enabled(Event Player, False);
 		Else;
 			Set Move Speed(Event Player, 100);
+			Set Jump Enabled(Event Player, Event Player.FreeMode ? True : Event Player.Jump);
 		End;
 		Set Primary Fire Enabled(Event Player, !Event Player.MenuOpen);
 		Set Secondary Fire Enabled(Event Player, !Event Player.MenuOpen);
@@ -2038,6 +2042,38 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 		Play Effect(Event Player, Widowmaker Venom Mine Explosion Sound , Null, Position Of(Event Player), 60);
 		Wait(0.15, Abort When False);
 		Loop If Condition Is True;
+	}
+}
+rule("EditMode: Press [Jump] in menu to edit the attribute")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
+		Event Player.MenuOpen == True;
+		Is Button Held(Event Player, Button(Jump)) == True;
+	}
+	actions
+	{
+		If(Event Player.MenuCursor == 0);
+			Small Message(Event Player, Custom String("Cant change object coordinates with this menu"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Abort;
+		End;
+		"TODO: This does not reflect changes to crouch enabled immediately, fix pls"
+		If(Event Player.MenuPage == 0);
+			Call Subroutine(SetCurrentAbilities);
+		End;
+		Call Subroutine(EditSelectedObject);
+		Call Subroutine(GetEditMenuTempData);
+		Wait(0.2, Ignore Condition);
 	}
 }
 rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/previous object")
@@ -2136,9 +2172,10 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 			Global.Clouds[Event Player.Checkpoint] = Empty Array;
 			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
 			Else;
-			Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
-			Global.Teleports[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			disabled Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
+			disabled Global.Teleports[Event Player.Checkpoint] = Empty Array;
+			disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.Temp));
+			Small Message(Event Player, Custom String("Inserting Teleports too hard yet sry :/"));
 			Else;
 		End;
 		Event Player.ObjectIndex = -1;
@@ -2211,27 +2248,30 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			Abort;
 		End;
 		If(Event Player.ObjectMoveGhost == Null);
-			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 10);
+			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 16);
 				Small Message(Event Player, Custom String("Selected object is too far to move"));
 				Abort;
 			End;
 			If(True);
 				Event Player.ObjectSelectAura[2] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
-				Skip(Value In Array(Array(0,2,2,4,4,6,0), Event Player.MenuPage));
-				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
-				Else;
-				Create Effect(Event Player, Orb, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
-				Else;
-				Create Effect(Event Player, Sphere,  Event Player.MenuPage != 3 ? Color(Turquoise) : Color(Blue), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.MenuPage != 3 ? Event Player.ObjectSelectAura[1] : 0.25, Visible To Position Radius and Color);
-				Else;
-				Create Effect(Event Player, Cloud, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				
+				Skip(Value In Array(Array(0,3,3,12,6,9,0), Event Player.MenuPage));
+				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
 				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
-				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Local Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Skip(9);
+				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+				Create Effect(Event Player, Orb, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Else;
+				Create Effect(Event Player, Sphere, Event Player.MenuPage != 3 ? Color(Turquoise) : Color(Blue), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.MenuPage != 3 ? Event Player.ObjectSelectAura[1] : 0.25, Visible To Position Radius and Color);
+				Else;
+				Create Effect(Event Player, Cloud, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Else;
+				"Small orb for objects that require more precise placing"
+				Create Effect(Event Player, Sphere, Color(Blue), Update Every Frame(Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), 0.25, Visible To Position Radius and Color);
 				Else;
 			End;
 			Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
@@ -2239,7 +2279,10 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			Small Message(Event Player, Custom String("Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuOptionsNames[Event Player.MenuPage], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
 
 		Else;
-			disabled Event Player.ObjectSelectTemp = Null;
+			Event Player.MenuCursor = 0;
+			Event Player.ObjectSelectAura[2] = (Eye Position(Event Player) + 
+				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player));
+			Call Subroutine(EditSelectedObject);
 			Small Message(Event Player, Custom String("Moved object!"));
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			Destroy Effect(Event Player.ObjectMoveGhost);
@@ -2546,6 +2589,89 @@ rule("Subroutine UpdateSelectObjAura")
 			Event Player.ObjectSelectAura = Global.Teleports[Event Player.Checkpoint] != Null ? Array Slice(Global.Teleports[Event Player.Checkpoint][Event Player.ObjectIndex], 0, 2) : Null;
 			Else;
 		End;
+	}
+}
+rule("Subroutine EditSelectedObject")
+{
+	event
+	{
+		Subroutine;
+		EditSelectedObject;
+	}
+
+	actions
+	{
+		"Get current level object array"
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Event Player.EditTempArray = Global.Checkpoints[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Orbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.RefreshOrbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Bots[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.AntiOrbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Clouds[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Teleports[Event Player.Checkpoint];
+			Else;
+		End;
+		"Checkpoints and teleports are not encapsulated in other arrays"
+		If(Event Player.MenuPage == 0 || Event Player.MenuPage == 6);
+			Event Player.EditTempObject = Event Player.EditTempArray;
+		Else;
+			"Single out the edited object"
+			Event Player.EditTempObject = Event Player.EditTempArray[Event Player.ObjectIndex];
+		End;
+
+		"TODO: Temporary, only valid when using hold and move"
+		If(Event Player.MenuCursor == 0);
+			Event Player.EditTempObject[0] = Event Player.ObjectSelectAura[2];
+			Event Player.ObjectSelectAura[0] = Event Player.ObjectSelectAura[2];
+
+		"TODO: Validate different language clients"
+		Else If(String Contains(Custom String("{0} {1}", True, False), Custom String("{0}", Event Player.EditTempObject[Event Player.MenuCursor])));
+			Event Player.EditTempObject[Event Player.MenuCursor] = !Event Player.EditTempObject[Event Player.MenuCursor];
+		Else;
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Small Message(Event Player, Custom String("The value you tried to edit is not supported yet"));
+			Abort;
+		End;
+		"Pack the array again"
+		If(Event Player.MenuPage == 0 || Event Player.MenuPage == 6);
+			Event Player.EditTempArray = Event Player.EditTempObject;
+		Else;
+			Event Player.EditTempArray[Event Player.ObjectIndex] = Event Player.EditTempObject;
+		End;
+
+		Wait(0.016, Ignore Condition);
+		"Save data"
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Global.Checkpoints[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.Orbs[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.RefreshOrbs[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.Bots[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.AntiOrbs[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.Clouds[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+			Global.Teleports[Event Player.Checkpoint] = Event Player.EditTempArray;
+			Else;
+		End;
+		
+		If(Event Player.MenuPage == 3);
+			"Call for a bot update"
+			Set Player Variable(Event Player.Bot, BotUpdate, True);
+		End;
+		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 	}
 }
 rule("——————————————————————————Subroutines——————————————————————————")
