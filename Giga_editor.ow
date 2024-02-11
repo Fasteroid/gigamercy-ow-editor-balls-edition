@@ -250,6 +250,7 @@ subroutines
 	23: UpdateSelectObjAura
 	24: EditSelectedObject
 }
+
 rule("——————————————————————————Giga Parkour Editor v0.1——————————————————————————")
 {
 	event
@@ -507,7 +508,7 @@ rule("————————————————————————�
 		Ongoing - Global;
 	}
 }
-rule("Press [Interact] twice to view/hide controls")
+rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 {
 	event
 	{
@@ -533,15 +534,29 @@ rule("Press [Interact] twice to view/hide controls")
 		Wait Until(!Is Button Held(Event Player, Button(Interact)), 99999);
 		Wait Until(Is Button Held(Event Player, Button(Interact)), 0.300);
 		If(Is Button Held(Event Player, Button(Interact)));
+			Skip If(Global.EditMode, 6);
 			If(!Array Contains(Global.ShowSidebarControlsPlayers, Event Player));
 				Modify Global Variable(ShowSidebarControlsPlayers, Append To Array, Event Player);
 			Else;
 				Modify Global Variable(ShowSidebarControlsPlayers, Remove From Array By Value, Event Player);
 			End;
+			Abort;
+			Log To Inspector(Custom String("{0} - Toggle menu", Event Player));
+			Event Player.MenuOpen = !Event Player.MenuOpen;
+			If(Event Player.MenuOpen);
+				Set Move Speed(Event Player, 0);
+				Set Jump Enabled(Event Player, False);
+			Else;
+				Set Move Speed(Event Player, 100);
+				Set Jump Enabled(Event Player, Event Player.FreeMode ? True : Event Player.Jump);
+			End;
+			Set Primary Fire Enabled(Event Player, !Event Player.MenuOpen);
+			Set Secondary Fire Enabled(Event Player, !Event Player.MenuOpen);
+			Call Subroutine(GetEditMenuTempData);
 		End;
 	}
 }
-rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoints")
+rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoints | EditMode: Switch object mode")
 {
 	event
 	{
@@ -552,35 +567,42 @@ rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoin
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == True;
+		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Melee)) == True;
-		(Is Button Held(Event Player, Button(Primary Fire)) ||
-		Is Button Held(Event Player, Button(Secondary Fire))) == True;
+		Is Button Held(Event Player, Button(Primary Fire)) !=
+		Is Button Held(Event Player, Button(Secondary Fire));
 	}
 	actions
 	{
-		Event Player.TempFreeMode = Event Player.FreeMode;
-		Event Player.FreeMode = True;
-		If(Is Button Held(Event Player, Button(Primary Fire)));
-			If(Event Player.Checkpoint < Count Of(Global.Checkpoints) - 1);
-				Event Player.Checkpoint += 1;
+		If(!Global.EditMode);
+			Event Player.TempFreeMode = Event Player.FreeMode;
+			Event Player.FreeMode = True;
+			Event Player.Checkpoint = Is Button Held(Event Player, Button(Primary Fire)) ? 
+				(Event Player.Checkpoint + 1 ) % Count Of(Global.Checkpoints) : 
+				(Event Player.Checkpoint - 1 + Count Of(Global.Checkpoints)) % Count Of(Global.Checkpoints);
+				
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = Event Player.TempFreeMode;
+			Log To Inspector(Custom String("{0} - Switched manually to CP {1}", Event Player, Event Player.Checkpoint));
+			Call Subroutine(SetUpCheckpoint);
+			"Hold buttons to speed switch"
+			Wait(0.2, Abort When False);
+			Loop If Condition Is True;
+		Else;
+			Log To Inspector(Custom String("{0} - Switch page", Event Player));
+				Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			If(Is Button Held(Event Player, Button(Primary Fire)));
+				Event Player.MenuPage = (Event Player.MenuPage + 1) % Evaluate Once(Count Of(Global.MenuOptions));
 			Else;
-				Event Player.Checkpoint = 0;
+				Event Player.MenuPage = (Event Player.MenuPage + Evaluate Once(Count Of(Global.MenuOptions) - 1)) % Evaluate Once(Count Of(Global.MenuOptions));
 			End;
-		Else If(Is Button Held(Event Player, Button(Secondary Fire)));
-			If(Event Player.Checkpoint > 0);
-				Event Player.Checkpoint -= 1;
-			Else If(Event Player.Checkpoint == 0);
-				Event Player.Checkpoint = Count Of(Global.Checkpoints) - 1;
-			End;
-		End;	
-		Call Subroutine(TeleportToCurrentCheckpoint);
-		Event Player.FreeMode = Event Player.TempFreeMode;
-		Log To Inspector(Custom String("{0} - Switched manually to CP {1}", Event Player, Event Player.Checkpoint));
-		Call Subroutine(SetUpCheckpoint);
-		"Hold buttons to speed switch"
-		Wait(0.1, Abort When False);
-		Loop If Condition Is True;
+			Event Player.MenuCursor = 0;
+			Event Player.ObjectIndex = 0;
+			Call Subroutine(UpdateSelectObjAura);
+			Call Subroutine(GetEditMenuTempData);
+			Wait(0.2, Restart When True);
+			Small Message(Event Player, Custom String("Page {0}: {1}", Event Player.MenuPage, Global.MenuOptionsNames[Event Player.MenuPage]));
+		End;
 	}
 }
 rule("Press [Reload] to reset current checkpoint")
@@ -1626,7 +1648,7 @@ rule("Detect Using Ability 1")
 					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 					Event Player.Ability1 = True;
 			"If lvl does not have unlimited GA, set GA status (racing conditions apply)"
-			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False);
+			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False && Event Player.FreeMode == False);
 				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 			End;
 		End;
@@ -1980,7 +2002,7 @@ rule("EditMode: Menu option definitions")
 
     }
 }
-rule("EditMode: Hold [Interact] to open menu")
+disabled rule("EditMode: Hold [Interact] to open menu")
 {
 	event
 	{
@@ -2076,7 +2098,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 		Wait(0.2, Ignore Condition);
 	}
 }
-rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/previous object")
+rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous object")
 {
 	event
 	{
@@ -2089,13 +2111,13 @@ rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/prev
 		Is Dummy Bot(Event Player) == False;
 		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
-		Is Button Held(Event Player, Button(Ability 2)) == True;
-		"Mind == Blown"
+		"developer.Mind = Blown"
+		Is Button Held(Event Player, Button(Melee)) == True;
 		(Is Button Held(Event Player, Button(Primary Fire)) !=
 		Is Button Held(Event Player, Button(Secondary Fire))) == True;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Is Button Held(Event Player, Button(Interact)) == False;
 		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
 		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
 		disabled Is Button Held(Event Player, Button(Jump)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
@@ -2116,7 +2138,7 @@ rule("EditMode: Press [Ability 2] + [Primary/Secondary Fire] to select next/prev
 		Small Message(Event Player, Custom String("Selected {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 	}
 }
-rule("EditMode: Press [Interact] + [Melee] to insert object")
+rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 {
 	event
 	{
@@ -2130,7 +2152,9 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Melee)) == True;
+		Is Button Held(Event Player, Button(Primary Fire)) == True;
+		Is Button Held(Event Player, Button(Secondary Fire)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
 		Is Button Held(Event Player, Button(Ability 1)) == False;
 		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Is Button Held(Event Player, Button(Crouch)) == False;
@@ -2141,6 +2165,13 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 	}
 	actions
 	{
+		If(Event Player.MenuPage == 0);
+			Small Message(Event Player, Custom String("Hold for 1s to add a new checkpoint"));
+			Wait(1, Abort When False);
+			Small Message(Event Player, Custom String("checkpoint would be added here"));
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			Abort;
+		End;
 		"TODO: BERI DAENDARIS"
 		Event Player.Temp = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
 		Event Player.Temp[0] = Position Of(Event Player);
@@ -2190,7 +2221,7 @@ rule("EditMode: Press [Interact] + [Melee] to insert object")
 		Wait(0.2, Ignore Condition);
 	}
 }
-rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/object type")
+rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected object")
 {
 	event
 	{
@@ -2204,8 +2235,76 @@ rule("EditMode: Press [Interact] + [Primary/Secondary Fire] to switch menu page/
 		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
-		((Is Button Held(Event Player, Button(Primary Fire)) == True) ||
-		(Is Button Held(Event Player, Button(Secondary Fire)) == True)) == True;
+		Is Button Held(Event Player, Button(Secondary Fire)) == True;
+		Is Button Held(Event Player, Button(Primary Fire)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+	}
+	actions
+	{
+		Small Message(Event Player, Custom String("Hold {0} + {1} for 1s to delete {2}", Input Binding String(Button(Interact)),Input Binding String(Button(Secondary Fire)), Global.MenuOptionsNames[Event Player.MenuPage]));
+		Wait(1, Abort When False);
+		If(Event Player.MenuPage == 0);
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			disabled Small Message(Event Player, Custom String("Hold {0} + {2} for 1s to delete checkpoint", Input Binding String(Button(Melee)),Input Binding String(Button(Primary Fire)),Input Binding String(Button(Secondary Fire))));
+			disabled Wait(1, Abort When False);
+			Small Message(Event Player, Custom String("checkpoint would be deleted here"));
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			Abort;
+		End;
+		"Heres hoping blzz wont change this broken method and also that they add real switch/case"
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Small Message(Event Player, Custom String("Deleting cp not implemented yet"));
+			Else;
+			Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+			Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+			Modify Global Variable At Index(Bots, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+			Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+			Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+			Else;
+		End;
+		Event Player.ObjectIndex = -1;
+		Call Subroutine(SetEditModeObjectIndex);
+
+		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Small Message(Event Player, Custom String("Deleted {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+		
+		If(Event Player.MenuOpen);
+			Call Subroutine(GetEditMenuTempData);
+		End;
+		Wait(0.2, Ignore Condition);
+	}
+}
+disabled rule("EditMode: Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch menu page/object type")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		(Is Button Held(Event Player, Button(Primary Fire)) ||
+		Is Button Held(Event Player, Button(Secondary Fire))) == True;
 	}
 	actions
 	{
@@ -2335,37 +2434,45 @@ rule("EditMode: Create Global Edit mode HUD")
 	actions
 	{
 		"Selected object indicator"
-		Create HUD Text(Local Player, Null, String Slice(Global.EnPadding, 0, 85), Custom String("Current Mode: {0}", Global.MenuOptionsNames[Local Player.MenuPage]),
+		disabled Create HUD Text(Local Player, Null, String Slice(Global.EnPadding, 0, 85), Custom String("Current Mode: {0}", Global.MenuOptionsNames[Local Player.MenuPage]),
 			Left, 1, Null, Null, Color(Green), Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85), 
-			Custom String("— — — — — Edit Mode Controls — — — — —\nInsert: {0} + {1} (Hold to open palette)\n{2}", 
-				Input Binding String(Button(Interact)), 
-				Input Binding String(Button(Melee)), 
-				Custom String("Edit: Hold {0}", 
-					Input Binding String(Button(Interact))
+		Create HUD Text(All Players(All Teams), Null, 
+			Custom String("\n\n{0}\n{1}", 
+				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Interact + {1}\nNext/Prev {2}.... Melee + {0}/{1}", 
+					Input Binding String(Button(Primary Fire)),
+					Input Binding String(Button(Secondary Fire)),
+					Global.MenuOptionsNames[Local Player.MenuPage]
+				), 
+				Custom String("Open {0} menu... Interact 2x{1}", 
+					Global.MenuOptionsNames[Local Player.MenuPage],
+					String Slice(Global.EnPadding, 0, 85 - 26 - String Length(Global.MenuOptionsNames[Local Player.MenuPage]))
 				)
-			),
-			Left, 10, Null, Null, Color(Green), Visible To String And Color, Default Visibility);
+			), 
+			Null, Left, 10, Null, Color(Turquoise), Null, Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
-			Custom String("Select: {0} + {1}/{2}",
-				Input Binding String(Button(Reload)), 
-				Input Binding String(Button(Primary Fire)), 
-				Input Binding String(Button(Secondary Fire))
-			),
-			Left, 11, Null, Null, Color(Purple), Visible To String And Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null,
+			Custom String("{0}\n{1}", 
+			Custom String("Move {0}................ Reload + {1}\n{2}",
+				Global.MenuOptionsNames[Local Player.MenuPage],
+				Input Binding String(Button(Ability 2)),
+				Custom String("Switch Mode: Interact + Melee + {0}/{1}", 
+					Input Binding String(Button(Primary Fire)),
+					Input Binding String(Button(Secondary Fire)))
+			), 
+			String Slice(Global.EnPadding, 0, 85)), 
+			Null, Left, 11, Null, Color(Turquoise), Null, Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
-			Custom String("Grab selection: {0} + {1}\n{2}\n— — — — — — — — — — — — — — — — — — — ", 
-				Input Binding String(Button(Melee)),  
-				Input Binding String(Button(Primary Fire)), 
-				Custom String("Delete: Hold {0} + {1}",
-					Input Binding String(Button(Interact)), 
-					Input Binding String(Button(Crouch))
-				)
+		disabled Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
+			Custom String("Edit menu: Double click {0} \nSwitch Mode: {1} + {2}",
+				Input Binding String(Button(Interact)),
+				Input Binding String(Button(Ability 2)),
+				Custom String("{0} + {1}/{2}", 
+					Input Binding String(Button(Melee)),
+					Input Binding String(Button(Primary Fire)), 
+					Input Binding String(Button(Secondary Fire)))
 			),
-			Left, 12, Null, Null, Color(Orange), Visible To String And Color, Default Visibility);
+			Left, 12, Null, Null, Color(Purple), Visible To String And Color, Default Visibility);
 		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
 		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
 			Custom String("--------------------------------------\n{0}{1}", 
@@ -2559,6 +2666,11 @@ rule("Subroutine SetEditModeObjectIndex")
 		End;
 		
 		Event Player.ObjectIndex = (Event Player.ObjectIndex + Event Player.ObjectSelectTemp) % Event Player.ObjectSelectTemp;
+		If(Event Player.MenuPage == 0);
+			Event Player.TempFreeMode = Event Player.FreeMode;
+			Event Player.FreeMode = True;
+			Event Player.Checkpoint = Event Player.ObjectIndex;
+		End;
 		Call Subroutine(UpdateSelectObjAura);
 	}
 }
@@ -2708,6 +2820,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                                                                ");
 		Global.PlayerData = Empty Array;
+		Global.ShowSidebarControlsPlayers = Empty Array;
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -2905,7 +3018,7 @@ rule("Subroutine CreateGlobalHUD")
 		disabled End;
 
 		"Controls pt1"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("— — — — — — — — — — — — — — —\n{0}\n{1}",
 				Custom String("Reset level: {0}", 
 					Input Binding String(Button(Reload))
@@ -2918,8 +3031,9 @@ rule("Subroutine CreateGlobalHUD")
 			), 
 		Right, 12, Null,  Null, Color(White), Visible To and String, Default Visibility);
 		
+		Skip If(Global.EditMode, 1);
 		"Controls pt2. Lord forgive me for this hack"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("Switch Level: {0} + {1} + {2}", 
 				Input Binding String(Button(Ability 2)), 
 				Input Binding String(Button(Melee)), 
@@ -2948,7 +3062,7 @@ rule("Subroutine CreateGlobalHUD")
 		Right, 13, Null, Null, Color(White),  Visible To and String, Default Visibility);
 		
 		"Controls pt3"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("Free Mode: {0} + {1} + {2}  ", 
 				String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
 				Input Binding String(Button(Reload)),
@@ -2957,7 +3071,7 @@ rule("Subroutine CreateGlobalHUD")
 		Right, 14, Null, Null, Color(White), Visible To and String, Default Visibility);
 		
 		"Controls pt4"
-		Create HUD Text(Global.ShowSidebarControlsPlayers, Null, Null,
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null, Null,
 			Custom String("{0}\n{1}\n— — — — — — — — — — — — — — —",
 				Custom String("3rd Person: {0} + {1}", 
 					Input Binding String(Button(Jump)), 
