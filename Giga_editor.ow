@@ -597,7 +597,7 @@ rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoint
 				Event Player.MenuPage = (Event Player.MenuPage + Evaluate Once(Count Of(Global.MenuOptions) - 1)) % Evaluate Once(Count Of(Global.MenuOptions));
 			End;
 			Event Player.MenuCursor = 0;
-			Event Player.ObjectIndex = 0;
+			Event Player.ObjectIndex = Event Player.MenuPage == 0 ? Event Player.Checkpoint : 0;
 			Call Subroutine(UpdateSelectObjAura);
 			Call Subroutine(GetEditMenuTempData);
 			Wait(0.2, Restart When True);
@@ -2128,8 +2128,6 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 	{
 		Event Player.ObjectIndex += (Is Button Held(Event Player, Button(Primary Fire)) ? 1 : -1);
 		Call Subroutine(SetEditModeObjectIndex);
-
-		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
@@ -2354,7 +2352,7 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			If(True);
 				Event Player.ObjectSelectAura[2] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
 				
-				Skip(Value In Array(Array(0,3,3,12,6,9,0), Event Player.MenuPage));
+				Skip(Value In Array(Array(0,3,3,12,6,8,0), Event Player.MenuPage));
 				Create Effect(Event Player, Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
 				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
 				Skip(9);
@@ -2439,7 +2437,7 @@ rule("EditMode: Create Global Edit mode HUD")
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(All Players(All Teams), Null, 
 			Custom String("\n\n{0}\n{1}", 
-				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Interact + {1}\nNext/Prev {2}.... Melee + {0}/{1}", 
+				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Interact + {1}\nSelect {2}............ Melee + {0}/{1}", 
 					Input Binding String(Button(Primary Fire)),
 					Input Binding String(Button(Secondary Fire)),
 					Global.MenuOptionsNames[Local Player.MenuPage]
@@ -2452,27 +2450,17 @@ rule("EditMode: Create Global Edit mode HUD")
 			Null, Left, 10, Null, Color(Turquoise), Null, Visible To String And Color, Default Visibility);
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(All Players(All Teams), Null,
-			Custom String("{0}\n{1}", 
-			Custom String("Move {0}................ Reload + {1}\n{2}",
-				Global.MenuOptionsNames[Local Player.MenuPage],
-				Input Binding String(Button(Ability 2)),
-				Custom String("Switch Mode: Interact + Melee + {0}/{1}", 
-					Input Binding String(Button(Primary Fire)),
-					Input Binding String(Button(Secondary Fire)))
-			), 
+			Custom String("{0}\n{1}\n{2}", 
+				Custom String("Move {0}................ {1} + {2}",
+					Global.MenuOptionsNames[Local Player.MenuPage],
+					Input Binding String(Button(Reload)),
+					Input Binding String(Button(Ability 2))),
+			Custom String("Switch Mode: Interact + Melee + {0}/{1}", 
+				Input Binding String(Button(Primary Fire)),
+				Input Binding String(Button(Secondary Fire))),
 			String Slice(Global.EnPadding, 0, 85)), 
 			Null, Left, 11, Null, Color(Turquoise), Null, Visible To String And Color, Default Visibility);
-		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		disabled Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85),
-			Custom String("Edit menu: Double click {0} \nSwitch Mode: {1} + {2}",
-				Input Binding String(Button(Interact)),
-				Input Binding String(Button(Ability 2)),
-				Custom String("{0} + {1}/{2}", 
-					Input Binding String(Button(Melee)),
-					Input Binding String(Button(Primary Fire)), 
-					Input Binding String(Button(Secondary Fire)))
-			),
-			Left, 12, Null, Null, Color(Purple), Visible To String And Color, Default Visibility);
+
 		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
 		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
 			Custom String("--------------------------------------\n{0}{1}", 
@@ -2493,7 +2481,6 @@ rule("EditMode: Create Global Edit mode HUD")
 				Vertical Angle From Direction(Facing Direction Of(Local Player)) - 90)
 			+ 3 * Facing Direction Of(Local Player)), 
 			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
-
 
 		"View object data"
 		Create In-World Text(Local Player.MenuOpen ? Local Player : Null, 
@@ -2538,7 +2525,7 @@ rule("EditMode: Create Global Edit mode HUD")
 			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
 
 		"Create highlighted object aura"
-		Create Effect(Local Player.ObjectSelectAura ? Local Player : Null, Good Aura, Color(Green), Local Player.ObjectSelectAura[0], Local Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+		Create Effect(Local Player.ObjectSelectAura && Local Player.MenuPage != 0 ? Local Player : Null, Good Aura, Color(Green), Local Player.ObjectSelectAura[0], Local Player.ObjectSelectAura[1], Visible To Position Radius and Color);
 		Create Icon(Local Player.ObjectSelectAura ? Local Player : Null, Local Player.ObjectSelectAura[0] + Vector(0, Local Player.ObjectSelectAura[1], 0), Arrow: Down, Visible To and Position, Color(Green), True);
 	}
 }
@@ -2670,6 +2657,12 @@ rule("Subroutine SetEditModeObjectIndex")
 			Event Player.TempFreeMode = Event Player.FreeMode;
 			Event Player.FreeMode = True;
 			Event Player.Checkpoint = Event Player.ObjectIndex;
+			Call Subroutine(SetUpCheckpoint);
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = Event Player.TempFreeMode;
+			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+		Else;
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		End;
 		Call Subroutine(UpdateSelectObjAura);
 	}
@@ -3184,6 +3177,10 @@ rule("Subroutine SetUpCheckpoint")
 		If(Global.SmallMessages[Event Player.Checkpoint] != False);
 			"Display current level Big message"
 			Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
+		End;
+		If(Global.EditMode);
+			Event Player.ObjectIndex = Event Player.MenuPage == 0 ? Event Player.Checkpoint : 0;
+			Call Subroutine(UpdateSelectObjAura);
 		End;
 	}
 }
