@@ -221,6 +221,8 @@ variables
 		60: ObjectSelectAura
 		61: ObjectMoveGhost
 		62: EditTempObject
+		63: EditNumber
+		64: EditConfirmationTimer
 }
 subroutines
 {
@@ -370,12 +372,12 @@ rule("VIPs / Custom player tags")
 	}
 	actions
 	{
-		"BNet name, Nickname, Color"
+		"Parkour Editor by GigaMercy"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224));
-		"Add your custom names here"
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("cashhole"), Custom String("Holecash"), Color(White));
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Platanardo"), Color(White));
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Aeternalys"), Custom String("Baguetternalys"), Color(White));
+		"Add your custom names here\n[0]: BNet name\n[1]: Custom name\n[2]: Color/Custom Color"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
 	}
 }
 rule("——————————————————————————Initialization Settings——————————————————————————")
@@ -1229,7 +1231,7 @@ rule("Create HUD Tips/Hints")
 	actions
 	{
 		"Separator from top of screen (default 22 new lines)"
-		disabled Create Hud Text(Local Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
+		Create Hud Text(Local Player.MenuOpen ? Null : Local Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
 
 		"TODO: Support translations"
 		Create Hud Text(Global.HintTexts[Local Player.Checkpoint] != False ? Local Player : Null, Custom String("{0} :{1}\n  {2}  \n", Hero Icon String(Hero(Mercy)), String Slice(Global.EnPadding, 0, 20), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 21,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To And String, Default Visibility);
@@ -2164,9 +2166,16 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 	}
 	actions
 	{
+		disabled Wait(0.016, Ignore Condition);
 		If(Event Player.MenuPage == 0);
-			Small Message(Event Player, Custom String("Hold for 1s to add a new checkpoint"));
-			Wait(1, Abort When False);
+			Event Player.EditConfirmationTimer = 0;
+			Chase Player Variable Over Time(Event Player, EditConfirmationTimer, 100, 0.6, None);
+			Wait Until((Is Button Held(Event Player, Button(Interact)) && Is Button Held(Event Player, Button(Primary Fire))) == False, 0.6);
+			Stop Chasing Player Variable(Event Player, EditConfirmationTimer);
+			Skip If(Event Player.EditConfirmationTimer == 100, 2);
+				Event Player.EditConfirmationTimer = 0;
+				Abort;
+			Event Player.EditConfirmationTimer = 0;
 
 			Event Player.EditTempArray = Event Player.NewObjectDefaults[0];
 			Event Player.EditTempArray[0] = Position Of(Event Player);
@@ -2185,53 +2194,53 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 			Small Message(All Players(All Teams), Custom String("{0} created a CP at index {1}", Event Player, Event Player.Checkpoint));
 			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 			Skip If(!Event Player.MenuOpen, 1);
-			Call Subroutine(GetEditMenuTempData);
 			Call Subroutine(SetUpCheckpoint);
-			Abort;
+		Else;
+
+			Event Player.EditTempArray = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
+			Event Player.EditTempArray[0] = Position Of(Event Player);
+
+			"Heres hoping blzz wont change this broken method and also that they add real switch/case"
+			If(True);
+				Skip((Event Player.MenuPage - 1) * 4);
+				Skip If(Global.Orbs[Event Player.Checkpoint] != False, 1);
+				Global.Orbs[Event Player.Checkpoint] = Empty Array;
+				Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Else;
+				Skip If(Global.RefreshOrbs[Event Player.Checkpoint] != False, 1);
+				Global.RefreshOrbs[Event Player.Checkpoint] = Empty Array;
+				Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Else;
+				Skip If(Global.Bots[Event Player.Checkpoint] != False, 1);
+				Global.Bots[Event Player.Checkpoint] = Empty Array;
+				Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Else;
+				Skip If(Global.AntiOrbs[Event Player.Checkpoint] != False, 1);
+				Global.AntiOrbs[Event Player.Checkpoint] = Empty Array;
+				Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Else;
+				Skip If(Global.Clouds[Event Player.Checkpoint] != False, 1);
+				Global.Clouds[Event Player.Checkpoint] = Empty Array;
+				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Else;
+				disabled Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
+				disabled Global.Teleports[Event Player.Checkpoint] = Empty Array;
+				disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Small Message(Event Player, Custom String("Inserting Teleports too hard yet sry :/"));
+				Else;
+			End;
+			Event Player.ObjectIndex = -1;
+			Call Subroutine(SetEditModeObjectIndex);
+
+			Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		End;
-
-		Event Player.EditTempArray = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
-		Event Player.EditTempArray[0] = Position Of(Event Player);
-
-		"Heres hoping blzz wont change this broken method and also that they add real switch/case"
-		If(True);
-			Skip((Event Player.MenuPage - 1) * 4);
-			Skip If(Global.Orbs[Event Player.Checkpoint] != False, 1);
-			Global.Orbs[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Else;
-			Skip If(Global.RefreshOrbs[Event Player.Checkpoint] != False, 1);
-			Global.RefreshOrbs[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Else;
-			Skip If(Global.Bots[Event Player.Checkpoint] != False, 1);
-			Global.Bots[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Else;
-			Skip If(Global.AntiOrbs[Event Player.Checkpoint] != False, 1);
-			Global.AntiOrbs[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Else;
-			Skip If(Global.Clouds[Event Player.Checkpoint] != False, 1);
-			Global.Clouds[Event Player.Checkpoint] = Empty Array;
-			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Else;
-			disabled Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
-			disabled Global.Teleports[Event Player.Checkpoint] = Empty Array;
-			disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-			Small Message(Event Player, Custom String("Inserting Teleports too hard yet sry :/"));
-			Else;
-		End;
-		Event Player.ObjectIndex = -1;
-		Call Subroutine(SetEditModeObjectIndex);
-
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
-
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
 		Wait(0.2, Ignore Condition);
+		"Wait for player to release fire buttons before ending"
+		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 9999);
 	}
 }
 rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected object")
@@ -2261,44 +2270,52 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 	}
 	actions
 	{
-		Small Message(Event Player, Custom String("Hold {0} + {1} for 1s to delete {2}", Input Binding String(Button(Interact)),Input Binding String(Button(Secondary Fire)), Global.MenuOptionsNames[Event Player.MenuPage]));
-		Wait(1, Abort When False);
-		If(Event Player.MenuPage == 0);
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-			disabled Small Message(Event Player, Custom String("Hold {0} + {2} for 1s to delete checkpoint", Input Binding String(Button(Melee)),Input Binding String(Button(Primary Fire)),Input Binding String(Button(Secondary Fire))));
-			disabled Wait(1, Abort When False);
-			Small Message(Event Player, Custom String("checkpoint would be deleted here"));
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		disabled Wait(0.016, Ignore Condition);
+		Event Player.EditConfirmationTimer = -100;
+		Chase Player Variable Over Time(Event Player, EditConfirmationTimer, 0, Event Player.MenuPage == 0 ? 1.5 : 0.6, None);
+		Wait Until((Is Button Held(Event Player, Button(Interact)) && Is Button Held(Event Player, Button(Secondary Fire))) == False, Event Player.MenuPage == 0 ? 1.5 : 0.6);
+		Stop Chasing Player Variable(Event Player, EditConfirmationTimer);
+		Skip If(Event Player.EditConfirmationTimer == 0, 2);
+			Event Player.EditConfirmationTimer = 0;
 			Abort;
-		End;
-		"Heres hoping blzz wont change this broken method and also that they add real switch/case"
-		If(True);
-			Skip(Event Player.MenuPage * 2);
-			Small Message(Event Player, Custom String("Deleting cp not implemented yet"));
-			Else;
-			Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-			Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-			Modify Global Variable At Index(Bots, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-			Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-			Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-			Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
-			Else;
-		End;
-		Event Player.ObjectIndex = -1;
-		Call Subroutine(SetEditModeObjectIndex);
-
-		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Small Message(Event Player, Custom String("Deleted {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		
+		If(Event Player.MenuPage == 0);
+			Modify Global Variable(Checkpoints, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(Orbs, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(RefreshOrbs, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(Bots, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(AntiOrbs, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(Clouds, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Global Variable(Teleports, Remove From Array By Index, Event Player.Checkpoint);
+			Modify Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint >= Event Player.Checkpoint), Checkpoint, Subtract, 1);
+		Else;
+			"Heres hoping blzz wont change this broken method and also that they add real switch/case"
+			If(True);
+				Skip((Event Player.MenuPage - 1) * 2);
+				Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+				Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+				Modify Global Variable At Index(Bots, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+				Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+				Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Else;
+			End;
+			Event Player.ObjectIndex = -1;
+		End;
+			Call Subroutine(SetEditModeObjectIndex);
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			Small Message(Event Player, Custom String("Deleted {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
-		Wait(0.2, Ignore Condition);
+		Wait(0.2, Ignore Condition);		
+		"Wait for player to release fire buttons before ending"
+		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 9999);
 	}
 }
 disabled rule("EditMode: Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch menu page/object type")
@@ -2452,6 +2469,10 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 				Small Message(Event Player, Custom String("Changing bot size not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
+			Else If((Event Player.MenuPage == 1 && Global.OrbStyle == 1 ) || (Event Player.MenuPage == 2 && Global.RefreshOrbStyle == 1 ));
+				Small Message(Event Player, Custom String("The current Orb style does not support changing the size"));
+				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+				Abort;
 			End;
 			Event Player.ObjectSelectAura[1] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.05 : -0.05;
 			If(Event Player.ObjectSelectAura[1] > 8);
@@ -2498,7 +2519,7 @@ rule("EditMode: Create Global Edit mode HUD")
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(Event Player, Null, 
 			Custom String("\n\n{0}\n{1}", 
-				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Interact + {1}\nSelect {2}............ Melee + {0}/{1}", 
+				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Hold Interact + {1}\nSelect {2}............ Melee + {0}/{1}", 
 					Input Binding String(Button(Primary Fire)),
 					Input Binding String(Button(Secondary Fire)),
 					Global.MenuOptionsNames[Event Player.MenuPage]
@@ -2525,7 +2546,7 @@ rule("EditMode: Create Global Edit mode HUD")
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(Event Player, Null,
 			Custom String("— — — — While moving object — — — —\n{0}\n{1}\n{2}", 
-				Custom String("Move Closer............... {0}\nMove Away................... {1}\nChange Size................ Jump + {0}/{1}",
+				Custom String("Move Away............... {0}\nMove Closer................... {1}\nChange Size................ Jump + {0}/{1}",
 					Input Binding String(Button(Primary Fire)),
 					Input Binding String(Button(Secondary Fire))),
 			Custom String("Cancel move.............. Press Melee"),
@@ -2594,6 +2615,9 @@ rule("EditMode: Create Global Edit mode HUD")
 				Vertical Angle From Direction(Facing Direction Of(Event Player)) - 90)
 			+ 3 * Facing Direction Of(Event Player)), 
 			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
+
+		"Hold to confirm insert/delete progress bar"
+		Create Progress Bar HUD Text(Event Player.EditConfirmationTimer != 0 ? Event Player : Null, Event Player.EditConfirmationTimer > 0 ? Event Player.EditConfirmationTimer : Absolute Value(Event Player.EditConfirmationTimer), Custom String(">>> {0} {1} {2} <<<", Event Player.EditConfirmationTimer > 0 ? Custom String("Inserting new") : Custom String("Deleting"), Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 0 ? Event Player.Checkpoint : Event Player.ObjectIndex), Top, 22, Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Visible To Values And Color, Default Visibility);
 
 		"Create highlighted object aura"
 		Create Effect(Event Player.ObjectSelectAura && Event Player.MenuPage != 0 ? Event Player : Null, Good Aura, Color(Green), Event Player.ObjectSelectAura[0], Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
@@ -3054,44 +3078,40 @@ rule("Subroutine CreateGlobalHUD")
 		Create HUD Text(All Players(All Teams), Null, String Slice(Global.EnPadding, 0, 85), Custom String("{0}{1}", Global.MapTitle, Global.EditMode == False ? Custom String("\n\n") : Empty Array),
 		Left, 0, Null, Color(Red), Global.Settings[18] != Null ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
 		
-			
-		"Scoreboard Title"
-		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
-		Null, 
-		String Slice(Global.EnPadding, 0, 85),
-		Global.Settings[17],
-		Left, 2, Null, Null, Global.Settings[15], Visible To String and Color, Default Visibility);
-		
-		"Top 5 scoreboard rows"
-		For Global Variable(i, 0, 5, 1);
-			"Insert scoreboard record"
-			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
-				Hero Icon String(
-					Global.Scoreboard[Evaluate Once(Global.i)][3]), 
-			Custom String("{0} {1}\n{2}", 
-			Global.Top5Prefix[Evaluate Once(Global.i)],
-			Global.Scoreboard[Evaluate Once(Global.i)][0],
-			Custom String("{0} sec - Mistakes: {1}{2}", 
-				Global.Scoreboard[Evaluate Once(Global.i)][1],
-				Global.Scoreboard[Evaluate Once(Global.i)][2],
-				String Slice(
-					Global.EnPadding, 0, 85 - 21 - String Length(Custom String("{0}{1}",
-						Global.Scoreboard[Evaluate Once(Global.i)][1],
-						Global.Scoreboard[Evaluate Once(Global.i)][2])
+		If(!Global.EditMode);
+			"Scoreboard Title"
+			Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
+			Null, 
+			String Slice(Global.EnPadding, 0, 85),
+			Global.Settings[17],
+			Left, 2, Null, Null, Global.Settings[15], Visible To String and Color, Default Visibility);
+			"Top 5 scoreboard rows"
+			For Global Variable(i, 0, 5, 1);
+				"Insert scoreboard record"
+				Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
+					Hero Icon String(
+						Global.Scoreboard[Evaluate Once(Global.i)][3]), 
+				Custom String("{0} {1}\n{2}", 
+				Global.Top5Prefix[Evaluate Once(Global.i)],
+				Global.Scoreboard[Evaluate Once(Global.i)][0],
+				Custom String("{0} sec - Mistakes: {1}{2}", 
+					Global.Scoreboard[Evaluate Once(Global.i)][1],
+					Global.Scoreboard[Evaluate Once(Global.i)][2],
+					String Slice(
+						Global.EnPadding, 0, 85 - 21 - String Length(Custom String("{0}{1}",
+							Global.Scoreboard[Evaluate Once(Global.i)][1],
+							Global.Scoreboard[Evaluate Once(Global.i)][2])
+						)
 					)
 				)
-			)
-			),
-			Null,
-			Left, 3 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
+				),
+				Null,
+				Left, 3 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
+			End;
+			"Instructions"
+			Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
+				Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
 		End;
-
-		"Instructions"
-		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
-			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
-
-		"// TODO: Break up into blocks that use no more than 4 input binding string per custom string"
-		disabled End;
 
 		"Controls pt1"
 		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null, Null,
