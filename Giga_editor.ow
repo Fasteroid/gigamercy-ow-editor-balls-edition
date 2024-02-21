@@ -1592,9 +1592,10 @@ rule("Update Bot Status")
 			Set Gravity(Event Player, 100);
 		"Bot Floating on this level, also affects when bot goes to storage"
 		Else;
-			If(Hero Of(Event Player) == Hero(Mercy));
-				Start Holding Button(Event Player, Button(Jump));
-			End;
+
+			disabled If(Hero Of(Event Player) == Hero(Mercy));
+			disabled 	Start Holding Button(Event Player, Button(Jump));
+			disabled End;
 			Set Gravity(Event Player, 0);
 			disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
 			"// TODO: Refactor this to use the same function as the player, dont copy paste"
@@ -1729,7 +1730,7 @@ rule("Regen ultimate in FreeMode")
 		Set Ultimate Charge(Event Player, 100);
 	}
 }
-rule("Player left the lobby, save their progress")
+rule("Player left the lobby, save their progress and destroy their bot")
 {
 	event
 	{
@@ -1748,6 +1749,7 @@ rule("Player left the lobby, save their progress")
 			Event Player.CurrentRunTime,
 			Event Player.Mistakes)
 		));
+		Destroy Dummy Bot(Team Of(Event Player.Bot), Slot Of(Event Player.Bot));
 	}
 }
 rule("Resurrect Player after dying")
@@ -2198,7 +2200,7 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		Else;
 
 			Event Player.EditTempArray = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
-			Event Player.EditTempArray[0] = Position Of(Event Player);
+			Event Player.EditTempArray[0] = Array Contains(Array(1,2,4), Event Player.MenuPage) ? Position Of(Event Player) + Vector(0, Event Player.EditTempArray[1], 0) : Position Of(Event Player);
 
 			"Heres hoping blzz wont change this broken method and also that they add real switch/case"
 			If(True);
@@ -2223,10 +2225,10 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				Global.Clouds[Event Player.Checkpoint] = Empty Array;
 				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
 				Else;
-				disabled Skip If(Global.Teleports[Event Player.Checkpoint] != False, 1);
-				disabled Global.Teleports[Event Player.Checkpoint] = Empty Array;
-				disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
-				Small Message(Event Player, Custom String("Inserting Teleports too hard yet sry :/"));
+				Global.Teleports[Event Player.Checkpoint] = Event Player.EditTempArray;
+				disabled End;
+				disabled End;
+				disabled End;
 				Else;
 			End;
 			Event Player.ObjectIndex = -1;
@@ -2382,39 +2384,40 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 				Abort;
 			End;
 			If(True);
-				Event Player.ObjectSelectAura[2] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
-				
-				Skip(Value In Array(Array(0,3,3,12,6,8,0), Event Player.MenuPage));
-				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
-				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+				Event Player.ObjectMoveGhost[0] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
+				Event Player.ObjectMoveGhost[1] = Event Player.ObjectSelectAura[1];
+
+				Skip(Value In Array(Array(0,Global.OrbStyle == 1 ? 3 : 6,Global.RefreshOrbStyle == 1 ? 3 : 6,12,6,8,0), Event Player.MenuPage));
+				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 				Skip(9);
-				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
-				Create Effect(All Players(All Teams), Orb, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
+				Create Effect(All Players(All Teams), Orb, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
 				Else;
 				Create Effect(All Players(All Teams), Sphere, Event Player.MenuPage != 3 ? Color(Turquoise) : Color(Blue), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.MenuPage != 3 ? Event Player.ObjectSelectAura[1] : 0.25, Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.MenuPage != 3 ? Event Player.ObjectMoveGhost[1] : 0.25, Visible To Position Radius and Color);
 				Else;
-				Create Effect(All Players(All Teams), Cloud, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
-				Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
-				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+				Create Effect(All Players(All Teams), Cloud, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
+				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
 				Else;
 				"Small orb for objects that require more precise placing"
 				Create Effect(All Players(All Teams), Sphere, Color(Blue), Update Every Frame(Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player)), 0.25, Visible To Position Radius and Color);
+				Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), 0.25, Visible To Position Radius and Color);
 				Else;
 			End;
-			Event Player.ObjectMoveGhost = Append To Array(Event Player.ObjectMoveGhost, Last Created Entity);
+			Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 			Play Effect(Event Player, Brigitte Repair Pack Impact Sound, Null, Position Of(Event Player), 100);
 			Small Message(Event Player, Custom String("Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuOptionsNames[Event Player.MenuPage], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
 			Small Message(Event Player, Custom String("Press {0} to cancel move", Input Binding String(Button(Melee))));
 		Else;
 			Event Player.MenuCursor = 0;
-			Event Player.ObjectSelectAura[2] = (Eye Position(Event Player) + 
-				Event Player.ObjectSelectAura[2] * Facing Direction Of(Event Player));
+			Event Player.ObjectMoveGhost[0] = (Eye Position(Event Player) + 
+				Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player));
 			Call Subroutine(EditSelectedObject);
 			Small Message(Event Player, Custom String("Moved object!"));
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
-			Destroy Effect(Event Player.ObjectMoveGhost);
+			Destroy Effect(Event Player.ObjectMoveGhost[2]);
 			Event Player.ObjectMoveGhost = Null;
 		End;
 		Wait(0.6, Restart When True);
@@ -2440,7 +2443,7 @@ rule("EditMode: Press [Melee] to cancel an object move action")
 	{
 		Small Message(Event Player, Custom String("Cancelled move object"));
 		Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-		Destroy Effect(Event Player.ObjectMoveGhost);
+		Destroy Effect(Event Player.ObjectMoveGhost[2]);
 		Event Player.ObjectMoveGhost = Null;
 	}
 }
@@ -2458,7 +2461,8 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
 		Event Player.ObjectMoveGhost != Null;
-		Event Player.ObjectSelectAura != Null;
+		"TODO: Why did i add this ?_?"
+		disabled Event Player.ObjectSelectAura != Null;
 		(Is Button Held(Event Player, Button(Primary Fire)) != Is Button Held(Event Player, Button(Secondary Fire))) == True;
 	}
 	actions
@@ -2474,22 +2478,22 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			End;
-			Event Player.ObjectSelectAura[1] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.05 : -0.05;
-			If(Event Player.ObjectSelectAura[1] > 8);
-				Event Player.ObjectSelectAura[1] = 8;
+			Event Player.ObjectMoveGhost[1] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.05 : -0.05;
+			If(Event Player.ObjectMoveGhost[1] > 8);
+				Event Player.ObjectMoveGhost[1] = 8;
 				Abort;
 			End;
-			If(Event Player.ObjectSelectAura[1] < 0.1);
-				Event Player.ObjectSelectAura[1] = 0.1;
+			If(Event Player.ObjectMoveGhost[1] < 0.1);
+				Event Player.ObjectMoveGhost[1] = 0.1;
 				Abort;
 			End;
 		Else;
-			Event Player.ObjectSelectAura[2] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.1 : -0.1;
-			If(Event Player.ObjectSelectAura[2] > 24);
-				Event Player.ObjectSelectAura[2] = 24;
+			Event Player.ObjectMoveGhost[0] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.1 : -0.1;
+			If(Event Player.ObjectMoveGhost[0] > 24);
+				Event Player.ObjectMoveGhost[0] = 24;
 				Abort;
-			Else If(Event Player.ObjectSelectAura[2] < (Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectSelectAura[1]/2));
-				Event Player.ObjectSelectAura[2] = Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectSelectAura[1]/2;
+			Else If(Event Player.ObjectMoveGhost[0] < (Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectMoveGhost[1]/2));
+				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectMoveGhost[1]/2;
 				Abort;
 			End;
 		End;
@@ -2546,7 +2550,7 @@ rule("EditMode: Create Global Edit mode HUD")
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(Event Player, Null,
 			Custom String("— — — — While moving object — — — —\n{0}\n{1}\n{2}", 
-				Custom String("Move Away............... {0}\nMove Closer................... {1}\nChange Size................ Jump + {0}/{1}",
+				Custom String("Move Away................... {0}\nMove Closer............... {1}\nChange Size................ Jump + {0}/{1}",
 					Input Binding String(Button(Primary Fire)),
 					Input Binding String(Button(Secondary Fire))),
 			Custom String("Cancel move.............. Press Melee"),
@@ -2834,11 +2838,13 @@ rule("Subroutine EditSelectedObject")
 		End;
 
 		"TODO: Temporary, only valid when using hold and move"
-		If(Event Player.MenuCursor == 0);
-			Event Player.EditTempObject[0] = Event Player.ObjectSelectAura[2];
-			Event Player.ObjectSelectAura[0] = Event Player.ObjectSelectAura[2];
-			Event Player.EditTempObject[1] = Event Player.ObjectSelectAura[1];
-			Event Player.ObjectSelectAura[0] = Event Player.EditTempObject[1];
+		If(Event Player.MenuCursor == 0 && Event Player.ObjectMoveGhost != Null);
+			Log To Inspector(Custom String("{0} - Saving moved object", Event Player));
+			Event Player.EditTempObject[0] = Event Player.ObjectMoveGhost[0];
+			Event Player.ObjectSelectAura[0] = Event Player.ObjectMoveGhost[0];
+			Skip If(Event Player.MenuPage == 3, 2);
+			Event Player.EditTempObject[1] = Event Player.ObjectMoveGhost[1];
+			Event Player.ObjectSelectAura[1] = Event Player.EditTempObject[1];
 
 		"TODO: Validate different language clients"
 		Else If(String Contains(Custom String("{0} {1}", True, False), Custom String("{0}", Event Player.EditTempObject[Event Player.MenuCursor])));
