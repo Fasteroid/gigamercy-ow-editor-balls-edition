@@ -2019,7 +2019,9 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 	}
 	actions
 	{
-		If (Z Component Of(Throttle Of(Event Player)) < 0);
+		If(Event Player.ObjectSelectAura == Null);
+			Abort;
+		Else If (Z Component Of(Throttle Of(Event Player)) < 0);
 			Event Player.MenuCursor = (Event Player.MenuCursor + 1) % Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage);
 		Else If (Z Component Of(Throttle Of(Event Player)) > 0);
 			Event Player.MenuCursor = (Event Player.MenuCursor + (Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage)) -1) % Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage);
@@ -2047,8 +2049,13 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 	}
 	actions
 	{
-		If(Event Player.MenuCursor == 0);
+		If(Event Player.ObjectSelectAura == Null);
+			Abort;
+		Else If(Event Player.MenuCursor == 0);
 			Small Message(Event Player, Custom String("Hold {0} to set coordinates to your current position", Input Binding String(Button(Jump))));
+			Wait(1.6, Abort When False);
+		Else If(Event Player.MenuPage == 0 && Event Player.MenuCursor == 2);
+			Small Message(Event Player, Custom String("Hold {0} to set your current facing direction as default for this level", Input Binding String(Button(Jump))));
 			Wait(1.6, Abort When False);
 		End;
 		Call Subroutine(EditSelectedObject);
@@ -2090,8 +2097,11 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 	{
 		Event Player.ObjectIndex += (Is Button Held(Event Player, Button(Primary Fire)) ? 1 : -1);
 		Call Subroutine(SetEditModeObjectIndex);
-		
-		If(Event Player.MenuOpen);
+		If(Event Player.ObjectSelectAura == Null);
+			Small Message(Event Player, Custom String("No {0} to select on this level", Global.MenuOptionsNames[Event Player.MenuPage]));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Abort;
+		Else If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
 		Wait(0.2, Restart When True);
@@ -2479,14 +2489,15 @@ rule("EditMode: Create Global Edit mode HUD")
 		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
 		Create In-World Text(Event Player.MenuOpen ? Event Player : Null, 
 			Custom String("--------------------------------------\n{0}{1}", 
-				Global.MenuOptions[Event Player.MenuPage], 
+				Event Player.ObjectSelectAura != Null ? Global.MenuOptions[Event Player.MenuPage] :
+				Custom String("No {0} selected", Global.MenuOptionsNames[Event Player.MenuPage]), 
 				String Slice(
 					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
 					0, 
-					17 - Count Of(
+					Event Player.ObjectSelectAura != Null ? 17 - Count Of(
 						String Split(Global.MenuOptions[Event Player.MenuPage], 
 						Custom String("\n"))
-					)
+					) : 16
 				)
 			), 
 			Eye Position(Event Player) + 
@@ -2515,7 +2526,7 @@ rule("EditMode: Create Global Edit mode HUD")
 				Horizontal Angle From Direction(Facing Direction Of(Event Player)), 
 				Vertical Angle From Direction(Facing Direction Of(Event Player)) - 90)
 			+ 3 * Facing Direction Of(Event Player)), 
-			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
+			2, Do Not Clip, Visible To Position String And Color, Color(Aqua), Default Visibility);
 		
 		"Menu cursor"
 		Create In-World Text(Event Player.MenuOpen ? Event Player : Null, 
@@ -2558,6 +2569,8 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 	actions
 	{
 		Event Player.MenuTempData = Empty Array;
+		Skip If(Event Player.ObjectSelectAura != Null, 1);
+		Abort;
 		For Player Variable(Event Player, i, 0, Value In Array(Array(8, 2, 6, 6, 2, 3, 5), Event Player.MenuPage), 1);
 			Skip(Event Player.MenuPage * 2);
 			"TODO: could rewrite this to save element space"
@@ -2679,14 +2692,14 @@ rule("Subroutine SetEditModeObjectIndex")
 			Call Subroutine(SetUpCheckpoint);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			Event Player.FreeMode = Event Player.TempFreeMode;
-			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+			disabled Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 		Else If(Event Player.MenuPage == 3);
 			Event Player.CurrentBotSection = Event Player.ObjectIndex;
 			Event Player.Bot.CurrentBotSection = Event Player.ObjectIndex;
 			Start Rule(UpdateBotPosition, Restart Rule);
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			disabled Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		Else;
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			disabled Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		End;
 		Call Subroutine(UpdateSelectObjAura);
 	}
