@@ -79,7 +79,7 @@ settings
 
 	workshop
 	{
-		Debug Mode (Inspector Recording): On
+		Debug Mode: On
 		Edit Mode: On
 		Server Load Widget: On
 	}
@@ -1534,29 +1534,6 @@ rule("Detect Touching Jump Cloud")
 		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.500)))[2], To World, Cancel Contrary Motion);
 	}
 }
-disabled rule("// TODO: Bot Condition")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.FreeMode == False;
-		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] == True;
-		Event Player.BotCondition == False;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Bot condition triggered", Event Player));
-		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
-			Small Message(Event Player, Custom String("There is a bot here"));
-		End;
-	}
-}
 rule("Update Bot Status")
 {
 	event
@@ -1593,9 +1570,9 @@ rule("Update Bot Status")
 		"Bot Floating on this level, also affects when bot goes to storage"
 		Else;
 
-			disabled If(Hero Of(Event Player) == Hero(Mercy));
-			disabled 	Start Holding Button(Event Player, Button(Jump));
-			disabled End;
+			If(Hero Of(Event Player) == Hero(Mercy));
+				Start Holding Button(Event Player, Button(Jump));
+			End;
 			Set Gravity(Event Player, 0);
 			disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
 			"// TODO: Refactor this to use the same function as the player, dont copy paste"
@@ -1614,6 +1591,23 @@ rule("Update Bot Status")
 		End;
 
 		Loop If Condition Is True;
+	}
+}
+rule("Bot hold buttons")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		
+	}
+	actions
+	{
+		
 	}
 }
 rule("Detect Using Ability 1")
@@ -2007,42 +2001,6 @@ rule("EditMode: Menu option definitions")
 
     }
 }
-disabled rule("EditMode: Hold [Interact] to open menu")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		"TODO: Only allow this for players with edit permissions"
-		Global.EditMode == True;
-		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Toggle menu", Event Player));
-		Wait(0.2, Abort When False);
-		Event Player.MenuOpen = !Event Player.MenuOpen;
-		If(Event Player.MenuOpen);
-			Set Move Speed(Event Player, 0);
-			Set Jump Enabled(Event Player, False);
-		Else;
-			Set Move Speed(Event Player, 100);
-			Set Jump Enabled(Event Player, Event Player.FreeMode ? True : Event Player.Jump);
-		End;
-		Set Primary Fire Enabled(Event Player, !Event Player.MenuOpen);
-		Set Secondary Fire Enabled(Event Player, !Event Player.MenuOpen);
-		Call Subroutine(GetEditMenuTempData);
-	}
-}
 rule("EditMode: Use [Movement Keys] to navigate the menu")
 {
 	event
@@ -2090,16 +2048,15 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 	actions
 	{
 		If(Event Player.MenuCursor == 0);
-			Small Message(Event Player, Custom String("Cant change object coordinates with this menu"));
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-			Abort;
+			Small Message(Event Player, Custom String("Hold {0} to set coordinates to your current position", Input Binding String(Button(Jump))));
+			Wait(1.6, Abort When False);
 		End;
+		Call Subroutine(EditSelectedObject);
+		Call Subroutine(GetEditMenuTempData);
 		"TODO: This does not reflect changes to crouch enabled immediately, fix pls"
 		If(Event Player.MenuPage == 0);
 			Call Subroutine(SetCurrentAbilities);
 		End;
-		Call Subroutine(EditSelectedObject);
-		Call Subroutine(GetEditMenuTempData);
 		Wait(0.2, Ignore Condition);
 	}
 }
@@ -2226,9 +2183,6 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
 				Else;
 				Global.Teleports[Event Player.Checkpoint] = Event Player.EditTempArray;
-				disabled End;
-				disabled End;
-				disabled End;
 				Else;
 			End;
 			Event Player.ObjectIndex = -1;
@@ -2320,42 +2274,6 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 9999);
 	}
 }
-disabled rule("EditMode: Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch menu page/object type")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		"TODO: Only allow this for players with edit permissions"
-		Global.EditMode == True;
-		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Melee)) == True;
-		(Is Button Held(Event Player, Button(Primary Fire)) ||
-		Is Button Held(Event Player, Button(Secondary Fire))) == True;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Switch page", Event Player));
-		If(Is Button Held(Event Player, Button(Primary Fire)));
-			Event Player.MenuPage = (Event Player.MenuPage + 1) % Evaluate Once(Count Of(Global.MenuOptions));
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Else;
-			Event Player.MenuPage = (Event Player.MenuPage + Evaluate Once(Count Of(Global.MenuOptions) - 1)) % Evaluate Once(Count Of(Global.MenuOptions));
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-		End;
-		Event Player.MenuCursor = 0;
-		Event Player.ObjectIndex = 0;
-		Call Subroutine(UpdateSelectObjAura);
-		Call Subroutine(GetEditMenuTempData);
-		Wait(0.2, Restart When True);
-		Small Message(Event Player, Custom String("Page {0}: {1}", Event Player.MenuPage, Global.MenuOptionsNames[Event Player.MenuPage]));
-	}
-}
 rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected object")
 {
 	event
@@ -2379,12 +2297,12 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			Abort;
 		End;
 		If(Event Player.ObjectMoveGhost == Null);
-			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 16);
+			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 24);
 				Small Message(Event Player, Custom String("Selected object is too far to move"));
 				Abort;
 			End;
 			If(True);
-				Event Player.ObjectMoveGhost[0] = Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura[0]);
+				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Event Player.ObjectSelectAura[0]);
 				Event Player.ObjectMoveGhost[1] = Event Player.ObjectSelectAura[1];
 
 				Skip(Value In Array(Array(0,Global.OrbStyle == 1 ? 3 : 6,Global.RefreshOrbStyle == 1 ? 3 : 6,12,6,8,0), Event Player.MenuPage));
@@ -2414,11 +2332,11 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			Event Player.MenuCursor = 0;
 			Event Player.ObjectMoveGhost[0] = (Eye Position(Event Player) + 
 				Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player));
+			Destroy Effect(Event Player.ObjectMoveGhost[2]);
 			Call Subroutine(EditSelectedObject);
+			Event Player.ObjectMoveGhost = Null;
 			Small Message(Event Player, Custom String("Moved object!"));
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
-			Destroy Effect(Event Player.ObjectMoveGhost[2]);
-			Event Player.ObjectMoveGhost = Null;
 		End;
 		Wait(0.6, Restart When True);
 	}
@@ -2492,8 +2410,9 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 			If(Event Player.ObjectMoveGhost[0] > 24);
 				Event Player.ObjectMoveGhost[0] = 24;
 				Abort;
-			Else If(Event Player.ObjectMoveGhost[0] < (Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectMoveGhost[1]/2));
-				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Position Of(Event Player)) + Event Player.ObjectMoveGhost[1]/2;
+			Else If(Event Player.ObjectMoveGhost[0] < (Distance Between(Eye Position(Event Player), Position Of(Event Player))));
+				"Orbs & refresh orbs"
+				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Position Of(Event Player)) + (Array Contains(Array(1,2), Event Player.MenuPage) ? Event Player.ObjectMoveGhost[1]/2 : 0);
 				Abort;
 			End;
 		End;
@@ -2621,7 +2540,7 @@ rule("EditMode: Create Global Edit mode HUD")
 			2, Do Not Clip, Visible To Position String And Color, Color(White), Default Visibility);
 
 		"Hold to confirm insert/delete progress bar"
-		Create Progress Bar HUD Text(Event Player.EditConfirmationTimer != 0 ? Event Player : Null, Event Player.EditConfirmationTimer > 0 ? Event Player.EditConfirmationTimer : Absolute Value(Event Player.EditConfirmationTimer), Custom String(">>> {0} {1} {2} <<<", Event Player.EditConfirmationTimer > 0 ? Custom String("Inserting new") : Custom String("Deleting"), Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 0 ? Event Player.Checkpoint : Event Player.ObjectIndex), Top, 22, Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Visible To Values And Color, Default Visibility);
+		Create Progress Bar HUD Text(Event Player.EditConfirmationTimer != 0 ? Event Player : Null, Event Player.EditConfirmationTimer > 0 ? Event Player.EditConfirmationTimer : Absolute Value(Event Player.EditConfirmationTimer), Custom String(">>> {0} {1} {2} <<<", Event Player.EditConfirmationTimer > 0 ? Custom String("Inserting new") : Custom String("Deleting"), Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 0 ? Event Player.Checkpoint : Event Player.ObjectIndex), Top, 22, Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Event Player.EditConfirmationTimer > 0 ? Custom Color(10,110,0,255) : Custom Color(180,20,0,255), Visible To Values And Color, Default Visibility);
 
 		"Create highlighted object aura"
 		Create Effect(Event Player.ObjectSelectAura && Event Player.MenuPage != 0 ? Event Player : Null, Good Aura, Color(Green), Event Player.ObjectSelectAura[0], Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
@@ -2836,7 +2755,7 @@ rule("Subroutine EditSelectedObject")
 			"Single out the edited object"
 			Event Player.EditTempObject = Event Player.EditTempArray[Event Player.ObjectIndex];
 		End;
-
+		
 		"TODO: Temporary, only valid when using hold and move"
 		If(Event Player.MenuCursor == 0 && Event Player.ObjectMoveGhost != Null);
 			Log To Inspector(Custom String("{0} - Saving moved object", Event Player));
@@ -2845,7 +2764,8 @@ rule("Subroutine EditSelectedObject")
 			Skip If(Event Player.MenuPage == 3, 2);
 			Event Player.EditTempObject[1] = Event Player.ObjectMoveGhost[1];
 			Event Player.ObjectSelectAura[1] = Event Player.EditTempObject[1];
-
+		Else If(Event Player.MenuCursor == 0);
+			Event Player.EditTempObject[0] = Position Of(Event Player);
 		"TODO: Validate different language clients"
 		Else If(String Contains(Custom String("{0} {1}", True, False), Custom String("{0}", Event Player.EditTempObject[Event Player.MenuCursor])));
 			Event Player.EditTempObject[Event Player.MenuCursor] = !Event Player.EditTempObject[Event Player.MenuCursor];
@@ -2909,7 +2829,7 @@ rule("Subroutine InitializeGlobalVariables")
 
 	actions
 	{
-		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"), False, 0);
+		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode"), False, 0);
 		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);		
 		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 0);	
 		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
