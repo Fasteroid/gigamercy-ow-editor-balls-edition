@@ -269,7 +269,7 @@ rule("Put your data here")
 		Ongoing - Global;
 	}
 
-actions
+	actions
 	{
 	}
 }
@@ -338,7 +338,7 @@ rule("Customization options")
 		"Player Hero"
 		Global.Settings[11] = Hero(Mercy);
 		"Bot Hero"
-		Global.Settings[10] = Hero(Mercy);
+		Global.Settings[10] = Hero(Kiriko);
 		"Where to store unused bots by default"
 		Global.BotPenCoords = Vector(0, 200, 0);
 	}
@@ -504,7 +504,7 @@ rule("4. Set player Invincible")
 	}
 	actions
 	{
-		Set Status(Event Player, Null, Invincible, 9999);
+		Set Status(Event Player, Null, Invincible, 99999);
 	}
 }
 rule("——————————————————————————Controls——————————————————————————")
@@ -1147,7 +1147,7 @@ rule("Create Bot Icons")
 	{
 		"Create Bot Icon"
 		Create Icon(Global.Bots[Event Player.Checkpoint] ? Event Player : Null, 
-		Eye Position(Event Player.Bot) + Vector(0, 0.5, 0), 
+		Update Every Frame(Eye Position(Event Player.Bot) + Vector(0, 0.5, 0)), 
 		Arrow: Down, 
 		Visible To Position and Color, 
 		Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], 
@@ -1380,7 +1380,7 @@ rule("Detect Arriving on Goal or Teleport")
 		End;
 	}
 }
-rule("Detect Grabbing Orb")
+disabled rule("Detect Grabbing Orb")
 {
 	event
 	{
@@ -1420,7 +1420,47 @@ rule("Detect Grabbing Orb")
 		End;
 	}
 }
-rule("Detect Grabbing RefreshOrb")
+rule("Detect Grabbing Orb v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Count Of(Event Player.GrabbedOrbs) > 0;
+		Is True For Any(Global.Orbs[Event Player.Checkpoint], !Event Player.GrabbedOrbs[Current Array Index] && (
+            Distance Between((Position Of(Event Player) + Vector(0, 0.7 ,0)), Current Array Element[0])
+			<= (0.7 + Current Array Element[1]) || Distance Between(Eye Position(Event Player), Current Array Element[0])
+			<= (0.7 + Current Array Element[1]))) == True;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Grabbed Orb", Event Player));
+		If(Event Player.BotCondition);
+			Event Player.GrabbedOrbs = 
+				Mapped Array(Global.Orbs[Event Player.Checkpoint], 
+					Event Player.GrabbedOrbs[Current Array Index] || Distance Between((Position Of(Event Player) + Vector(0, 0.7 ,0)), Current Array Element[0])
+					<= (0.7 + Current Array Element[1]) || Distance Between(Eye Position(Event Player), Current Array Element[0])
+					<= (0.7 + Current Array Element[1]) ? True : False);
+			Small Message(Event Player, Custom String("Orb Grab! {0}/{1}", Count Of(Filtered Array(Event Player.GrabbedOrbs,
+				Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)));
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Else;
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Call Subroutine(ResetWithMistake);
+		End;
+	}
+}
+disabled rule("Detect Grabbing RefreshOrb")
 {
 	event
 	{
@@ -1489,7 +1529,74 @@ rule("Detect Grabbing RefreshOrb")
 		End;
 	}
 }
-rule("Detect Touching AntiOrb")
+rule("Detect Grabbing RefreshOrb v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Count Of(Event Player.GrabbedRefreshOrbs) > 0;
+		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], !Event Player.GrabbedRefreshOrbs[Current Array Index] && (
+			Distance Between((Position Of(Event Player) + Vector(0, 0.7 ,0)), Current Array Element[0])
+			<= (0.7 + Current Array Element[1]) || Distance Between(Eye Position(Event Player), Current Array Element[0])
+			<= (0.7 + Current Array Element[1]))) == True;
+	}
+
+	actions
+	{
+		If(Event Player.BotCondition);
+			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
+				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] && (Distance Between(Position Of(Event Player) + Vector(0, 0.7, 0),
+					Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0])
+					<= (Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700) || Distance Between(Eye Position(Event Player),
+					Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0])
+					<= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700));
+					Log To Inspector(Custom String("{0} - Grabbed R.O. index {1} with section {2}", Event Player, Event Player.i,
+						Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]));
+					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
+					Small Message(Event Player, Custom String("Orb Grab! {0}/{1}, {2} also refreshed!", Count Of(Filtered Array(
+						Event Player.GrabbedRefreshOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedRefreshOrbs), Custom String(
+						"{0}{1}{2}", Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? Ability Icon String(Hero Of(Event Player),
+						Button(Ability 1)) : Empty Array, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? Ability Icon String(Hero Of(
+						Event Player), Button(Ability 2)) : Empty Array,
+						Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate))
+						: Empty Array)));
+					Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+					"Trigger Bot Section"
+					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
+						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
+						Event Player.Bot.CurrentBotSection = Event Player.CurrentBotSection;
+						"// TODO: Test to see what happens when many refresh orbs are close together"
+						disabled Call Subroutine(UpdateBotPosition);
+						Start Rule(UpdateBotPosition, Restart Rule);
+					End;
+					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
+					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;
+					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Event Player.Ultimate;
+					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+					Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
+					"Needed to fix small message issue with stacked orbs"
+					Wait(0.016, Ignore Condition);
+				End;
+			End;
+		Else;
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Call Subroutine(ResetWithMistake);
+		End;
+	}
+}
+disabled rule("Detect Touching AntiOrb")
 {
 	event
 	{
@@ -1515,7 +1622,33 @@ rule("Detect Touching AntiOrb")
 		Call Subroutine(ResetWithMistake);
 	}
 }
-rule("Detect Touching Jump Cloud")
+rule("Detect Touching AntiOrb v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Global.AntiOrbs[Event Player.Checkpoint] == True;
+		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], Distance Between((Position Of(Event Player) + Vector(0, 0.7 ,0)), Current Array Element[0])
+			<= (0.7 + Current Array Element[1]) || Distance Between(Eye Position(Event Player), Current Array Element[0])
+			<= (0.7 + Current Array Element[1])) == True;
+	}
+
+	actions
+	{
+		Set Status(Event Player, Null, Burning, 0.160);
+		Call Subroutine(ResetWithMistake);
+	}
+}
+disabled rule("Detect Touching Jump Cloud")
 {
 	event
 	{
@@ -1531,7 +1664,7 @@ rule("Detect Touching Jump Cloud")
 		Global.Clouds[Event Player.Checkpoint] == True;
 		
 		Is True For Any(Global.Clouds[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0])  <= Current Array Element[1] + 0.500 &&
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] &&
 		Absolute Value(Y Component Of(Current Array Element[0]) - Y Component Of(Position Of(Event Player))) <= Vector(0, 0.030, 0)))
 		== True;
 	}
@@ -1540,7 +1673,36 @@ rule("Detect Touching Jump Cloud")
 		Play Effect(Event Player, Explosion Sound, Null, Event Player, 100);
 
 		Apply Impulse(Event Player, Up, First Of(Filtered Array(Global.Clouds[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.500)))[2], To World, Cancel Contrary Motion);
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1])))[2], To World, Cancel Contrary Motion);
+	}
+}
+rule("Detect Touching Jump Cloud v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		"Disable this to allow bots to jump on clouds"
+		Is Dummy Bot(Event Player) == False;
+		Global.Clouds[Event Player.Checkpoint] == True;
+		Event Player.FreeMode == False;
+		Event Player.Finished == False;
+		(Altitude Of(Event Player) >= 0.030 || Is On Ground(Event Player)) == True;
+		Is True For Any(
+			Global.Clouds[Event Player.Checkpoint], 
+			(Distance Between(Position Of(Event Player), Current Array Element[0])
+				<= Current Array Element[1])) == True;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Boing!", Event Player));
+		Play Effect(Event Player, Explosion Sound, Null, Event Player, 100);
+		Apply Impulse(Event Player, Up, First Of(Filtered Array(Global.Clouds[Event Player.Checkpoint], Distance Between(Position Of(
+			Event Player), Current Array Element[0]) <= (Current Array Element[1])))[2], To World, Cancel Contrary Motion);
 	}
 }
 rule("Update Bot Status")
@@ -1583,7 +1745,7 @@ rule("Update Bot Status")
 				Start Holding Button(Event Player, Button(Jump));
 			End;
 			Set Gravity(Event Player, 0);
-			disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
+			disabled Set Status(Event Player.Bot, Null, Rooted, 99999);
 			"// TODO: Refactor this to use the same function as the player, dont copy paste"
 			Call Subroutine(CancelMomentum);
 		End;
@@ -1619,7 +1781,7 @@ rule("Bot hold buttons")
 		
 	}
 }
-rule("Detect Using Ability 1")
+disabled rule("Detect Using Ability 1")
 {
 	event
 	{
@@ -1636,19 +1798,20 @@ rule("Detect Using Ability 1")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
+		Small message( Event Player, Custom String("Detected using GA"));
 
 		If(Event Player.FreeMode == False);
 			Event Player.Ability1 = False;
 			Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
 
-			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
+			"This was added to be compatible with Taw's bot sections that have no refresh orb, they advance automatically after using your GA"
 			If(Hero Of(Event Player) == Hero(Mercy) && 
 				!Is True For Any(
 					Global.RefreshOrbs[Event Player.Checkpoint], 
 					Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
 				Event Player.BotCondition == True &&
 				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
-					Log To Inspector(Custom String("{0} - Used GA & no refresh orb. advancing bot now", Event Player));
+					Log To Inspector(Custom String("{0} - Used GA & theres no refresh orb. advancing bot now", Event Player));
 					Event Player.CurrentBotSection += 1;
 					Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
 					Call Subroutine(UpdateBotPosition);
@@ -1659,6 +1822,38 @@ rule("Detect Using Ability 1")
 				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
 			End;
 		End;
+		"Disable this if you want to set the cooldowns through lobby settings"
+		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
+		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
+	}
+}
+rule("Detect Using Ability 1 v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Using Ability 1(Event Player) == True;
+		Event Player.Resetting == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
+		Event Player.Ability1 = False;
+		Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 99999);
+
+		If(!Event Player.FreeMode);
+			"If lvl does not have unlimited GA, set GA status (racing conditions apply)"
+			If(!Global.Checkpoints[Event Player.Checkpoint][7]);
+				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+			End;
+		End;
+		Wait(0.032, IgnoreCondition);
 		"Disable this if you want to set the cooldowns through lobby settings"
 		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
 		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
@@ -1685,7 +1880,7 @@ rule("Detect Using Mercy Resurrect")
 		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
 		Event Player.MercyRezTimer = 0;
 		"Start chasing mercy resurrect time"
-		Chase Player Variable At Rate(Event Player, MercyRezTimer, 9999, 1, None);
+		Chase Player Variable At Rate(Event Player, MercyRezTimer, 99999, 1, None);
 		Wait Until(!Is Using Ability 2(Event Player), 1.750);
 		Stop Chasing Player Variable(Event Player, MercyRezTimer);
 
@@ -1711,6 +1906,38 @@ rule("Detect Using Mercy Resurrect")
 		Else;
 			Set Ability 2 Enabled(Event Player, False);
 		End;
+	}
+}
+rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == False;
+		Event Player.Finished == False;
+		Event Player.Resetting == False;
+		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], 
+				Current Array Element[2] == Event Player.CurrentBotSection + 1) == False;
+		Event Player.BotCondition == True;
+		Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1;
+		Ability Cooldown(Event Player, Button(Ability 1)) != 0;
+	}
+	actions
+	{
+		"This was added to be compatible with Taw's bot sections that have no refresh orb, they advance automatically after using your GA"
+		Event Player.Ability1 = True;
+		Log To Inspector(Custom String("{0} - Used GA & theres no refresh orb. advancing bot now", Event Player));
+		Event Player.CurrentBotSection += 1;
+		Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
+		Call Subroutine(UpdateBotPosition);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+		Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 	}
 }
 rule("Regen ultimate in FreeMode")
@@ -1854,7 +2081,7 @@ rule("BunnyHop: Detect using bhop")
 		Event Player.BhopActive = False;
 	}
 }
-rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
+disabled rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 {
 	event
 	{
@@ -1871,9 +2098,9 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 	{
 		Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
 		"Ignore Crouch-GA starting crouch"
-		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 9999);
+		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 99999);
 		"Ignore Gliding"
-		Wait Until((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) == False, 9999);
+		Wait Until((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) == False, 99999);
 
 		"Release GA button first"
 		Wait Until(Is Button Held(Event Player, Button(Ability 1)) == False, 9999);
@@ -1886,6 +2113,56 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
 				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
 			) == True, 9999);
 		If(Is Using Ability 1(Event Player) && !Is Button Held(Event Player, Button(Ability 1)));
+			Event Player.BhopActive = False;
+		Else If(Global.DebugMode == True);
+			Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
+		End;
+	}
+}
+rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Using Ability 1(Event Player) == True;
+		Event Player.BhopActive == True;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
+		"Ignore Crouch-GA starting crouch"
+		Wait Until(!Is Crouching(Event Player) && !Is Jumping(Event Player), 99999);
+
+		"Release GA button first"
+		Wait Until(!Is Button Held(Event Player, Button(Ability 1)) || !Is Using Ability 1(Event Player) || Is Jumping(Event Player) || 
+				Is Crouching(Event Player), 99999);
+		Skip If(Is Using Ability 1(Event Player), 2);
+			Small Message(Event Player, Custom String("Stopped using ability 1, s1, aborting"));
+			Abort;
+		If((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) || 
+				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch));
+			Event Player.BhopActive = False;
+			Small Message(Event Player, Custom String("Player slinged or SJ without cancel, failing"));
+			Abort;
+		End;
+			
+		
+		Wait Until(
+			(Is Using Ability 1(Event Player) == False) ||
+			(
+				(Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) || 
+				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
+			) == True, 99999);
+		If(!Is Using Ability 1(Event Player));
+			Small Message(Event Player, Custom String("Stopped using ability 1, s2, aborting"));
+			Abort;
+		Else If(!Is Button Held(Event Player, Button(Ability 1)));
+			Small Message(Event Player, Custom String("Detected a failed bhop cancel"));
 			Event Player.BhopActive = False;
 		Else If(Global.DebugMode == True);
 			Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
@@ -2009,7 +2286,12 @@ rule("EditMode: Menu option definitions")
 			"Position:\nRadius:\nTP Coords:\nTolerance Above:\nTolerance Below:\n");
 
         "Create menu background. Width 54, 19 lines"
-        Create Hud Text(Local Player.MenuOpen ? Local Player : Null, Custom String("      {0} {1}\n{2}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", Global.MenuOptionsNames[Local Player.MenuPage], Local Player.ObjectIndex, Evaluate Once(String Slice(Global.EnPadding, 0, 54))), Null, Null, Top, 10, Custom Color(0,255,0,128), Color(White), Color(White), Visible To And String, Default Visibility);
+        Create HUD Text(Local Player.MenuOpen ? Local Player : Null, Custom String("      {0}\n{1}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{2}", 
+			Custom String("{0} {1}", 
+				Global.MenuOptionsNames[Local Player.MenuPage], 
+				Local Player.ObjectIndex), 
+			Evaluate Once(String Slice(Global.EnPadding, 0, 54)),
+			Custom String("      Edit: {0}  |  Reset: [Crouch] + {0}\n", Input Binding String(Button(Jump)))), Null, Null, Top, 10, Custom Color(0,255,0,128), Color(White), Color(White), Visible To And String, Default Visibility);
 
     }
 }
@@ -2058,7 +2340,7 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 		End;
 	}
 }
-rule("EditMode: Press [Jump] in menu to edit the attribute")
+rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to reset to default")
 {
 	event
 	{
@@ -2080,6 +2362,22 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 		Skip If(Event Player.ObjectSelectAura, 1);
 			Abort;
 
+		If(Is Button Held(Event Player, Button(Crouch)));
+			If(Event Player.MenuCursor == 0);
+				Small Message(Event Player, Custom String("Resetting position is not supported"));
+				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+				Wait(1, Ignore Condition);
+				Abort;
+			End;
+			Small Message(Event Player, Custom String("Hold [Crouch] + {0} to reset to default", Input Binding String(Button(Jump))));
+			Wait(1.6, Abort When False);
+			Call Subroutine(GetEditTempObject);
+			Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.NewObjectDefaults[Event Player.MenuPage][Event Player.MenuCursor];
+			Call Subroutine(SetEditTempObject);
+			Call Subroutine(GetEditMenuTempData);
+			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+			Abort;
+		End;
 		Call Subroutine(GetEditTempObject);
 
 		"Edit object position"
@@ -2101,9 +2399,9 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 					Event Player.EditTempObject[2] = Facing Direction Of(Event Player);
 					Else;
 					"TODO: Bot Facing Direction"
-					Small Message(Event Player, Custom String("Bot Facing Direction not implemented yet"));
-					Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-					Abort;
+					Small Message(Event Player, Custom String("Hold {0} to set bot facing to your current position", Input Binding String(Button(Jump))));
+					Wait(1, Abort When False);
+					Event Player.EditTempObject[2] = Position Of(Event Player);
 					Else;
 					"TODO: Teleport target coordinates"
 					Small Message(Event Player, Custom String("Hold {0} to use your current position as the teleport destination", Input Binding String(Button(Jump))));
@@ -2162,6 +2460,42 @@ rule("EditMode: Press [Jump] in menu to edit the attribute")
 			Call Subroutine(SetCurrentAbilities);
 		End;
 		Wait(0.2, Ignore Condition);
+	}
+}
+disabled rule("EditMode: Hold [Melee] in menu to reset option back to default")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		"TODO: Only allow this for players with edit permissions"
+		Global.EditMode == True;
+		Event Player.MenuOpen == True;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Primary Fire)) == False;
+		Is Button Held(Event Player, Button(Secondary Fire)) == False;
+	}
+	actions
+	{
+		If(Event Player.MenuCursor == 0);
+			Small Message(Event Player, Custom String("Resetting position is not supported"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Wait(1, Ignore Condition);
+			Abort;
+		End;
+		Small Message(Event Player, Custom String("Hold {0} to reset to default", Input Binding String(Button(Melee))));
+		Wait(1.6, Abort When False);
+		Call Subroutine(GetEditTempObject);
+		Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.NewObjectDefaults[Event Player.MenuPage][Event Player.MenuCursor];
+		Call Subroutine(SetEditTempObject);
+		Call Subroutine(GetEditMenuTempData);
+		Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 	}
 }
 rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous object")
@@ -2305,7 +2639,7 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		End;
 		Wait(0.2, Ignore Condition);
 		"Wait for player to release fire buttons before ending"
-		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 9999);
+		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 99999);
 	}
 }
 rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected object")
@@ -2380,7 +2714,7 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 		End;
 		Wait(0.2, Ignore Condition);		
 		"Wait for player to release fire buttons before ending"
-		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 9999);
+		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 99999);
 	}
 }
 rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected object")
@@ -2537,7 +2871,7 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 		Loop If Condition Is True;
 	}
 }
-rule("EditMode: Create Global Edit mode HUD")
+rule("EditMode: Create Player Edit mode HUD")
 {
 	event
 	{
@@ -2609,7 +2943,7 @@ rule("EditMode: Create Global Edit mode HUD")
 			), 
 			Eye Position(Event Player) + 
 			100 * (-0.45 * World Vector Of(Right, Event Player, Rotation) + 
-			(-0.9) * Direction From Angles(
+			(-0.75) * Direction From Angles(
 				Horizontal Angle From Direction(Facing Direction Of(Event Player)), 
 				Vertical Angle From Direction(Facing Direction Of(Event Player)) - 90)
 			+ 3 * Facing Direction Of(Event Player)), 
@@ -2629,7 +2963,7 @@ rule("EditMode: Create Global Edit mode HUD")
 			), 			
 			Eye Position(Event Player) + 
 			100 * (0.55 * World Vector Of(Right, Event Player, Rotation) + 
-			(-0.9) * Direction From Angles(
+			(-0.75) * Direction From Angles(
 				Horizontal Angle From Direction(Facing Direction Of(Event Player)), 
 				Vertical Angle From Direction(Facing Direction Of(Event Player)) - 90)
 			+ 3 * Facing Direction Of(Event Player)), 
@@ -2653,7 +2987,7 @@ rule("EditMode: Create Global Edit mode HUD")
 			), 
 			Eye Position(Event Player) + 
 			100 * (-1.4 * World Vector Of(Right, Event Player, Rotation) + 
-			(-0.9) * Direction From Angles(
+			(-0.75) * Direction From Angles(
 				Horizontal Angle From Direction(Facing Direction Of(Event Player)), 
 				Vertical Angle From Direction(Facing Direction Of(Event Player)) - 90)
 			+ 3 * Facing Direction Of(Event Player)), 
@@ -3013,11 +3347,11 @@ rule("Subroutine InitializePlayerVariables")
 		If(Global.EditMode);
 			Event Player.NewObjectDefaults = Array(
 				Array(Null, 1.6, Null, True, False, 1.6, 1.6, False),
-				Array(Null, 0.8),
-				Array(Null, 0.8, False, True, False, False),
+				Array(Null, 0.5),
+				Array(Null, 0.5, False, True, False, False),
 				Array(Null, 1, Null, False, False, False, True),
 				Array(Null, 2),
-				Array(Null, 1, 8),
+				Array(Null, 1.5, 8),
 				Array(Null, 1.6, Null, 1.6, 1.6)
 			);
 		End;
@@ -3046,8 +3380,8 @@ rule("Subroutine InitializePlayerBot")
 			Set Player Variable(Event Player.Bot, Scale, 1);
 
 			Set Gravity(Event Player.Bot, 0);
-			Set Status(Event Player.Bot, Null, Invincible, 9999);
-			Set Status(Event Player.Bot, Null, Phased Out, 9999);
+			Set Status(Event Player.Bot, Null, Invincible, 99999);
+			Set Status(Event Player.Bot, Null, Phased Out, 99999);
 			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Settings[10]));
 			"// TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
 			Start Facing(Event Player.Bot, 
@@ -3243,7 +3577,7 @@ rule("Subroutine CreatePlayerHUD")
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
 			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
 		Create HUD Text(
-			Event Player, 
+			Event Player.MenuOpen ? Null : Event Player, 
 			Null,
 			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("Collected Orbs:\n{0}{1}", 
 				Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)) : Empty Array,
@@ -3815,10 +4149,10 @@ rule("Subroutine PeaceDecompressData")
 		Global.PeaceEditorVariables[0] = True;
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = False;
-		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.5"
-		Global.PeaceEditorVariables[4] = 0.8;
+		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.8 - 1"
+		Global.PeaceEditorVariables[4] = 0.5;
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
-		Global.PeaceEditorVariables[7] = 1;
+		Global.PeaceEditorVariables[7] = 1.5;
 		"Peace editor rules require player to grab all refresh orbs"
 		Global.RequireGrabAllRefreshOrbs = True;
 		"Peace editor stores unused bots near these coordinates"
