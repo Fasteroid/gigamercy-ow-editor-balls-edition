@@ -2,8 +2,8 @@ settings
 {
 	main
 	{
-		Description: "WIP v.20231112\n By GigaMercy"
-		Mode Name: "Giga Parkour Engine"
+		Mode Name: "Giga Parkour Editor"
+		Description: "Beta revision 0\n! Pls dont share or publish maps with this code !\n\nBy GigaMercy"
 	}
 
 	lobby
@@ -12,7 +12,7 @@ settings
 		Map Rotation: Paused
 		Match Voice Chat: Enabled
 		Max Spectators: 12
-		Max Team 1 Players: 7
+		Max Team 1 Players: 8
 		Max Team 2 Players: 0
 		Return To Lobby: After A Game
 		Swap Teams After Match: No
@@ -79,21 +79,17 @@ settings
 
 	workshop
 	{
-		Debug Mode: On
+		Debug Mode: Off
 		Edit Mode: On
 		Server Load Widget: On
 	}
 
 	extensions
 	{
-		Beam Effects
-		Beam Sounds
 		Buff Status Effects
 		Buff and Debuff Sounds
 		Explosion Sounds
-		Play More Effects
 		Spawn More Dummy Bots
-		Projectiles
 	}
 }
 
@@ -223,6 +219,7 @@ variables
 		62: EditTempObject
 		63: EditNumber
 		64: EditConfirmationTimer
+		65: EditModeObjectiveIndex
 }
 subroutines
 {
@@ -253,9 +250,10 @@ subroutines
 	24: SetEditTempObject
 	25: GetGoalData
 	26: GetEditTempObject
+	27: GetStartingAbilities
 }
 
-rule("——————————————————————————Giga Parkour Editor v0.1——————————————————————————")
+rule("————————————————Giga Parkour Editor BETA rev 0—————————————————")
 {
 	event
 	{
@@ -285,9 +283,9 @@ rule("Customization options")
 		"------Colors------"
 		disabled End;
 		"Start Checkpoint Ring Color. Accepts multiple Colors"
-		Global.Settings[0] = Array(Color(Red),Color(Yellow),Color(Green),Color(Blue),Color(Purple));
+		Global.Settings[0] = Array(Color(Red));
 		"Goal Checkpoint Ring Color. Accepts multiple colors"
-		Global.Settings[5] = Array(Color(Green),Color(White),Color(Red));
+		Global.Settings[5] = Array(Color(Aqua));
 		"Goal Checkpoint text Color"
 		Global.Settings[6] = Color(White);
 		"Teleport pad effect color"
@@ -328,7 +326,7 @@ rule("Customization options")
 		Global.Settings[7] = Custom String("Goal");
 		"Teleport pad Text or Icon"
 		Global.Settings[8] = Icon String(Spiral);
-		"Player leaderboard positions (1st, 2nd, 3rd place)"
+		"Player leaderboard position names"
 		Global.Top5Prefix = Array(Custom String("1st"), Custom String("2nd"), Custom String("3rd"),Custom String("4th"), Custom String("5th"));
 		"Scoreboard title"
 		Global.Settings[17] = Custom String("Scoreboard:");
@@ -338,7 +336,7 @@ rule("Customization options")
 		"Player Hero"
 		Global.Settings[11] = Hero(Mercy);
 		"Bot Hero"
-		Global.Settings[10] = Hero(Kiriko);
+		Global.Settings[10] = Hero(Mercy);
 		"Where to store unused bots by default"
 		Global.BotPenCoords = Vector(0, 200, 0);
 	}
@@ -382,7 +380,7 @@ rule("VIPs / Custom player tags")
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String(""), Custom String(""), Color(White));
 	}
 }
-rule("——————————————————————————Initialization Settings——————————————————————————")
+rule("———————————————————Initialization Settings———————————————————")
 {
 	event
 	{
@@ -406,13 +404,6 @@ rule("1. Global Initialization")
 		Disable Built-In Game Mode Music;
 		Disable Built-In Game Mode Scoring;
 		Disable Built-In Game Mode Respawning(All Players(All Teams));		
-		"// TODO: Figure why match time is setup like this in taws and peace"
-		disabled If(Current Game Mode != Game Mode(Skirmish));
-		disabled 	Set Match Time(1);
-		disabled Else;
-		disabled 	Set Match Time(0);
-				 	disabled Start Game Mode;	
-		disabled End;
 		Pause Match Time;
 		"TODO: useless right?"
 		disabled Stop Forcing Spawn Room(All Teams);
@@ -507,7 +498,7 @@ rule("4. Set player Invincible")
 		Set Status(Event Player, Null, Invincible, 99999);
 	}
 }
-rule("——————————————————————————Controls——————————————————————————")
+rule("—————————————————————Controls——————————————————————")
 {
 	event
 	{
@@ -723,7 +714,7 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 			* -3, Null, Event Player, True), Null, Event Player, True), Event Player + Facing Direction Of(Event Player) * 100, 100);
 	}
 }
-rule("Press [Reload] + [Interact] to TP to player")
+rule("Press [Reload] + [Interact] to TP to player (Free Mode only)")
 {
 	event
 	{
@@ -831,7 +822,7 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 		Wait(0.600, Ignore Condition);
 	}
 }
-rule("Press [Melee] twice to cancel ultimate")
+rule("Press [Melee] twice to cancel ultimate (Free Mode only)")
 {
 	event
 	{
@@ -899,7 +890,7 @@ rule("Hold [Reload] to toggle collision (Free Mode only)")
 
 	}
 }
-rule("——————————————————————————Effects——————————————————————————")
+rule("—————————————————————Effects———————————————————————")
 {
 	event
 	{
@@ -1245,7 +1236,7 @@ rule("Create HUD Tips/Hints")
 		Create Hud Text(Global.HintTexts[Local Player.Checkpoint] != False ? Local Player : Null, Custom String("{0} :{1}\n  {2}  \n", Hero Icon String(Hero(Mercy)), String Slice(Global.EnPadding, 0, 20), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 21,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To And String, Default Visibility);
 	}
 }
-rule("——————————————————————————Parkour Engine rules——————————————————————————")
+rule("———————————————————Parkour Engine rules———————————————————")
 {
 	event
 	{
@@ -1380,46 +1371,6 @@ rule("Detect Arriving on Goal or Teleport")
 		End;
 	}
 }
-disabled rule("Detect Grabbing Orb")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.Finished == False;
-		Event Player.FreeMode == False;
-		Count Of(Event Player.GrabbedOrbs) > 0;
-		
-		Is True For Any(Global.Orbs[Event Player.Checkpoint], 
-		!Event Player.GrabbedOrbs[Current Array Index] && 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
-		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
-		== True;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Grabbed Orb", Event Player));
-		If(Event Player.BotCondition);
-			Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint],
-				Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
-				Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700
-				|| Event Player.GrabbedOrbs[Current Array Index] ? True : False);
-			Small Message(Event Player, Custom String("Orb Grab! {0}/{1}",
-			Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)),
-			Count Of(Event Player.GrabbedOrbs)));
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Else;
-			Small Message(Event Player, Custom String("You need to rez the bot!"));
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-			Call Subroutine(ResetWithMistake);
-		End;
-	}
-}
 rule("Detect Grabbing Orb v2")
 {
 	event
@@ -1453,75 +1404,6 @@ rule("Detect Grabbing Orb v2")
 			Small Message(Event Player, Custom String("Orb Grab! {0}/{1}", Count Of(Filtered Array(Event Player.GrabbedOrbs,
 				Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)));
 			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-		Else;
-			Small Message(Event Player, Custom String("You need to rez the bot!"));
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-			Call Subroutine(ResetWithMistake);
-		End;
-	}
-}
-disabled rule("Detect Grabbing RefreshOrb")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.Finished == False;
-		Event Player.FreeMode == False;
-		Count Of(Event Player.GrabbedRefreshOrbs) > 0;
-		
-		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], 
-		!Event Player.GrabbedRefreshOrbs[Current Array Index] && 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
-		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
-		== True;
-	}
-	actions
-	{
-		If(Event Player.BotCondition);
-			Event Player.i = 0;
-			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
-				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] &&
-				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700 ||
-				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][0]) <= Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][1] + 0.700));
-					Log To Inspector(Custom String("{0} - Grabbed R.O. index {1} with section {2}", Event Player, Event Player.i, Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]));
-
-					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
-					Small Message(Event Player, 
-					Custom String("Orb Grab! {0}/{1}, {2} also refreshed!",
-						Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
-						Count Of(Event Player.GrabbedRefreshOrbs),
-						Custom String("{0}{1}{2}", 
-							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
-							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? Ability Icon String(Hero Of(Event Player), Button(Ability 2)) : Empty Array,
-							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate)) : Empty Array
-						)
-					));
-					Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-					"Trigger Bot Section"
-					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
-						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
-						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
-						"// TODO: Test to see what happens when many refresh orbs are close together"
-						disabled Call Subroutine(UpdateBotPosition);
-						Start Rule(UpdateBotPosition, Restart Rule);
-					End;
-					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
-					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
-					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;					
-					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
-					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Event Player.Ultimate;					
-					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
-					Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
-					"Needed to fix small message issue with stacked orbs"
-					Wait(0.016, Ignore Condition);
-				End;
-			End;
 		Else;
 			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
@@ -1596,32 +1478,6 @@ rule("Detect Grabbing RefreshOrb v2")
 		End;
 	}
 }
-disabled rule("Detect Touching AntiOrb")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.Finished == False;
-		Event Player.FreeMode == False;
-		Global.AntiOrbs[Event Player.Checkpoint] == True;
-		
-		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] ||
-		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1]))
-		== True;
-	}
-	actions
-	{
-		Set Status(Event Player, Null, Burning, 0.16);
-		Call Subroutine(ResetWithMistake);
-	}
-}
 rule("Detect Touching AntiOrb v2")
 {
 	event
@@ -1646,34 +1502,6 @@ rule("Detect Touching AntiOrb v2")
 	{
 		Set Status(Event Player, Null, Burning, 0.160);
 		Call Subroutine(ResetWithMistake);
-	}
-}
-disabled rule("Detect Touching Jump Cloud")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.Finished == False;
-		Event Player.FreeMode == False;
-		Global.Clouds[Event Player.Checkpoint] == True;
-		
-		Is True For Any(Global.Clouds[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] &&
-		Absolute Value(Y Component Of(Current Array Element[0]) - Y Component Of(Position Of(Event Player))) <= Vector(0, 0.030, 0)))
-		== True;
-	}
-	actions
-	{
-		Play Effect(Event Player, Explosion Sound, Null, Event Player, 100);
-
-		Apply Impulse(Event Player, Up, First Of(Filtered Array(Global.Clouds[Event Player.Checkpoint], 
-		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1])))[2], To World, Cancel Contrary Motion);
 	}
 }
 rule("Detect Touching Jump Cloud v2")
@@ -1779,52 +1607,6 @@ rule("Bot hold buttons")
 	actions
 	{
 		
-	}
-}
-disabled rule("Detect Using Ability 1")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Is Using Ability 1(Event Player) == True;
-		Event Player.Resetting == False;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
-		Small message( Event Player, Custom String("Detected using GA"));
-
-		If(Event Player.FreeMode == False);
-			Event Player.Ability1 = False;
-			Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
-
-			"This was added to be compatible with Taw's bot sections that have no refresh orb, they advance automatically after using your GA"
-			If(Hero Of(Event Player) == Hero(Mercy) && 
-				!Is True For Any(
-					Global.RefreshOrbs[Event Player.Checkpoint], 
-					Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
-				Event Player.BotCondition == True &&
-				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
-					Log To Inspector(Custom String("{0} - Used GA & theres no refresh orb. advancing bot now", Event Player));
-					Event Player.CurrentBotSection += 1;
-					Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
-					Call Subroutine(UpdateBotPosition);
-					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
-					Event Player.Ability1 = True;
-			"If lvl does not have unlimited GA, set GA status (racing conditions apply)"
-			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False && Event Player.FreeMode == False);
-				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
-			End;
-		End;
-		"Disable this if you want to set the cooldowns through lobby settings"
-		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
-		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
 	}
 }
 rule("Detect Using Ability 1 v2")
@@ -2081,44 +1863,6 @@ rule("BunnyHop: Detect using bhop")
 		Event Player.BhopActive = False;
 	}
 }
-disabled rule("BunnyHop: Using Mercy's sling/superjump loses the bhop")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		Mercy;
-	}
-	conditions
-	{
-		Is Using Ability 1(Event Player) == True;
-		Event Player.BhopActive == True;
-	}
-	actions
-	{
-		Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
-		"Ignore Crouch-GA starting crouch"
-		Wait Until((Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == False, 99999);
-		"Ignore Gliding"
-		Wait Until((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) == False, 99999);
-
-		"Release GA button first"
-		Wait Until(Is Button Held(Event Player, Button(Ability 1)) == False, 9999);
-
-		
-		Wait Until(
-			(Is Using Ability 1(Event Player) == False) ||
-			(
-				(Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) || 
-				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
-			) == True, 9999);
-		If(Is Using Ability 1(Event Player) && !Is Button Held(Event Player, Button(Ability 1)));
-			Event Player.BhopActive = False;
-		Else If(Global.DebugMode == True);
-			Small Message(Event Player, Custom String("Successful bhop cancel, dist to ground {0}", Altitude Of(Event Player)));
-		End;
-	}
-}
 rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
 {
 	event
@@ -2139,14 +1883,18 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
 		Wait Until(!Is Crouching(Event Player) && !Is Jumping(Event Player), 99999);
 
 		"Release GA button first"
-		Wait Until(!Is Button Held(Event Player, Button(Ability 1)) || !Is Using Ability 1(Event Player) || Is Jumping(Event Player) || 
-				Is Crouching(Event Player), 99999);
-		Skip If(Is Using Ability 1(Event Player), 2);
+		Wait Until( !Is Button Held(Event Player, Button(Ability 1)) || 
+					!Is Using Ability 1(Event Player) || 
+					Is Jumping(Event Player) || 
+					Is Crouching(Event Player), 99999);
+		Skip If(Is Using Ability 1(Event Player), 3);
+			Skip If(!Global.DebugMode, 1);
 			Small Message(Event Player, Custom String("Stopped using ability 1, s1, aborting"));
 			Abort;
 		If((Is Button Held(Event Player, Button(Jump)) && Event Player.Jump) || 
 				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch));
 			Event Player.BhopActive = False;
+			Skip If(!Global.DebugMode, 1);
 			Small Message(Event Player, Custom String("Player slinged or SJ without cancel, failing"));
 			Abort;
 		End;
@@ -2159,9 +1907,11 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
 				(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch)
 			) == True, 99999);
 		If(!Is Using Ability 1(Event Player));
+			Skip If(!Global.DebugMode, 1);
 			Small Message(Event Player, Custom String("Stopped using ability 1, s2, aborting"));
 			Abort;
 		Else If(!Is Button Held(Event Player, Button(Ability 1)));
+			Skip If(!Global.DebugMode, 1);
 			Small Message(Event Player, Custom String("Detected a failed bhop cancel"));
 			Event Player.BhopActive = False;
 		Else If(Global.DebugMode == True);
@@ -2213,7 +1963,7 @@ rule("Crouch disabled message")
 		Wait(1, Ignore Condition);
 	}
 }
-rule("<FGa366ffFF>——————————————————————————Giga Editor - Edit Mode——————————————————————————")
+rule("<FGa366ffFF>—————————————————————Edit Mode——————————————————————")
 {
 	event
 	{
@@ -2457,45 +2207,10 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 		Call Subroutine(GetEditMenuTempData);
 		"TODO: This does not reflect changes to crouch enabled immediately, fix pls"
 		If(Event Player.MenuPage == 0);
+			Call Subroutine(GetStartingAbilities);
 			Call Subroutine(SetCurrentAbilities);
 		End;
 		Wait(0.2, Ignore Condition);
-	}
-}
-disabled rule("EditMode: Hold [Melee] in menu to reset option back to default")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		"TODO: Only allow this for players with edit permissions"
-		Global.EditMode == True;
-		Event Player.MenuOpen == True;
-		Is Button Held(Event Player, Button(Melee)) == True;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Primary Fire)) == False;
-		Is Button Held(Event Player, Button(Secondary Fire)) == False;
-	}
-	actions
-	{
-		If(Event Player.MenuCursor == 0);
-			Small Message(Event Player, Custom String("Resetting position is not supported"));
-			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-			Wait(1, Ignore Condition);
-			Abort;
-		End;
-		Small Message(Event Player, Custom String("Hold {0} to reset to default", Input Binding String(Button(Melee))));
-		Wait(1.6, Abort When False);
-		Call Subroutine(GetEditTempObject);
-		Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.NewObjectDefaults[Event Player.MenuPage][Event Player.MenuCursor];
-		Call Subroutine(SetEditTempObject);
-		Call Subroutine(GetEditMenuTempData);
-		Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 	}
 }
 rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous object")
@@ -2578,11 +2293,10 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				Abort;
 			Event Player.EditConfirmationTimer = 0;
 
-			Event Player.EditTempArray = Event Player.NewObjectDefaults[0];
-			Event Player.EditTempArray[0] = Position Of(Event Player);
+			Event Player.EditTempObject = Event Player.NewObjectDefaults[0];
+			Event Player.EditTempObject[0] = Position Of(Event Player);
 
-			"TODO: What happens when global.checkpoints is empty?"
-			Global.Checkpoints = Append To Array(Append To Array(Array Slice(Global.Checkpoints, 0, Event Player.Checkpoint + 1), Array(Event Player.EditTempArray)), Array Slice(Global.Checkpoints, Event Player.Checkpoint + 1, 1000000000));
+			Global.Checkpoints = Append To Array(Append To Array(Array Slice(Global.Checkpoints, 0, Event Player.Checkpoint + 1), Array(Event Player.EditTempObject)), Array Slice(Global.Checkpoints, Event Player.Checkpoint + 1, 1000000000));
 			Global.Orbs = Append To Array(Append To Array(Array Slice(Global.Orbs, 0, Event Player.Checkpoint + 1), False), Array Slice(Global.Orbs, Event Player.Checkpoint + 1, 1000000000));
 			Global.RefreshOrbs = Append To Array(Append To Array(Array Slice(Global.RefreshOrbs, 0, Event Player.Checkpoint + 1), False), Array Slice(Global.RefreshOrbs, Event Player.Checkpoint + 1, 1000000000));
 			Global.Bots = Append To Array(Append To Array(Array Slice(Global.Bots, 0, Event Player.Checkpoint + 1), False), Array Slice(Global.Bots, Event Player.Checkpoint + 1, 1000000000));
@@ -2590,41 +2304,50 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 			Global.Clouds = Append To Array(Append To Array(Array Slice(Global.Clouds, 0, Event Player.Checkpoint + 1), False), Array Slice(Global.Clouds, Event Player.Checkpoint + 1, 1000000000));
 			Global.Teleports = Append To Array(Append To Array(Array Slice(Global.Teleports, 0, Event Player.Checkpoint + 1), False), Array Slice(Global.Teleports, Event Player.Checkpoint + 1, 1000000000));
 
-			Modify Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint >= Event Player.Checkpoint), Checkpoint, Add, 1);
-
 			Small Message(All Players(All Teams), Custom String("{0} created a CP at index {1}", Event Player, Event Player.Checkpoint));
 			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-			Skip If(!Event Player.MenuOpen, 1);
-			Call Subroutine(SetUpCheckpoint);
-		Else;
 
-			Event Player.EditTempArray = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
-			Event Player.EditTempArray[0] = Array Contains(Array(1,2,4), Event Player.MenuPage) ? Position Of(Event Player) + Vector(0, Event Player.EditTempArray[1], 0) : Position Of(Event Player);
+			If(Count Of(Global.Checkpoints) == 1);
+				"Trigger a SetUpCheckpoint call"
+				Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 1);
+			Else;
+				"Trigger a GetGoalData call for players on previous level"
+				Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == (Event Player.Checkpoint - 1)), BotUpdate, 2);
+				Modify Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint >= Event Player.Checkpoint), Checkpoint, Add, 1);
+				Skip If(!Event Player.MenuOpen, 1);
+				Call Subroutine(GetEditMenuTempData);
+				Call Subroutine(SetUpCheckpoint);
+			End;
+			Log To Inspector(Custom String("{0} - Created checkpoint {1}", Event Player, Event Player.Checkpoint));
+		Else;
+			Log To Inspector(Custom String("{0} - Inserted {1} at checkpoint {2}", Event Player, Global.MenuOptionsNames[Event Player.MenuPage], Event Player.Checkpoint));
+			Event Player.EditTempObject = Event Player.NewObjectDefaults[Event Player.MenuPage]; 
+			Event Player.EditTempObject[0] = Array Contains(Array(1,2,4), Event Player.MenuPage) ? Position Of(Event Player) + Vector(0, Event Player.EditTempObject[1], 0) : Position Of(Event Player);
 
 			"Heres hoping blzz wont change this broken method and also that they add real switch/case"
 			If(True);
 				Skip((Event Player.MenuPage - 1) * 4);
 				Skip If(Global.Orbs[Event Player.Checkpoint] != False, 1);
 				Global.Orbs[Event Player.Checkpoint] = Empty Array;
-				Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Modify Global Variable At Index(Orbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempObject));
 				Else;
 				Skip If(Global.RefreshOrbs[Event Player.Checkpoint] != False, 1);
 				Global.RefreshOrbs[Event Player.Checkpoint] = Empty Array;
-				Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Modify Global Variable At Index(RefreshOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempObject));
 				Else;
 				Skip If(Global.Bots[Event Player.Checkpoint] != False, 1);
 				Global.Bots[Event Player.Checkpoint] = Empty Array;
-				Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Modify Global Variable At Index(Bots, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempObject));
 				Else;
 				Skip If(Global.AntiOrbs[Event Player.Checkpoint] != False, 1);
 				Global.AntiOrbs[Event Player.Checkpoint] = Empty Array;
-				Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Modify Global Variable At Index(AntiOrbs, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempObject));
 				Else;
 				Skip If(Global.Clouds[Event Player.Checkpoint] != False, 1);
 				Global.Clouds[Event Player.Checkpoint] = Empty Array;
-				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempArray));
+				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Append To Array, Array(Event Player.EditTempObject));
 				Else;
-				Global.Teleports[Event Player.Checkpoint] = Event Player.EditTempArray;
+				Global.Teleports[Event Player.Checkpoint] = Event Player.EditTempObject;
 				Call Subroutine(GetGoalData);
 				Else;
 			End;
@@ -2632,6 +2355,13 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 			Call Subroutine(SetEditModeObjectIndex);
 
 			Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+		End;
+		If(Event Player.MenuPage == 3 && Count Of(Global.Bots[Event Player.Checkpoint]) == 1);
+			"Trigger a GetStartingAbilities call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 3);
+		Else If(Event Player.MenuPage == 6);
+			"Trigger a GetGoalData call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 2);
 		End;
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		If(Event Player.MenuOpen);
@@ -2686,6 +2416,10 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 			Modify Global Variable(AntiOrbs, Remove From Array By Index, Event Player.Checkpoint);
 			Modify Global Variable(Clouds, Remove From Array By Index, Event Player.Checkpoint);
 			Modify Global Variable(Teleports, Remove From Array By Index, Event Player.Checkpoint);
+			"Trigger a SetUpCheckpoint call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 1);
+			"Trigger a GetGoalData call for players on previous level"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == (Event Player.Checkpoint - 1)), BotUpdate, 2);
 			Modify Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint >= Event Player.Checkpoint), Checkpoint, Subtract, 1);
 		Else;
 			"Heres hoping blzz wont change this broken method and also that they add real switch/case"
@@ -2701,7 +2435,8 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 				Else;
 				Modify Global Variable At Index(Clouds, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
 				Else;
-				Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
+				Global.Teleports[Event Player.Checkpoint] = Null;
 				Else;
 			End;
 			Event Player.ObjectIndex = -1;
@@ -2711,6 +2446,13 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 			Small Message(Event Player, Custom String("Deleted {0} {1} {2}", Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
+		End;
+		If(Event Player.MenuPage == 3 && Count Of(Global.Bots[Event Player.Checkpoint]) == 0);
+			"Trigger a GetStartingAbilities call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 3);
+		Else If(Event Player.MenuPage == 6);
+			"Trigger a GetGoalData call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 2);
 		End;
 		Wait(0.2, Ignore Condition);		
 		"Wait for player to release fire buttons before ending"
@@ -2871,6 +2613,37 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 		Loop If Condition Is True;
 	}
 }
+rule("EditMode: Hold [Ultimate] to TP to next objective")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == True;
+		Is Button Held(Event Player, Button(Reload)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		disabled Is Button Held(Event Player, Button(Crouch)) == False;
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+	}
+	actions
+	{
+		Wait(0.2, Abort When False);
+		Small Message(Event Player, Custom String("Hold {0} to teleport to next objective", Input Binding String(Button(Ultimate))));
+		Wait(1.6, Abort When False);
+		Event Player.EditModeObjectiveIndex = (Event Player.EditModeObjectiveIndex + 1) % 3;
+		Teleport(Event Player, Objective Position(Event Player.EditModeObjectiveIndex));
+		Small Message(Event Player, Custom String("Teleported player to objective {0}", Event Player.EditModeObjectiveIndex));
+
+	}
+}
 rule("EditMode: Create Player Edit mode HUD")
 {
 	event
@@ -2916,16 +2689,6 @@ rule("EditMode: Create Player Edit mode HUD")
 				Input Binding String(Button(Secondary Fire))),
 			String Slice(Global.EnPadding, 0, 85)), 
 			Null, Left, 11, Null, Color(Turquoise), Null, Visible To String And Color, Default Visibility);
-		
-		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		Create HUD Text(Event Player, Null,
-			Custom String("— — — — While moving object — — — —\n{0}\n{1}\n{2}", 
-				Custom String("Move Away................... {0}\nMove Closer............... {1}\nChange Size................ Jump + {0}/{1}",
-					Input Binding String(Button(Primary Fire)),
-					Input Binding String(Button(Secondary Fire))),
-			Custom String("Cancel move.............. Press Melee"),
-			String Slice(Global.EnPadding, 0, 85)), 
-			Null, Left, 12, Null, Color(Orange), Null, Visible To String And Color, Default Visibility);
 		
 		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
 		Create In-World Text(Event Player.MenuOpen ? Event Player : Null, 
@@ -2999,6 +2762,73 @@ rule("EditMode: Create Player Edit mode HUD")
 		"Create highlighted object aura"
 		Create Effect(Event Player.ObjectSelectAura && Event Player.MenuPage != 0 ? Event Player : Null, Good Aura, Color(Green), Event Player.ObjectSelectAura[0], Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
 		Create Icon(Event Player.ObjectSelectAura ? Event Player : Null, Event Player.ObjectSelectAura[0] + Vector(0, Event Player.ObjectSelectAura[1], 0), Arrow: Down, Visible To and Position, Color(Green), True);
+	}
+}
+rule("EditMode: Create Global Edit mode HUD")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	conditions
+	{
+		Global.EditMode == True;
+	}
+	actions
+	{
+				
+		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
+		Create HUD Text(All Players(All Teams), Null,
+			Custom String("— — — While moving object — — —\n{0}\n{1}\n{2}", 
+				Custom String("Move Away................... {0}\nMove Closer............... {1}\nChange Size................ Jump + {0}/{1}",
+					Input Binding String(Button(Primary Fire)),
+					Input Binding String(Button(Secondary Fire))),
+			Custom String("Cancel move.............. Melee"),
+			String Slice(Global.EnPadding, 0, 85)), 
+			Null, Left, 12, Null, Color(Orange), Null, Visible To And String, Default Visibility);
+				
+		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
+		Create HUD Text(All Players(All Teams), Null,
+			Custom String("— — — — — Extras — — — — —\n{0}\n{1}", 
+				Custom String("Toggle collision............ Hold {0}\nTP to next objective... Hold {1}\nTP to player..................... {0} + {2}",
+					Input Binding String(Button(Reload)),
+					Input Binding String(Button(Ultimate)),
+					Input Binding String(Button(Interact))
+					),
+			String Slice(Global.EnPadding, 0, 85)), 
+			Null, Left, 13, Null, Color(Aqua), Null, Visible To And String, Default Visibility);
+	}
+}
+rule("EditMode: Trigger player update")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Global.EditMode == True;
+		Event Player.BotUpdate != Null;
+	}
+	actions
+	{
+		Wait(0.2, Ignore Condition);
+		Log To Inspector(Custom String("{0} - Received trigger id {1}", Event Player,Event Player.BotUpdate));
+		
+		"1: SetUpCheckpoint 2: GetGoalData 3: GetStartingAbilities"
+		Skip((Event Player.BotUpdate - 1) * 3);
+			Call Subroutine(SetUpCheckpoint);
+			Event Player.BotUpdate = Null;
+			Abort;
+			Call Subroutine(GetGoalData);
+			Event Player.BotUpdate = Null;
+			Abort;
+			Call Subroutine(GetStartingAbilities);
+			Event Player.BotUpdate = Null;
+			Abort;
 	}
 }
 rule("EditMode: Subroutine GetEditMenuTempData")
@@ -3098,7 +2928,7 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 		
 	}
 }
-rule("Subroutine SetEditModeObjectIndex")
+rule("EditMode: Subroutine SetEditModeObjectIndex")
 {
 	event
 	{
@@ -3147,7 +2977,7 @@ rule("Subroutine SetEditModeObjectIndex")
 		Call Subroutine(UpdateSelectObjAura);
 	}
 }
-rule("Subroutine UpdateSelectObjAura")
+rule("EditMode: Subroutine UpdateSelectObjAura")
 {
 	event
 	{
@@ -3177,7 +3007,7 @@ rule("Subroutine UpdateSelectObjAura")
 		End;
 	}
 }
-rule("Subroutine SetEditTempObject")
+rule("EditMode: Subroutine SetEditTempObject")
 {
 	event
 	{
@@ -3187,7 +3017,23 @@ rule("Subroutine SetEditTempObject")
 
 	actions
 	{
-		
+		If(True);
+			Skip(Event Player.MenuPage * 2);
+			Event Player.EditTempArray = Global.Checkpoints[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Orbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.RefreshOrbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Bots[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.AntiOrbs[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Clouds[Event Player.Checkpoint];
+			Else;
+			Event Player.EditTempArray = Global.Teleports[Event Player.Checkpoint];
+			Else;
+		End;			
 		"Pack the array again"
 		If(Event Player.MenuPage == 0 || Event Player.MenuPage == 6);
 			Event Player.EditTempArray = Event Player.EditTempObject;
@@ -3215,15 +3061,21 @@ rule("Subroutine SetEditTempObject")
 			Else;
 		End;
 		
-		If(Event Player.MenuPage == 3);
+		If(Event Player.MenuPage == 0 && Array Contains(Array(3,7), Event Player.MenuCursor));
+			"Trigger a GetStartingAbilities call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 3);
+		Else If(Event Player.MenuPage == 3);
 			"Call for a bot update"
 			Set Player Variable(Event Player.Bot, BotUpdate, True);
+		Else If(Event Player.MenuPage == 6);
+			"Trigger a GetGoalData call"
+			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), BotUpdate, 2);
 		End;
 		Call Subroutine(UpdateSelectObjAura);
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 	}
 }
-rule("Subroutine GetEditTempObject")
+rule("EditMode: Subroutine GetEditTempObject")
 {
 	event
 	{
@@ -3236,31 +3088,24 @@ rule("Subroutine GetEditTempObject")
 		"Get current level object array"
 		If(True);
 			Skip(Event Player.MenuPage * 2);
-			Event Player.EditTempArray = Global.Checkpoints[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.Checkpoints[Event Player.Checkpoint];
 			Else;
-			Event Player.EditTempArray = Global.Orbs[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.Orbs[Event Player.Checkpoint][Event Player.ObjectIndex];
 			Else;
-			Event Player.EditTempArray = Global.RefreshOrbs[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.ObjectIndex];
 			Else;
-			Event Player.EditTempArray = Global.Bots[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.Bots[Event Player.Checkpoint][Event Player.ObjectIndex];
 			Else;
-			Event Player.EditTempArray = Global.AntiOrbs[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.AntiOrbs[Event Player.Checkpoint][Event Player.ObjectIndex];
 			Else;
-			Event Player.EditTempArray = Global.Clouds[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.Clouds[Event Player.Checkpoint][Event Player.ObjectIndex];
 			Else;
-			Event Player.EditTempArray = Global.Teleports[Event Player.Checkpoint];
+			Event Player.EditTempObject = Global.Teleports[Event Player.Checkpoint];
 			Else;
-		End;		
-		"Checkpoints and teleports are not encapsulated in other arrays"
-		If(Event Player.MenuPage == 0 || Event Player.MenuPage == 6);
-			Event Player.EditTempObject = Event Player.EditTempArray;
-		Else;
-			"Single out the edited object"
-			Event Player.EditTempObject = Event Player.EditTempArray[Event Player.ObjectIndex];
 		End;
 	}
 }
-rule("——————————————————————————Subroutines——————————————————————————")
+rule("————————————————————Subroutines——————————————————————")
 {
 	event
 	{
@@ -3526,7 +3371,7 @@ rule("Subroutine CreateGlobalHUD")
 				Input Binding String(Current Array Element)) && 
 				String Contains(
 					Custom String("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&~\"#'{([-|`_\\^@)]=}^$%*,?.;/:>²ÉÈÇÀÙ+¤^ßÜÖÄÑ¡´¿ÒÌСЛП↓←→↑스아좌왼숫우오위空回退大下左暂右上；，向數"),
-					Char In String(Input Binding String(Current Array Element), 0))) ? Custom String("    ") : Custom String(" ")
+					Char In String(Input Binding String(Current Array Element), 0))) ? Custom String("     ") : Custom String(" ")
 				)
 			),
 		Right, 13, Null, Null, Color(White),  Visible To and String, Default Visibility);
@@ -3631,23 +3476,7 @@ rule("Subroutine SetUpCheckpoint")
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
-		"// TODO: Refactor to use compressed abilities"
-		Event Player.StartingAbilities = 
-			Array(
-				Global.Checkpoints[Event Player.Checkpoint][3],
-				True,
-				Global.Bots[Event Player.Checkpoint] ? True : False,
-				False,
-				False,
-				True,
-				True,
-				True
-			);
-		
-		"// TODO: Enable abilities for non mercy heroes"
-		If(Hero Of(Event Player) != Hero(Mercy));
-			Event Player.StartingAbilities[2] = True;
-		End;
+		Call Subroutine(GetStartingAbilities);
 
 		"Set Bot checkpoint too"
 		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
@@ -3733,7 +3562,7 @@ rule("Subroutine TeleportToCurrentCheckpoint")
 		Log To Inspector(Custom String("{0} - Teleport Player", Event Player));
 		Set Status(Event Player, Null, Rooted, 0.2);
 		Call Subroutine(CancelMomentum);
-		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
+		Teleport(Event Player, Global.Checkpoints ? Global.Checkpoints[Event Player.Checkpoint][0] : Objective Position(Event Player.EditModeObjectiveIndex));
 	}
 }
 rule("Subroutine CreatePlayerDebugModeHUD")
@@ -3908,6 +3737,64 @@ rule("Subroutine PlayerCompletedRun")
 				Log To Inspector(Custom String("{0} - Added best run to scoreboard", Event Player));
 			End;
 			Global.Scoreboard = Sorted Array(Global.Scoreboard, Current Array Element[1]);
+		End;
+	}
+}
+rule("Subroutine CreateCurrentWorldTexts")
+{
+	event
+	{
+		Subroutine;
+		CreateCurrentWorldTexts;
+	}
+	actions
+	{
+		Destroy In-World Text(Event Player.CheckpointWorldTexts);
+		Create In-World Text(Event Player, Global.WorldTexts[Event Player.Checkpoint][0], Global.WorldTexts[Event Player.Checkpoint][1], Global.WorldTexts[Event Player.Checkpoint][2], Do Not Clip, Visible To And String, Global.WorldTexts[Event Player.Checkpoint][3], Default Visibility);
+		Event Player.CheckpointWorldTexts = Last Text Id;
+	}
+}
+rule("Subroutine GetGoalData")
+{
+	event
+	{
+		Subroutine;
+		GetGoalData;
+	}
+
+	actions
+	{
+		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
+		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
+		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
+	}
+}
+rule("Subroutine GetStartingAbilities")
+{
+	event
+	{
+		Subroutine;
+		GetStartingAbilities;
+	}
+
+	actions
+	{
+		"// TODO: Refactor to use compressed abilities"
+		Event Player.StartingAbilities = 
+			Array(
+				Global.Checkpoints[Event Player.Checkpoint][3],
+				True,
+				Global.Bots[Event Player.Checkpoint] ? True : False,
+				False,
+				False,
+				True,
+				True,
+				True
+			);
+		
+		"// TODO: Enable abilities for non mercy heroes"
+		If(Hero Of(Event Player) != Hero(Mercy));
+			Event Player.StartingAbilities[2] = True;
 		End;
 	}
 }
@@ -4334,36 +4221,7 @@ rule("Subroutine PeaceDecompressData")
 		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
 }
-rule("Subroutine CreateCurrentWorldTexts")
-{
-	event
-	{
-		Subroutine;
-		CreateCurrentWorldTexts;
-	}
-	actions
-	{
-		Destroy In-World Text(Event Player.CheckpointWorldTexts);
-		Create In-World Text(Event Player, Global.WorldTexts[Event Player.Checkpoint][0], Global.WorldTexts[Event Player.Checkpoint][1], Global.WorldTexts[Event Player.Checkpoint][2], Do Not Clip, Visible To And String, Global.WorldTexts[Event Player.Checkpoint][3], Default Visibility);
-		Event Player.CheckpointWorldTexts = Last Text Id;
-	}
-}
-rule("Subroutine GetGoalData")
-{
-	event
-	{
-		Subroutine;
-		GetGoalData;
-	}
-
-	actions
-	{
-		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
-		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
-		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
-	}
-}
-rule("——————————————————————————Add-ons——————————————————————————")
+rule("—————————————————————Add-ons——————————————————————")
 {
 	event
 	{
