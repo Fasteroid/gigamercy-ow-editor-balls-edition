@@ -39,7 +39,7 @@ settings
 		{
 			enabled maps
 			{
-				Hanamura
+				Hanamura 0
 			}
 		}
 
@@ -79,7 +79,7 @@ settings
 
 	workshop
 	{
-		Debug Mode: Off
+		Debug Mode: On
 		Edit Mode: On
 		Server Load Widget: On
 	}
@@ -90,6 +90,7 @@ settings
 		Buff and Debuff Sounds
 		Explosion Sounds
 		Spawn More Dummy Bots
+		Beam Effects
 	}
 }
 
@@ -291,9 +292,9 @@ rule("Customization options")
 		"Teleport pad effect color"
 		Global.Settings[9] = Color(Orange);
 		"Orb color"
-		Global.Settings[1] = Color(Yellow);
+		Global.Settings[1] = Color(Red);
 		"Orb Icon Color"
-		Global.Settings[12] = Color(Yellow);
+		Global.Settings[12] = Color(Red);
 		"Refresh Orb Color"
 		Global.Settings[4] = Color(Violet);
 		"Refresh Orb Icon Color"
@@ -433,6 +434,7 @@ rule("2. Player Initialization")
 		"// TODO: Check if needed"
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
+		Disable Nameplates(Event Player, All Players(All Teams));
 		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
 		Start Forcing Spawn Room(Team 1, Color(Red));
 		Start Forcing Spawn Room(Team 2, Color(Red));
@@ -441,8 +443,10 @@ rule("2. Player Initialization")
 		Call Subroutine(CreatePlayerHUD);
 		"TODO: Optimize"
 		If(Global.EditMode);
+			Event Player.FreeMode = True;
 			Call Subroutine(CreatePlayerEditModeHUD);
 			Call Subroutine(InitializePlayerBot);
+			Call Subroutine(EnableAllAbilities);
 		Else If(Is True for Any(Global.Bots, Current Array Element == True));
 			Call Subroutine(InitializePlayerBot);
 		End;
@@ -943,7 +947,7 @@ rule("Create/Destroy current level Orbs")
 			Create Icon(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbIcons))] ? Null : Event Player, 
 			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] 
 				+ Vector(0,Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1]/2, 0), 
-			Halo, Visible To and Position, Global.Settings[12], True);
+			Circle, Visible To and Position, Global.Settings[12], True);
 			"Save reference for last created icon to player variable"		
 			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
 		End;
@@ -1213,11 +1217,18 @@ rule("Create Bunnyhop effect")
 {
 	event
 	{
-		Ongoing - Global;
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bot(Event Player) == False;
 	}
 	actions
 	{
-		Create Effect(Local Player.BhopActive ? Local Player : Null, Baptiste Immortality Field Protected Effect, Null, Local Player, 1,
+		Create Effect(Event Player.BhopActive ? Event Player : Null, Baptiste Immortality Field Protected Effect, Null, Event Player, 1,
 			Visible To Position and Radius);
 	}
 }
@@ -1453,7 +1464,7 @@ rule("Detect Grabbing RefreshOrb v2")
 						: Empty Array)));
 					Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 					"Trigger Bot Section"
-					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
+					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2] >= 0);
 						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
 						Event Player.Bot.CurrentBotSection = Event Player.CurrentBotSection;
 						"// TODO: Test to see what happens when many refresh orbs are close together"
@@ -2066,6 +2077,7 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 		If(Event Player.ObjectSelectAura == Null);
 			Abort;
 		Else If(Count Of(Event Player.EditNumber) != 0);
+			"EditNumber:\n 0: New value, 1: StepSize, 2: MaxValue, 3: MinValue"
 			Event Player.EditNumber[0] += Z Component Of(Throttle Of(Event Player)) > 0 ? Event Player.EditNumber[1] : 0 - Event Player.EditNumber[1];
 			If(Event Player.EditNumber[0] > Event Player.EditNumber[2]);
 				Event Player.EditNumber[0] = Event Player.EditNumber[2];
@@ -2510,6 +2522,22 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 				Else;
 			End;
 			Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
+			"TEST: positioning beam effect"
+			Create Beam Effect(
+				All Players(All Teams), 
+				Torbjörn Turret Sight Beam, 
+				Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)),
+				Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player) - Vector(0, 16, 0)), 
+				Null, Position and Radius);
+			Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
+			"TEST: positioning beam effect"
+			Create Beam Effect(
+				All Players(All Teams), 
+				Brigitte Flail Chain Beam,
+				Event Player.ObjectSelectAura[0],
+				Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), 
+				Null, Position and Radius);
+			Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 			Play Effect(Event Player, Brigitte Repair Pack Impact Sound, Null, Position Of(Event Player), 100);
 			Small Message(Event Player, Custom String("Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuOptionsNames[Event Player.MenuPage], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
 			Small Message(Event Player, Custom String("Press {0} to cancel move", Input Binding String(Button(Melee))));
@@ -2589,7 +2617,7 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			End;
-			Event Player.ObjectMoveGhost[1] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.05 : -0.05;
+			Event Player.ObjectMoveGhost[1] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.025 : -0.025;
 			If(Event Player.ObjectMoveGhost[1] > 8);
 				Event Player.ObjectMoveGhost[1] = 8;
 				Abort;
@@ -2600,8 +2628,8 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 			End;
 		Else;
 			Event Player.ObjectMoveGhost[0] += Is Button Held(Event Player, Button(Primary Fire)) ? 0.1 : -0.1;
-			If(Event Player.ObjectMoveGhost[0] > 24);
-				Event Player.ObjectMoveGhost[0] = 24;
+			If(Event Player.ObjectMoveGhost[0] > 20);
+				Event Player.ObjectMoveGhost[0] = 20;
 				Abort;
 			Else If(Event Player.ObjectMoveGhost[0] < (Distance Between(Eye Position(Event Player), Position Of(Event Player))));
 				"Orbs & refresh orbs"
@@ -2760,7 +2788,7 @@ rule("EditMode: Create Player Edit mode HUD")
 		Create Progress Bar HUD Text(Event Player.EditConfirmationTimer != 0 ? Event Player : Null, Event Player.EditConfirmationTimer > 0 ? Event Player.EditConfirmationTimer : Absolute Value(Event Player.EditConfirmationTimer), Custom String(">>> {0} {1} {2} <<<", Event Player.EditConfirmationTimer > 0 ? Custom String("Inserting new") : Custom String("Deleting"), Global.MenuOptionsNames[Event Player.MenuPage], Event Player.MenuPage == 0 ? Event Player.Checkpoint : Event Player.ObjectIndex), Top, 22, Event Player.EditConfirmationTimer > 0 ? Color(Green) : Color(Red), Event Player.EditConfirmationTimer > 0 ? Custom Color(10,110,0,255) : Custom Color(180,20,0,255), Visible To Values And Color, Default Visibility);
 
 		"Create highlighted object aura"
-		Create Effect(Event Player.ObjectSelectAura && Event Player.MenuPage != 0 ? Event Player : Null, Good Aura, Color(Green), Event Player.ObjectSelectAura[0], Event Player.ObjectSelectAura[1], Visible To Position Radius and Color);
+		Create Effect(Event Player.ObjectSelectAura && Event Player.MenuPage != 0 ? Event Player : Null, Good Aura, Color(Green), Event Player.ObjectSelectAura[0], Event Player.ObjectSelectAura[1] + 0.2, Visible To Position Radius and Color);
 		Create Icon(Event Player.ObjectSelectAura ? Event Player : Null, Event Player.ObjectSelectAura[0] + Vector(0, Event Player.ObjectSelectAura[1], 0), Arrow: Down, Visible To and Position, Color(Green), True);
 	}
 }
@@ -3193,7 +3221,7 @@ rule("Subroutine InitializePlayerVariables")
 			Event Player.NewObjectDefaults = Array(
 				Array(Null, 1.6, Null, True, False, 1.6, 1.6, False),
 				Array(Null, 0.5),
-				Array(Null, 0.5, False, True, False, False),
+				Array(Null, 0.5, -1, True, False, False),
 				Array(Null, 1, Null, False, False, False, True),
 				Array(Null, 2),
 				Array(Null, 1.5, 8),
@@ -4079,6 +4107,7 @@ rule("Subroutine PeaceDecompressData")
 		);
 		"Teleport CP counter, do not modify"
 		Global.PeaceEditorVariables[6] = 0;
+		Log To Inspector(Custom String("Count of peace checkpoints: {0}", Count Of(Global.Checkpoints)));
 		"Extract and translate level effects"
 		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
 			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
