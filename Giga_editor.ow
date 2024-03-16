@@ -3,7 +3,7 @@ settings
 	main
 	{
 		Mode Name: "Giga Parkour Editor"
-		Description: "Beta revision 1\n! Pls dont share or publish maps with this code !\n\nBy GigaMercy"
+		Description: "Beta revision 2\n! Pls dont share or publish maps with this code !\n\nBy GigaMercy"
 	}
 
 	lobby
@@ -102,7 +102,7 @@ variables
 		2:  Colors
 		3:  HintTexts
 		4:  Settings
-		5:  free
+		5:  ButtonList
 		6:  Checkpoints
 		7:  PeaceCheckpoint
 		8:  TawsCompressedData
@@ -256,7 +256,7 @@ subroutines
 	28: ClearGlobalVariables
 }
 
-rule("————————————————Giga Parkour Editor BETA rev 1—————————————————")
+rule("————————————————Giga Parkour Editor BETA rev 2—————————————————")
 {
 	event
 	{
@@ -269,7 +269,7 @@ rule("Put your data here")
 	{
 		Ongoing - Global;
 	}
-	
+
 	actions
 	{
 	}
@@ -442,7 +442,7 @@ rule("2. Player Initialization")
 		Start Forcing Spawn Room(Team 2, Color(Red));
 		Disable Movement Collision With Players(Event Player);
 		Call Subroutine(InitializePlayerVariables);
-		Call Subroutine(CreatePlayerHUD);
+		Start Rule(CreatePlayerHUD, Do Nothing);
 		"TODO: Optimize"
 		If(Global.EditMode);
 			Event Player.FreeMode = True;
@@ -523,17 +523,10 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(Jump), Button(Crouch))), Is Button Held(Event Player, Current Array Element)));
 		Wait Until(!Is Button Held(Event Player, Button(Interact)), 99999);
 		Wait Until(Is Button Held(Event Player, Button(Interact)), 0.300);
 		If(Is Button Held(Event Player, Button(Interact)));
@@ -624,15 +617,12 @@ rule("Press [Reload] to reset current checkpoint")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
-		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Jump), Button(Crouch))), Is Button Held(Event Player, Current Array Element)));
 		"Sometimes going into free mode triggered this rule, if the keys were released in a specific order"
 		If(Is Button Held(Event Player, Button(Crouch)) == True || Is Button Held(Event Player, Button(Melee)) == True);
 			Abort;
@@ -657,15 +647,11 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
 	{
 		Is Button Held(Event Player, Button(Crouch)) == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Ability 2)) == True;		
-		Is Button Held(Event Player, Button(Melee)) == False;
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == True;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Crouch), Button(Interact), Button(Ability 2), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
 		Event Player.Mistakes = 0;
 		Event Player.FreeMode = True;
@@ -699,15 +685,10 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
 		Is Button Held(Event Player, Button(Jump)) == True;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		"By overclocking"
 		Wait(0.750, Abort When False);
 		Event Player.ThirdPerson = !Event Player.ThirdPerson;
@@ -717,7 +698,7 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 		Start Camera(Event Player, Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player)
 			+ 0.500), Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500),
 			Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500) + Facing Direction Of(Event Player)
-			* -3, Null, Event Player, True), Null, Event Player, True), Event Player + Facing Direction Of(Event Player) * 100, 100);
+			* -3, Null, Event Player, True), Null, Event Player, True), Event Player + Facing Direction Of(Event Player) * 100, 0);
 	}
 }
 rule("Press [Reload] + [Interact] to TP to player (Free Mode only)")
@@ -731,19 +712,15 @@ rule("Press [Reload] + [Interact] to TP to player (Free Mode only)")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == True;
 		Is Button Held(Event Player, Button(Reload)) == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Event Player.FreeMode == True;
-		Is Dummy Bot(Player Closest To Reticle(Event Player, Team(All))) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Interact))), Is Button Held(Event Player, Current Array Element)));
+		
+		Abort If(Is Dummy Bot(Player Closest To Reticle(Event Player, Team(All))));
 		Teleport(Event Player, Player Closest To Reticle(Event Player, Team(All)));
 	}
 }
@@ -760,15 +737,10 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == True;
 		Is Button Held(Event Player, Button(Ability 2)) == True;
-		Is Button Held(Event Player, Button(Reload)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Ultimate), Button(Ability 2))), Is Button Held(Event Player, Current Array Element)));
 		Wait(1, Abort When False);
 		Event Player.SpectatorMode = !Event Player.SpectatorMode;
 
@@ -797,14 +769,11 @@ rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
 		Is Button Held(Event Player, Button(Crouch)) == True;
 		Is Button Held(Event Player, Button(Reload)) == True;
 		Is Button Held(Event Player, Button(Melee)) == True;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Crouch), Button(
+		Reload),Button(Melee))), Is Button Held(Event Player, Current Array Element)));
 		If(Event Player.FreeMode);
 			If(Is Using Ultimate(Event Player));
 				Call Subroutine(CancelUltimate);
@@ -840,18 +809,12 @@ rule("Press [Melee] twice to cancel ultimate (Free Mode only)")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Melee)) == True;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		disabled Is Button Held(Event Player, Button(Crouch)) == False;
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
 		Event Player.FreeMode == True;
 		Is Using Ultimate(Event Player) == True;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		Wait Until(!Is Button Held(Event Player, Button(Melee)), 99999);
 		Wait Until(Is Button Held(Event Player, Button(Melee)), 0.300);
 		If(Is Button Held(Event Player, Button(Melee)));
@@ -873,17 +836,11 @@ rule("Hold [Reload] to toggle collision (Free Mode only)")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
 		Event Player.FreeMode == True;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload))), Is Button Held(Event Player, Current Array Element)));
 		Wait(1, Abort When False);
 		If(Event Player.Collision == True);
 			Disable Movement Collision with Environment(Event Player, False);
@@ -1807,7 +1764,7 @@ rule("Resurrect Player after dying")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - died, resurrecting", Event Player)); 
-		If((Event Player.Finished || Event Player.FreeMode) == True);
+		If(Event Player.Finished || Event Player.FreeMode);
 			Teleport(Event Player, Nearest Walkable Position(Position Of(Event Player)));
 		Else;
 			Call Subroutine(ResetWithMistake);
@@ -2172,7 +2129,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Small Message(Event Player, Custom String("Changing bot size not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
-		Else If((Global.OrbStyle == 1 && Event Player.MenuPage == 1 ) || (Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2));
+		Else If((Global.OrbStyle == 1 && Event Player.MenuPage == 1 ) || (Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2) && Event Player.MenuCursor == 1);
 			Small Message(Event Player, Custom String("This Orb effect does not support changing the size. Change the orb style in the orange settings"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
@@ -2261,21 +2218,14 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 		Is Dummy Bot(Event Player) == False;
 		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
-		"developer.Mind = Blown"
 		Is Button Held(Event Player, Button(Melee)) == True;
+		"developer.Mind = Blown"
 		(Is Button Held(Event Player, Button(Primary Fire)) !=
 		Is Button Held(Event Player, Button(Secondary Fire))) == True;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
 	}
 	actions
-	{
+	{	
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		Event Player.ObjectIndex += (Is Button Held(Event Player, Button(Primary Fire)) ? 1 : -1);
 		Call Subroutine(SetEditModeObjectIndex);
 		If(Event Player.ObjectSelectAura == Null);
@@ -2305,18 +2255,10 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Primary Fire)) == True;
-		Is Button Held(Event Player, Button(Secondary Fire)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Append To Array(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(Jump))), Button(Secondary Fire)), Is Button Held(Event Player, Current Array Element)));
 		disabled Wait(0.016, Ignore Condition);
 		If(Event Player.MenuPage == 0);
 			Event Player.EditConfirmationTimer = 0;
@@ -2421,18 +2363,10 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 		Global.EditMode == True;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Secondary Fire)) == True;
-		Is Button Held(Event Player, Button(Primary Fire)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
-		Is Button Held(Event Player, Button(Crouch)) == False;
-		"// TODO: Disabled because it caused issues when gliding, consider reenabling"
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ultimate)) == False;
-		Is Button Held(Event Player, Button(Reload)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Append To Array(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(Jump))), Button(Primary Fire)), Is Button Held(Event Player, Current Array Element)));
 		disabled Wait(0.016, Ignore Condition);
 		Event Player.EditConfirmationTimer = -100;
 		Chase Player Variable Over Time(Event Player, EditConfirmationTimer, 0, Event Player.MenuPage == 0 ? 1.5 : 0.6, None);
@@ -2511,6 +2445,7 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Ability 2), Button(Jump), Button(Crouch))), Is Button Held(Event Player, Current Array Element)));
 		If(Event Player.ObjectSelectAura == Null);
 			Small Message(Event Player, Custom String("No object selected"));
 			Abort;
@@ -2675,16 +2610,10 @@ rule("EditMode: Hold [Ultimate] to TP to next objective")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Ultimate)) == True;
-		Is Button Held(Event Player, Button(Reload)) == False;
-		Is Button Held(Event Player, Button(Melee)) == False;
-		Is Button Held(Event Player, Button(Interact)) == False;
-		disabled Is Button Held(Event Player, Button(Crouch)) == False;
-		disabled Is Button Held(Event Player, Button(Jump)) == False;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-		Is Button Held(Event Player, Button(Ability 2)) == False;
 	}
 	actions
 	{
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Ultimate), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		Wait(0.2, Abort When False);
 		Small Message(Event Player, Custom String("Hold {0} to teleport to next objective", Input Binding String(Button(Ultimate))));
 		Wait(1.6, Abort When False);
@@ -2718,25 +2647,16 @@ rule("EditMode: Create Global Edit mode HUD")
 			Null, Left, 12, Null, Color(Orange), Null, Visible To And String, Default Visibility);
 				
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
-		Create HUD Text(All Players(All Teams), Null,
-			Custom String("— — — — — Extras — — — — —\n{0}\n{1}", 
-				Custom String("Toggle collision............ Hold {0}\nTP to next objective... Hold {1}\nTP to player..................... {0} + {2}",
-					Input Binding String(Button(Reload)),
-					Input Binding String(Button(Ultimate)),
-					Input Binding String(Button(Interact))
-					),
-			String Slice(Global.EnPadding, 0, 85)), 
-			Null, Left, 13, Null, Color(Aqua), Null, Visible To And String, Default Visibility);
-		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(Host Player, Null,
-			Custom String("Export data: Hold {0}\n{1}", 
+			Custom String("Export data {0}: Hold {1}\n{2}",
+				Ability Icon String(Hero(Hanzo), Button(Jump)), 
 				Custom String("{0} + {1} + {2}",
 					Input Binding String(Button(Ability 1)),
 					Input Binding String(Button(Ability 2)),
 					Input Binding String(Button(Ultimate))
 					),
 			String Slice(Global.EnPadding, 0, 85)), 
-			Null, Left, 14, Null, Custom Color(192, 192, 192, 255), Null, Visible To And String, Default Visibility);
+			Null, Left, 13, Null, Custom Color(192, 192, 192, 255), Null, Visible To And String, Default Visibility);
 	}
 }
 rule("EditMode: Trigger player update")
@@ -2872,7 +2792,7 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 
 		"Sidebar Buttons. TODO: hide buttons for players without edit mode permissions"
 		Create HUD Text(Event Player, Null, 
-			Custom String("— — — Edit Mode Controls — — —{0}\n{1}", 
+			Custom String("— — — Edit Mode Controls — — —\n{0}\n{1}", 
 				Custom String("Insert {2}............ Interact + {0}\nDelete {2}............ Hold Interact + {1}\nSelect {2}............ Melee + {0}/{1}", 
 					Input Binding String(Button(Primary Fire)),
 					Input Binding String(Button(Secondary Fire)),
@@ -3271,6 +3191,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
 		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 1);
 		Global.RequireGrabAllRefreshOrbs = Workshop Setting Toggle(Custom string("Gameplay options"), Custom String("Require grabbing all Refresh Orbs?"), True, 0);	
+		Global.ButtonList = Array(Button(Crouch), Button(Jump), Button(Interact), Button(Ability 1), Button(Ability 2), Button(Ultimate), Button(Melee), Button(Reload));
 
 		Call Subroutine(CreateGlobalHUD);
 		Global.Checkpoints = Empty Array;
@@ -3388,6 +3309,8 @@ rule("Subroutine InitializePlayerBot")
 			"IDFK MAN D:"
 			Event Player.Bot.BotIcons = Last Created Entity;
 		End;
+		
+		Disable Nameplates(Event Player.Bot, All Players(All Teams));
 	}
 }
 rule("Subroutine UpdateBotPosition")
@@ -3523,7 +3446,7 @@ rule("Subroutine CreateGlobalHUD")
 
 		"Controls pt1"
 		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
-			Custom String("— — — — — Controls — — — — —\n{0}\n{1}",
+			Custom String("— — — — — Controls  — — — — —  \n{0}\n{1}",
 				Custom String("Reset level: {0}", 
 					Input Binding String(Button(Reload))
 				),
@@ -3533,7 +3456,7 @@ rule("Subroutine CreateGlobalHUD")
 					Input Binding String(Button(Ability 2))
 				)
 			), 
-		Null, Right, 12, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+		Null, Right, 12, Null, Color(White), Null, Visible To and String, Default Visibility);
 		
 		Skip If(Global.EditMode, 1);
 		"Controls pt2. Lord forgive me for this hack"
@@ -3563,18 +3486,10 @@ rule("Subroutine CreateGlobalHUD")
 					Char In String(Input Binding String(Current Array Element), 0))) ? Custom String("   ") : Custom String(" ")
 				)
 			),
-		Null, Right, 13, Color(White), Color(White), Color(White),  Visible To and String, Default Visibility);
+		Null, Right, 13,Null, Color(White), Null,  Visible To and String, Default Visibility);
+
 		
 		"Controls pt3"
-		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
-			Custom String("Free Mode: {0} + {1} + {2}  ", 
-				String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
-				Input Binding String(Button(Reload)),
-				Custom String("{0}{1}", Input Binding String(Button(Melee)), String Length(Input Binding String(Button(Crouch))) < 4 ? Custom String("  ") : Empty Array)
-			),
-		Null, Right, 14, Null, Color(White), Color(White), Visible To and String, Default Visibility);
-		
-		"Controls pt4"
 		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
 			Custom String("{0}\n{1}\n— — — — — — — — — — — — — — —",
 				Custom String("3rd Person: {0} + {1}", 
@@ -3586,8 +3501,32 @@ rule("Subroutine CreateGlobalHUD")
 					Input Binding String(Button(Ability 2))
 				)
 			),
-		Null, Right, 15, Null,  Color(White), Color(White), Visible To and String, Default Visibility);
+		Null, Right, 14, Null,  Color(White), Null, Visible To and String, Default Visibility);
 		
+		
+		"Controls pt3"
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
+			Custom String("Free Mode: {0} + {1} + {2} ", 
+				String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
+				Input Binding String(Button(Reload)),
+				Custom String("{0}{1}", Input Binding String(Button(Interact)), String Length(Input Binding String(Button(Crouch))) < 4 ? Custom String("     ") : Empty Array)
+			),
+		Null, Right, 15, Null, Color(Aqua), Null, Visible To and String, Default Visibility);
+		"Controls pt3 experimental"
+		disabled Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
+			Custom String("Free Mode............ Hold {0}", 
+				Input Binding String(Button(Melee)) 
+			),
+		Null, Right, 15, Null, Color(Aqua), Null, Visible To and String, Default Visibility);
+		"Right Sidebar extras"
+		Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
+			Custom String("{0}\n{1}— — — — — — — — — — — — — — —",
+				Custom String("Toggle collision............ Hold {0}\nTP to player..................... {0} + {1}",
+					Input Binding String(Button(Reload)),
+					Input Binding String(Button(Interact))
+					),
+				Global.EditMode ? Custom String("TP to next objective... Hold {0}\n", Input Binding String(Button(Ultimate))) : Empty Array), 
+			Null, Right, 16, Null, Color(Aqua), Null, Visible To And String, Default Visibility);
 		"// TODO: Move to player init and use preferred language"
 		Create HUD Text(All Players(All Teams), Null, 
 		Custom String("Elapsed time: {0} minutes {1} seconds",
@@ -4281,7 +4220,8 @@ rule("Subroutine PeaceDecompressData")
 		);
 		"Teleport CP counter, do not modify"
 		Global.PeaceEditorVariables[6] = 0;
-		Log To Inspector(Custom String("Count of peace checkpoints: {0}", Count Of(Global.Checkpoints)));
+		Log To Inspector(Custom String("Count of peace checkpoints: {0}", Count Of(Global.Checkpoints) - 1));
+		
 		"Extract and translate level effects"
 		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
 			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
@@ -4440,7 +4380,7 @@ rule("Subroutine ClearGlobalVariables")
 		Global.Colors = Null;
 		Global.HintTexts = Null;
 		Global.Settings = Null;
-		Global.free = Null;
+		Global.ButtonList = Null;
 		disabled Global.Checkpoints = Null;
 		Global.PeaceCheckpoint = Null;
 		Global.TawsCompressedData = Null;
