@@ -154,6 +154,7 @@ variables
 		54: Teleports
 		55: MenuObjectNames
 		56: MapDataSchema
+		57: AbilityEncoding
 
 	player:
 		0:  Checkpoint
@@ -229,6 +230,9 @@ variables
 		70: PalettePage
 		71: PaletteCenter
 		72: SelectedHero
+		73: MenuPage
+		74: AbilitiesTemp
+		75: AbilitiesI
 }
 subroutines
 {
@@ -601,6 +605,7 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 			Log To Inspector(Custom String("{0} - Toggle menu", Event Player));
 			"For safety"
 			disabled Event Player.PaletteOpen = False;
+			Event Player.MenuPage = Event Player.ObjectType;
 			Event Player.MenuOpen = !Event Player.MenuOpen;
 			"Cleanup edit number"
 			Event Player.EditNumber = Null;
@@ -617,7 +622,7 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 		End;
 	}
 }
-rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoints | EditMode: Switch object mode")
+rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoints")
 {
 	event
 	{
@@ -635,7 +640,7 @@ rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoint
 	}
 	actions
 	{
-		Event Player.MenuOpen = False;
+		Abort If(Event Player.MenuOpen);
 		Event Player.TempFreeMode = Event Player.FreeMode;
 		Event Player.FreeMode = True;
 		Event Player.Checkpoint = Is Button Held(Event Player, Button(Primary Fire)) ? 
@@ -698,6 +703,7 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to start over")
 	}
 	actions
 	{
+		Abort If(Event Player.MenuOpen);
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Crouch), Button(Interact), Button(Ability 2), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
 		Event Player.Mistakes = 0;
@@ -786,6 +792,7 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	}
 	actions
 	{
+		Abort If(Event Player.MenuOpen);
 		Wait(1, Abort When False);
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Ultimate), Button(Ability 2))), Is Button Held(Event Player, Current Array Element)));
 		Event Player.SpectatorMode = !Event Player.SpectatorMode;
@@ -1493,9 +1500,9 @@ rule("Detect Grabbing RefreshOrb v2")
 						Event Player.BotCompletedSections[Event Player.CurrentBotSection] = True;
 					End;
 					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
-					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+					Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
 					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;
-					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+					Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
 					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Event Player.Ultimate;
 					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 					Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
@@ -1664,7 +1671,7 @@ rule("Detect Using Ability 1 v2")
 			Wait(0.016, IgnoreCondition);
 			Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
 		Else;
-			Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+			Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
 			Wait(0.016, IgnoreCondition);
 			"Disable this if you want to set the cooldowns through lobby settings"
 			Set Ability Cooldown(Event Player, Button(Ability 1), 0);
@@ -1699,7 +1706,7 @@ rule("Detect Using Ability 2")
 				Wait(0.016, IgnoreCondition);
 				Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 			Else;
-				Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+				Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
 				Wait(0.016, IgnoreCondition);
 				"Disable this if you want to set the cooldowns through lobby settings"
 				Set Ability Cooldown(Event Player, Button(Ability 2), 0);
@@ -1726,9 +1733,12 @@ rule("Detect Using Ability 2")
 					) : Empty Array
 				)
 			);
+			"Resurrection refresh GA"
 			Set Ability 1 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6]);
-			Set Ability 2 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7]);
-			Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8]);
+			"Not implemented yet"
+			disabled Set Ability 2 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7]);
+			"Not implemented yet"
+			disabled Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8]);
 			Event Player.BotCondition = True;
 		Else;
 			Set Ability 2 Enabled(Event Player, False);
@@ -1788,9 +1798,10 @@ rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
 		Event Player.BotCompletedSections[Event Player.CurrentBotSection] = True;
 		Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
 		Call Subroutine(UpdateBotPosition);
+		Wait(0.016, IgnoreCondition);
 		Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
 		Wait(0.016, IgnoreCondition);
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
 		Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 	}
 }
@@ -2074,12 +2085,12 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 				Custom String("  {0}\nNoClip", Icon String(No)),
 				Custom String("      {0}\nSlow crouch", Ability Icon String(Hero(Wrecking Ball), Button(Crouch))),
 				Array(Custom String("      {0}\nSwitch heroes", Ability Icon String(Hero(Echo), Button(Ultimate))), 3),
-				Custom String("      {0}\nWho's the best?", Icon String(Question Mark))
+				Custom String("      {0}\nWho's the best?", Icon String(Question Mark)),
+				Custom String("       {0}\n   Focus mode", Icon String(Eye))
 			),
 			Array(
 				Custom String("     {0}\n   Editing\npermissions", Ability Icon String(Hero(Sombra), Button(Ability 2))),
-				Custom String("       {0}\n   View/Hide\nobject details", Icon String(Eye)),
-				Custom String("Option 3")
+				Custom String("       {0}\n   View/Hide\nobject details", Icon String(Eye))
 			),
 			Array(
 				Custom String("  {0}\nReset", Icon String(Recycle)),
@@ -2098,47 +2109,54 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Custom String("Cloud"),
 			Custom String("Teleport"));
 		
-		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Non-zero Integer \n3: Positive Integer \n4: Non-zero floating point \n5: Positive floating point \n6: Vector\n7: Color"
+		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)"
 		Global.MapDataSchema = Array(
-			Array(2, 5, 2, 1, 1, 5, 5, 1),
+			Array(2, 5, 2, 1, 1, 5, 5, 1, 8),
 			Array(2, 5),
 			Array(2, 5, 4, 1, 1, 1),
 			Array(2, 5, 2, 1, 1, 1, 1, 1),
 			Array(2, 5),
 			Array(2, 5, 3),
-			Array(2, 5, 2, 5, 5)
+			Array(2, 5, 2, 5, 5),
+			Array(1, 1, 1, 1, Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)
 		);
 		
 		"Checkpoint Screen"
 		Global.MenuOptions[0] = Custom String(
-			"Position:\nRadius:\nFacing:\nAllow Crouch:\nRequire ground:\nTolerance Above:\nTolerance Below:\nUnlimited GA:\n"
+			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
 		);
         "Orbs Screen"
         Global.MenuOptions[1] = Custom String(
-			"Position:\nRadius:\n");
+			"Position:\nSize:\n");
 		
 		"Refresh Orbs Screen"
 		Global.MenuOptions[2] = Custom String(
-			"Position:\nRadius:\nBot section:\nRefresh A1:\nRefresh A2:\nRefresh Ult:\n");
+			"Position:\nSize:\nBot section:\nRefresh A1:\nRefresh A2:\nRefresh Ult:\n");
 
         "Bots Screen"
 		Global.MenuOptions[3] = Custom String(
-			"Position:\nScale:\nFacing:\nCrouch:\nGravity:\nResurrect:\nRefresh GA:\n");
+			"Position:\nSize:\nFacing:\nCrouch:\nGravity:\nResurrect:\nRefresh GA:\n");
+			
 		"TODO: Implement bot flags, then we can reenable this"
         disabled Global.MenuOptions[3] = Custom String(
 			"Position:\nFacing:\nCrouch:\nGravity:\nRequire Kill/Rez:\nRefresh GA:\nUse Ability1:\nUse Ability 2:\nUse Ult:\nShoot:\nHold:\n{0}", Custom String("-----Level Overrides-----\nScale:\nHealth:\n"));
 		
         "AntiOrbs Screen"
         Global.MenuOptions[4] = Custom String(
-			"Position:\nRadius:\n");
+			"Position:\nSize:\n");
 		
         "Clouds Screen"
         Global.MenuOptions[5] = Custom String(
-			"Position:\nRadius:\nStrength:\n");
+			"Position:\nSize:\nStrength:\n");
 
 		"Teleports Screen"
         Global.MenuOptions[6] = Custom String(
-			"Position:\nRadius:\nTP Coords:\nTolerance Above:\nTolerance Below:\n");
+			"Position:\nSize:\nTP Coords:\nTolerance Above:\nTolerance Below:\n");
+
+		"Level starting abilities Screen"
+        Global.MenuOptions[7] = Custom String(
+			"Crouch:\nJump:\nMelee:\nUltimate:\nAbility 1:\nAbility 2:\nPrimary Fire:\nSecondary Fire:\nSave changes <<\n");
+
     }
 }
 rule("EditMode: Use [Movement Keys] to navigate the menu")
@@ -2177,9 +2195,9 @@ rule("EditMode: Use [Movement Keys] to navigate the menu")
 			End;
 		Else;
 			If (Z Component Of(Throttle Of(Event Player)) < 0);
-				Event Player.MenuCursor = (Event Player.MenuCursor + 1) % Value In Array(Array(8, 2, 6, 7, 2, 3, 5), Event Player.ObjectType);
+				Event Player.MenuCursor = (Event Player.MenuCursor + 1) % Value In Array(Array(9, 2, 6, 7, 2, 3, 5, 9), Event Player.MenuPage);
 			Else;
-				Event Player.MenuCursor = (Event Player.MenuCursor + (Value In Array(Array(8, 2, 6, 7, 2, 3, 5), Event Player.ObjectType)) -1) % Value In Array(Array(8, 2, 6, 7, 2, 3, 5), Event Player.ObjectType);
+				Event Player.MenuCursor = (Event Player.MenuCursor + (Value In Array(Array(9, 2, 6, 7, 2, 3, 5, 9), Event Player.MenuPage)) -1) % Value In Array(Array(9, 2, 6, 7, 2, 3, 5, 9), Event Player.MenuPage);
 			End;
 			Play Effect(Event Player, Widowmaker Venom Mine Explosion Sound , Null, Position Of(Event Player), 60);
 			Wait(0.2, Abort When False);
@@ -2206,53 +2224,70 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 	}
 	actions
 	{
+		Wait(0.032, Ignore Condition);
 		If(Is Button Held(Event Player, Button(Crouch)));
+			If(Event Player.MenuPage == 7);
+				Abort If(Event Player.MenuCursor > 7);
+				Wait(0.6, Abort When False);
+				"We take the player starting abilities as the original value even if it could be stale, dont wanna decompress abilities again:/"
+				Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.StartingAbilities[Event Player.MenuCursor];
+				Call Subroutine(GetEditMenuTempData);
+				Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+				Abort;
+			End;
 			If(Event Player.MenuCursor == 0);
 				Small Message(Event Player, Custom String("Resetting position is not supported"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-				Wait(1, Ignore Condition);
+				Wait(0.6, Ignore Condition);
 				Abort;
 			End;
+			"Resetting the save changes button is invalid"
 			Small Message(Event Player, Custom String("Hold [Crouch] + {0} to reset to default", Input Binding String(Button(Jump))));
 			Wait(0.6, Abort When False);
+
 			Call Subroutine(GetEditTempObject);
-			Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.NewObjectDefaults[Event Player.ObjectType][Event Player.MenuCursor];
+			Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.NewObjectDefaults[Event Player.MenuPage][Event Player.MenuCursor];
 			Call Subroutine(SetEditTempObject);
 			Call Subroutine(GetEditMenuTempData);
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			Abort;
 		End;
-		If(Global.MapDataSchema[Event Player.ObjectType][Event Player.MenuCursor] == Null || Global.MapDataSchema[Event Player.ObjectType][Event Player.MenuCursor] > 7);
-			Small Message(Event Player, Custom String("ERROR: Unexpected value/type at ObjectType: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.ObjectType, Event Player.ObjectIndex, Event Player.MenuCursor));
+		
+		If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] == Null || Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] > 8);
+			Small Message(Event Player, Custom String("ERROR: Unexpected value/type at MenuPage: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.MenuPage, Event Player.ObjectIndex, Event Player.MenuCursor));
+			Log to Inspector(Custom String("ERROR: Unexpected value/type at MenuPage: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.MenuPage, Event Player.ObjectIndex, Event Player.MenuCursor));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
-		Else If(Event Player.ObjectType == 3 && Event Player.MenuCursor == 1);
-				Small Message(Event Player, Custom String("Changing bot size not supported yet"));
-				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-				Abort;
-		Else If((Global.OrbStyle == 1 && Event Player.ObjectType == 1 ) || (Global.RefreshOrbStyle == 1 && Event Player.ObjectType == 2) && Event Player.MenuCursor == 1);
+		Else If(Event Player.MenuPage == 3 && Event Player.MenuCursor == 1);
+			Small Message(Event Player, Custom String("Changing bot size not supported yet"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Abort;
+		Else If(((Global.OrbStyle == 1 && Event Player.MenuPage == 1 ) || (Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2)) && Event Player.MenuCursor == 1);
 			Small Message(Event Player, Custom String("This Orb effect does not support changing the size. Change the orb style in the orange settings"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		End;
 		
-		Call Subroutine(GetEditTempObject);
+		Skip If(Event Player.MenuPage != Event Player.ObjectType, 1);
+			Call Subroutine(GetEditTempObject);
 		
 		"Save the new value if it exists"
 		If(Count Of(Event Player.EditNumber) != 0);
 			Event Player.EditTempObject[Event Player.MenuCursor] = Event Player.EditNumber[0];
 			Event Player.EditNumber = Null;
+		
 		"Edit Booleans"
-		Else If(Global.MapDataSchema[Event Player.ObjectType][Event Player.MenuCursor] == 1);
+		Else If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] == 1);
 			Event Player.EditTempObject[Event Player.MenuCursor] = !Event Player.EditTempObject[Event Player.MenuCursor];
+		
 		"Edit Vectors"
-		Else If(Global.MapDataSchema[Event Player.ObjectType][Event Player.MenuCursor] == 2);
+		Else If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] == 2);
 			If(Event Player.MenuCursor == 0);
 				Small Message(Event Player, Custom String("Hold {0} to move to your position", Input Binding String(Button(Jump))));
 				Wait(1, Abort When False);
 				Event Player.EditTempObject[0] = Position Of(Event Player);
 			Else If(True);
-				Skip(Value In Array(Array(1,0,0,5,0,0,9), Event Player.ObjectType));
+				Skip(Value In Array(Array(1,0,0,5,0,0,9), Event Player.MenuPage));
 				Abort;
 				"Checkpoint Facing Direction"
 				Small Message(Event Player, Custom String("Hold {0} to set your current facing direction as default for this level", Input Binding String(Button(Jump))));
@@ -2274,12 +2309,14 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 			End;
 		Else;
 			If(True);
-				Skip((Global.MapDataSchema[Event Player.ObjectType][Event Player.MenuCursor] - 3) * 2);
+				Skip(Value in Array(Array(0, 0, 0, 2, 4, 6, 8, 10, 13), Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor]));
+				Abort;
+				Else;
 				"Edit Non-zero integers (1 to 100)"
 				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 1, 100, 1);
 				Else;
-				"Edit positive integers (0 to 100)"
-				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 1, Event Player.ObjectType == 2 ? Count Of(Global.Bots[Event Player.Checkpoint]) - 1: 100, 0);
+				"Edit positive integers (0 to 100, unless max-range specified)"
+				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 1, Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] ? Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] : Event Player.MenuPage == 2 ? Count Of(Global.Bots[Event Player.Checkpoint]) - 1 : 100, 0);
 				Else;
 				"Edit Non-zero decimal values (0.01 to 8)"
 				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 0.1, 8, 0.1);
@@ -2290,16 +2327,43 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				"Edit Colors"
 				Small Message(Event Player, Custom String("Editing colors not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
-				Wait(1, Ignore Condition);
+				Else;
+				"Edit starting abilities"
+				Skip If(Event Player.MenuPage == 7, 2);
+					Event Player.EditTempObject = Event Player.StartingAbilities;
+					Call Subroutine(GetEditMenuTempData);
+				Event Player.MenuPage = Event Player.MenuPage == 0 ? 7 : 0;
+				Event Player.MenuCursor = 0;
+				
+				"Save starting abilities"
+				If(Event Player.MenuPage == 0);
+					Event Player.Temp = Mapped Array(Global.AbilityEncoding, Current Array Element * Event Player.EditTempObject[Current Array Index]);
+					Event Player.Temp = 
+						Event Player.Temp[0] + 
+						Event Player.Temp[1] + 
+						Event Player.Temp[2] + 
+						Event Player.Temp[3] + 
+						Event Player.Temp[4] + 
+						Event Player.Temp[5] + 
+						Event Player.Temp[6] + 
+						Event Player.Temp[7];
+					Call Subroutine(GetEditTempObject);
+					Event Player.EditTempObject[8] = Event Player.Temp;
+					Log To Inspector(Custom String("{0} - Compressed abilities: {1}", Event Player, Event Player.EditTempObject[8]));
+					Skip If(Global.DebugMode < 2, 1);
+					Small Message(Event Player, Custom String("{0} - Compressed abilities. Value {1}", Event Player, Event Player.EditTempObject[8]));
+				End;
 				Else;
 			End;
+			Skip If(!Event Player.EditNumber, 2);
 			Small Message(Event Player, Custom String("Editing number: Press {0} again to save", Input Binding String(Button(Jump))));
 			Abort;
 		End;
+		Skip If(Event Player.MenuPage == 7, 1);
 		Call Subroutine(SetEditTempObject);
 		Call Subroutine(GetEditMenuTempData);
 		"TODO: This does not reflect changes to crouch enabled immediately, fix pls"
-		If(Event Player.ObjectType == 0);
+		If(Event Player.MenuPage == 0);
 			Call Subroutine(GetStartingAbilities);
 			Call Subroutine(SetCurrentAbilities);
 		End;
@@ -2721,6 +2785,8 @@ rule("Press [Melee] to open/close palette wheel")
 	actions
 	{
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
+		Wait Until(!Is Button Held(Event Player, Button(Melee)), 9999);
+		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 
 		Event Player.PaletteOpen = !Event Player.PaletteOpen;
 		If(Event Player.PaletteOpen);
@@ -2771,6 +2837,7 @@ rule("Palette Wheel click")
 			End;
 			Event Player.ObjectType = Event Player.PaletteSelection;
 			Event Player.ObjectIndex = Event Player.ObjectType == 0 ? Event Player.Checkpoint : 0;
+			Event Player.MenuCursor = 0;
 			Skip If(!Event Player.MenuOpen, 2);
 			Log To Inspector(Custom String("ERROR: {0} - Unexpected palette + menu open state", Event Player));
 			Call Subroutine(GetEditMenuTempData);
@@ -2935,7 +3002,7 @@ rule("EditMode: Subroutine CreateGlobalEditModeHUD")
 				Update Every Frame(
 					Eye Position(Local Player) + Local Player.PalettePosition[Evaluate Once(Global.i)]
 				),
-			1.7, Do Not Clip, Visible To Position String and Color, Angle Between Vectors(Facing Direction Of(Local Player), Local Player.PalettePosition[Evaluate Once(Global.i)]) < 3.5 ? Color(Green) : Custom Color(201, 201, 201, 255), Default Visibility);
+			1.7, Do Not Clip, Visible To Position String and Color, Local Player.PalettePage == 0 && Local Player.ObjectType == Evaluate Once(Global.i) ? Color(Blue) : Angle Between Vectors(Facing Direction Of(Local Player), Local Player.PalettePosition[Evaluate Once(Global.i)]) < 3.5 ? Color(Green) : Custom Color(201, 201, 201, 255), Default Visibility);
 		End;
 		"SelectedHero"
 		Create In-World Text(Local Player.PaletteOpen && Local Player.PalettePage == 3 ? Local Player : Null, 
@@ -2959,8 +3026,9 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 		Event Player.MenuTempData = Empty Array;
 		Skip If(Event Player.ObjectSelectAura != Null, 1);
 		Abort;
-		For Player Variable(Event Player, i, 0, Value In Array(Array(8, 2, 6, 7, 2, 3, 5), Event Player.ObjectType), 1);
-			Skip(Event Player.ObjectType * 2);
+
+		For Player Variable(Event Player, i, 0, Value In Array(Array(8, 2, 6, 7, 2, 3, 5, 8), Event Player.MenuPage), 1);
+			Skip(Event Player.MenuPage * 2);
 			"TODO: could rewrite this to save element space"
 			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Global.Checkpoints[Event Player.Checkpoint][2] == Null) ? Custom String("Not set") : Global.Checkpoints[Event Player.Checkpoint][Event Player.i]);
 		Continue;
@@ -2975,6 +3043,17 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Global.Clouds[Event Player.Checkpoint][Event Player.ObjectIndex][Event Player.i]);
 		Continue;	
 			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Global.Teleports[Event Player.Checkpoint][2] == Null) ? Custom String("To next level") : Global.Teleports[Event Player.Checkpoint][Event Player.i]);
+		Continue;
+			"TODO: Clean zeroes and null values from output"
+			disabled Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i < 8 ? Event Player.i > 3 && Event Player.EditTempObject[Event Player.i] == 0 ? Custom String("Disabled") : Event Player.EditTempObject[Event Player.i] : Empty Array);
+			Event Player.MenuTempData = 
+				Custom String("{0}{1}\n", 
+					Event Player.MenuTempData, 
+					Event Player.i < 8 ? 
+						Event Player.EditTempObject[Event Player.i] ? 
+							Event Player.EditTempObject[Event Player.i] : 
+							Custom String("Disabled") : 
+						Empty Array);
 		End;	
 	}
 }
@@ -2990,11 +3069,11 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 	{
 	"In-world checkpoint details"
 		Create In-World Text(Count Of(Global.Checkpoints) > 0 && !Event Player.Preferences[0] ? Event Player : Null,
-		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
+		Custom String("Coordinates: {0}\nSize: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
 			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
 				Global.Checkpoints[Event Player.Checkpoint][2] == Null ? Custom String("Not Set") : Global.Checkpoints[Event Player.Checkpoint][2], 
 				Global.Checkpoints[Event Player.Checkpoint][3], 
-				Custom String("Require Ground: {0}\n{1}\nUnlimited GA: {2}", 
+				Custom String("Require Ground: {0}\n{1}\nUnlimited Abilities: {2}", 
 					Global.Checkpoints[Event Player.Checkpoint][4],
 					Custom String("Tolerance Above/Below: {0}/{1}\nDistance: {2}",
 						Global.Checkpoints[Event Player.Checkpoint][5], 
@@ -3072,13 +3151,13 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 		"TODO: Disable updating every frame if player is really going to be static, maybe hardcode coordinates"
 		Create In-World Text(Event Player.MenuOpen ? Event Player : Null, 
 			Custom String("--------------------------------------\n{0}{1}", 
-				Event Player.ObjectSelectAura != Null ? Global.MenuOptions[Event Player.ObjectType] :
+				Event Player.ObjectSelectAura != Null ? Global.MenuOptions[Event Player.MenuPage] :
 				Custom String("No {0} selected", Global.MenuObjectNames[Event Player.ObjectType]), 
 				String Slice(
 					Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), 
 					0, 
 					Event Player.ObjectSelectAura != Null ? 17 - Count Of(
-						String Split(Global.MenuOptions[Event Player.ObjectType], 
+						String Split(Global.MenuOptions[Event Player.MenuPage], 
 						Custom String("\n"))
 					) : 16
 				)
@@ -3276,7 +3355,7 @@ rule("EditMode: Subroutine SetEditTempObject")
 			Else;
 		End;
 		
-		If(Event Player.ObjectType == 0 && Array Contains(Array(3,7), Event Player.MenuCursor));
+		If(Event Player.ObjectType == 0 && Array Contains(Array(3,7,8), Event Player.MenuCursor));
 			"Trigger a GetStartingAbilities call"
 			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), CallUpdate, 3);
 		Else If(Event Player.ObjectType == 3);
@@ -3302,6 +3381,7 @@ rule("EditMode: Subroutine GetEditTempObject")
 	{
 		"Get current level object array"
 		If(True);
+			"TODO: Support non-object pages"
 			Skip(Event Player.ObjectType * 2);
 			Event Player.EditTempObject = Global.Checkpoints[Event Player.Checkpoint];
 			Else;
@@ -3455,6 +3535,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.EnPadding = Custom String("                                                                                                                                ");
 		Global.PlayerData = Empty Array;
 		Global.ShowSidebarControlsPlayers = Empty Array;
+		Global.AbilityEncoding = Array(1, 2, 4, 8, 16, 128, 1024, 8192);
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -3506,7 +3587,7 @@ rule("Subroutine InitializePlayerVariables")
 		End;
 		If(Global.EditMode);
 			Event Player.NewObjectDefaults = Array(
-				Array(Null, 1.6, Null, True, True, 1.6, 1.6, False),
+				Array(Null, 1.6, Null, True, True, 1.6, 1.6, False, 9223),
 				Array(Null, 0.5),
 				Array(Null, 0.5, -1, True, False, False),
 				Array(Null, 1, Null, False, False, False, True),
@@ -3578,8 +3659,8 @@ rule("Subroutine UpdateBotPosition")
 		"Call for a bot update"
 		Set Player Variable(Event Player.Bot, CallUpdate, True);
 		Wait(0.016, Ignore Condition);
-		"// TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
-		Start Forcing Player Outlines(
+		"Enable this when blizzard fixes bot outlines"
+		disabled Start Forcing Player Outlines(
 			Event Player.Bot,
 			Event Player,
 			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] ? True : False,
@@ -3587,7 +3668,7 @@ rule("Subroutine UpdateBotPosition")
 		"// For mercy parkours"	
 		If(Hero Of(Event Player) == Hero(Mercy));
 			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5];
-			Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
 		End;
 		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
 		Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5];
@@ -3767,7 +3848,7 @@ rule("Subroutine CreateGlobalHUD")
 		"Right Sidebar extras"
 		disabled Create HUD Text(Global.EditMode ? All Players(All Teams) : Global.ShowSidebarControlsPlayers, Null,
 			Custom String("{0}\n{1}— — — — — — — — — — — — — — —",
-				Custom String("Toggle collision............ Hold {0}\nTP to player..................... {1}\nCancel Ultimate........ {1} + {2}",
+				Custom String("Toggle collision............ Hold {0}\nTP to player..................... {1}\nCancel Ultimate....... {1} + {2}",
 					Input Binding String(Button(Reload)),
 					Input Binding String(Button(Interact)),
 					Input Binding String(Button(Ultimate))
@@ -3803,7 +3884,7 @@ rule("Subroutine CreatePlayerHUD")
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
 			Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
 		Create HUD Text(
-			Event Player.MenuOpen ? Null : Event Player, 
+			Event Player, 
 			Null,
 			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("Collected Orbs:\n{0}{1}", 
 				Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)) : Empty Array,
@@ -3916,20 +3997,24 @@ rule("Subroutine ResetCheckpoint")
 		"Initialize all Bot sections on this level to not completed"
 		Event Player.BotCompletedSections = Count Of(Global.Bots[Event Player.Checkpoint]) > 0 ? Mapped Array(Global.Bots[Event Player.Checkpoint], False) : Empty Array;
 
-		disabled Event Player.CurrentBotSection = 0;
-		If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
+		If(Global.RefreshOrbs[Event Player.Checkpoint] && 
+			Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
 			Event Player.Bot.CurrentBotSection = -1;
 		Else;
+			Event Player.CurrentBotSection = 0;
 			"No lo se rick..."
-			disabled Event Player.BotCompletedSections[0] = !Global.EditMode;
+			Event Player.BotCompletedSections[0] = !Global.EditMode;
 			Event Player.Bot.CurrentBotSection = 0;
 		End;
 
 		Event Player.Crouch = Event Player.StartingAbilities[0];
 		Event Player.Jump = Event Player.StartingAbilities[1];
-		Event Player.Ability1 = Event Player.StartingAbilities[2];
-		Event Player.Ability2 = Event Player.StartingAbilities[3];
-		Event Player.Ultimate = Event Player.StartingAbilities[4];
+		"TODO: Implement melee ability rules"
+		Event Player.Ultimate = Event Player.StartingAbilities[3];
+		Event Player.Ability1 = Event Player.StartingAbilities[4];
+		Event Player.Ability2 = Event Player.StartingAbilities[5];
+		Event Player.PrimaryFire = Event Player.StartingAbilities[6];
+		Event Player.SecondaryFire = Event Player.StartingAbilities[7];
 		"// TODO: Temporarily enabled here, should come from cp flags"
 		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
@@ -4079,11 +4164,11 @@ rule("Subroutine SetCurrentAbilities")
 
 	actions
 	{
-		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
 		Abort If(Event Player.FreeMode || Event Player.Finished);
+		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
 
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
@@ -4189,7 +4274,7 @@ rule("Subroutine GetStartingAbilities")
 	actions
 	{
 		"// TODO: Refactor to use compressed abilities"
-		Event Player.StartingAbilities = 
+		disabled Event Player.StartingAbilities = 
 			Array(
 				Global.Checkpoints[Event Player.Checkpoint][3],
 				True,
@@ -4200,12 +4285,36 @@ rule("Subroutine GetStartingAbilities")
 				True,
 				True
 			);
-		If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
-			Event Player.StartingAbilities[2] = False;
-		End;
-		"// TODO: Enable abilities for non mercy heroes"
-		If(Hero Of(Event Player) != Hero(Mercy));
-			Event Player.StartingAbilities[2] = True;
+		
+		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
+
+		"Experimental ability encoding with ability charges support V2"
+		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][8];
+
+		For Player Variable(Event Player, AbilitiesI, 7, -1, -1);
+			"Abilities with only True/False values:\n0: Crouch\n1: Jump\n2: Melee\n3: Ultimate"
+			If(Event Player.AbilitiesI < 4);
+				Event Player.StartingAbilities[Event Player.AbilitiesI] = Event Player.AbilitiesTemp >= Global.AbilityEncoding[Event Player.AbilitiesI];
+
+			"Rest of abilities that allow setting multiple charges"
+			Else;
+				Event Player.StartingAbilities[Event Player.AbilitiesI] = Round To Integer(Event Player.AbilitiesTemp / Global.AbilityEncoding[Event Player.AbilitiesI], Down);
+			End;
+			Event Player.AbilitiesTemp %= Global.AbilityEncoding[Event Player.AbilitiesI];
+		End;	
+		Log To Inspector(Custom String("{0} - Finished ability decompression", Event Player));
+		"To modders: disable this if you want to configure starting abilities manually in each level"
+		disabled Abort;
+
+		"Heroes that need a friendly bot to use their movement ability get their starting abilities overriden"
+		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Global.Settings[11]));
+			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
+				Event Player.StartingAbilities[4] = 0;
+			Else;
+				"TODO: add a check to see if bot is ally or enemy"
+				Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
+			End;
+
 		End;
 	}
 }
@@ -4300,6 +4409,7 @@ rule("Subroutine ClearGlobalVariables")
 		disabled Global.Teleports = Null;
 		Global.MenuObjectNames = Null;
 		Global.MapDataSchema = Null;
+		Global.AbilityEncoding = Null;
 	}
 }
 rule("Subroutine Taw'sDecompressData")
@@ -4557,7 +4667,8 @@ rule("Subroutine PeaceDecompressData")
 			Global.PeaceEditorVariables[1],
 			Current Array Element[1],
 			Current Array Element[1],
-			Current Array Element[4])
+			Current Array Element[4],
+			Current Array Element[2] ? 9223 : 9222)
 		);
 
 		"Extract initial bots. // TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
@@ -4748,5 +4859,33 @@ rule("Server load widget by GigaMercy")
 		"No need to enable this unless your map has a lot of in-world texts or icons\nColor depends on % used texts. Red: >75% | Orange: >50% | Green: below 50%"
 		Create HUD Text(All Players(All Teams), Null, Custom String("Text count {0}/128", Text Count),
 		Null, Right, 0, Null, Text Count > 96 ? Color(Red) : Text Count > 64 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);	
+	}
+}
+
+rule("Fix bot outline by GigaMercy")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Has Spawned(Event Player) == True;
+		Has Spawned(Event Player.Bot) == True;
+	}
+
+	actions
+	{
+		Wait(0.200, Ignore Condition);
+		Kill(Event Player.Bot, Null);
+		Wait(0.500, Ignore Condition);
+		Skip If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6], 1);
+		Resurrect(Event Player.Bot);
+		"◈ Set the bot outline color here ◈"
+		Start Forcing Player Outlines(Event Player.Bot, Event Player, True, Color(Blue), Always);
 	}
 }
