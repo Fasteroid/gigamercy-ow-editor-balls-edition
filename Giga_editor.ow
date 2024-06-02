@@ -191,48 +191,49 @@ variables
 		31: j
 		32: Crouch
 		33: Jump
-		34: Ability1
-		35: Ability2
-		36: Ultimate
-		37: PrimaryFire
-		38: SecondaryFire
-		39: TempFreeMode
-		40: CallUpdate
-		41: Resetting
-		42: MercyRezTimer
-		43: StartingAbilities
-		44: EditTempArray
-		45: PlayerName
-		46: BestRun
-		47: SavedCheckpoint
-		48: Cheat
-		49: PlayerNameColor
-		50: Temp
-		51: SpectatorMode
-		52: Mistakes
-		53: Collision
-		54: MenuOpen
-		55: ObjectType
-		56: MenuCursor
-		57: MenuTempData
-		58: ObjectIndex
-		59: ObjectSelectTemp
-		60: ObjectSelectAura
-		61: ObjectMoveGhost
-		62: EditTempObject
-		63: EditNumber
-		64: EditConfirmationTimer
-		65: EditModeObjectiveIndex
-		66: PaletteOpen
-		67: PalettePosition
-		68: PaletteSelection
-		69: Preferences
-		70: PalettePage
-		71: PaletteCenter
-		72: SelectedHero
-		73: MenuPage
-		74: AbilitiesTemp
-		75: AbilitiesI
+		34: Melee
+		35: Ultimate
+		36: Ability1
+		37: Ability2
+		38: PrimaryFire
+		39: SecondaryFire
+		40: TempFreeMode
+		41: CallUpdate
+		42: Resetting
+		43: MercyRezTimer
+		44: StartingAbilities
+		45: EditTempArray
+		46: PlayerName
+		47: BestRun
+		48: SavedCheckpoint
+		49: Cheat
+		50: PlayerNameColor
+		51: Temp
+		52: SpectatorMode
+		53: Mistakes
+		54: Collision
+		55: MenuOpen
+		56: ObjectType
+		57: MenuCursor
+		58: MenuTempData
+		59: ObjectIndex
+		60: ObjectSelectTemp
+		61: ObjectSelectAura
+		62: ObjectMoveGhost
+		63: EditTempObject
+		64: EditNumber
+		65: EditConfirmationTimer
+		66: EditModeObjectiveIndex
+		67: PaletteOpen
+		68: PalettePosition
+		69: PaletteSelection
+		70: Preferences
+		71: PalettePage
+		72: PaletteCenter
+		73: SelectedHero
+		74: MenuPage
+		75: AbilitiesTemp
+		76: AbilitiesI
 }
 subroutines
 {
@@ -539,7 +540,7 @@ rule("Player Initialization")
 		"// TODO: Check if needed"
 		Enable Death Spectate All Players(Event Player);
 		Enable Death Spectate Target HUD(Event Player);
-		Disable Nameplates(Event Player, All Players(All Teams));
+		Disable Nameplates(All Players(All Teams), Event Player);
 		Disable Movement Collision With Players(Event Player);
 		Set Status(Event Player, Null, Invincible, 99999);
 		
@@ -641,11 +642,22 @@ rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoint
 	actions
 	{
 		Abort If(Event Player.MenuOpen);
+		If(!Event Player.Finished && !Event Player.Cheat);
+			Event Player.SavedCheckpoint = Event Player.Checkpoint;
+			Event Player.Cheat = True;
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Small Message(Event Player, Custom String("Return to level {0} to continue your time", Event Player.SavedCheckpoint));
+		End;
 		Event Player.TempFreeMode = Event Player.FreeMode;
 		Event Player.FreeMode = True;
 		Event Player.Checkpoint = Is Button Held(Event Player, Button(Primary Fire)) ? 
 			(Event Player.Checkpoint + 1 ) % Count Of(Global.Checkpoints) : 
 			(Event Player.Checkpoint - 1 + Count Of(Global.Checkpoints)) % Count Of(Global.Checkpoints);
+		If(Event Player.Cheat && Event Player.SavedCheckpoint == Event Player.Checkpoint);
+			Event Player.SavedCheckpoint = Null;
+			Event Player.Cheat = False;
+			Small Message(Event Player, Custom String("Exit the checkpoint to continue your time", Event Player.SavedCheckpoint));
+		End;
 			
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		Event Player.FreeMode = Event Player.TempFreeMode;
@@ -669,7 +681,7 @@ rule("Press [Reload] to reset current checkpoint")
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
 		Event Player.Finished == False;
-		Event Player.FreeMode == False;
+		disabled Event Player.FreeMode == False;
 	}
 	actions
 	{
@@ -708,6 +720,8 @@ rule("Press [Crouch] + [Interact] + [Ability 2] to start over")
 		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
 		Event Player.Mistakes = 0;
 		Event Player.FreeMode = True;
+		Event Player.Cheat = False;
+		Event Player.SavedCheckpoint = Null;
 		If(Is Using Ultimate(Event Player));
 			Call Subroutine(CancelUltimate);
 		End;
@@ -743,7 +757,7 @@ rule("Press [Reload] + [Jump] to toggle 3rd person camera")
 	{
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
 		"By overclocking"
-		Wait(0.750, Abort When False);
+		Wait(0.4, Abort When False);
 		Event Player.ThirdPerson = !Event Player.ThirdPerson;
 		Skip If(Event Player.ThirdPerson, 2);
 		Stop Camera(Event Player);
@@ -793,7 +807,7 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	actions
 	{
 		Abort If(Event Player.MenuOpen);
-		Wait(1, Abort When False);
+		Wait(0.6, Abort When False);
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Ultimate), Button(Ability 2))), Is Button Held(Event Player, Current Array Element)));
 		Event Player.SpectatorMode = !Event Player.SpectatorMode;
 
@@ -870,29 +884,6 @@ rule("Hold [Interact] + [Ultimate] to cancel ultimate (Free Mode only)")
 		Call Subroutine(CancelUltimate);
 		"Anti Abuse wait"
 		Wait(1, Ignore Condition);
-	}
-}
-rule("Subroutine: TogglePlayerCollision")
-{
-	event
-	{
-		Subroutine;
-		TogglePlayerCollision;
-
-	}
-	actions
-	{
-		If(Event Player.Collision && !Event Player.FreeMode);
-			Small Message(Event Player, Custom String("Cant disable collision outside of free mode"));
-			Abort;
-		End;
-		Event Player.Collision = !Event Player.Collision;
-		If(Event Player.Collision);
-			Enable Movement Collision with Environment(Event Player);
-		Else;
-			Disable Movement Collision with Environment(Event Player, False);
-		End;
-		Small Message(Event Player, Custom String("Collision with environment {0}", Event Player.Collision ? Custom String("Enabled") : Custom String("Disabled")));
 	}
 }
 rule("————————————————————— Effects ———————————————————————")
@@ -1295,6 +1286,7 @@ rule("Detect Leaving Checkpoint")
 	actions
 	{
 		Event Player.LeftCheckpoint = True;
+		Abort If(Event Player.Cheat);
 		Chase Player Variable At Rate(Event Player, CurrentRunTime, 20000, 1, Destination and Rate);
 	}
 }
@@ -1384,12 +1376,11 @@ rule("Detect Arriving on Goal or Teleport")
 				"// TODO: Set a color for finish explosion in config"
 				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
+				Abort If(Event Player.Cheat);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.PlayerName, Event Player.CurrentRunTime));
 				Call Subroutine(PlayerCompletedRun);
 			"Player finished current checkpoint"
 			Else;
-				"Too annoying"
-				disabled Small Message(Event Player, Custom String("Level Cleared!"));
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					"// TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
 					disabled Call Subroutine(TeleportToCurrentCheckpoint);
@@ -1764,11 +1755,12 @@ rule("Detect Using Secondary Fire abilities")
 		Log To Inspector(Custom String("{0} - Detected using Secondary Fire", Event Player));
 		"TODO: Support ability charges"
 		Event Player.SecondaryFire = False;
+
 		If(Event Player.FreeMode || Event Player.SecondaryFire);
 			Wait(0.016, IgnoreCondition);
 			Set Ability Cooldown(Event Player, Button(Secondary Fire), 0.1);
 		End;
-		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire);
+		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire && True);
 	}
 }
 rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
@@ -1841,7 +1833,7 @@ rule("Player left the lobby, save their progress and destroy their bot")
 		Array(Array(
 			Custom String("{0}", Event Player), 
 			Event Player.Finished,
-			Event Player.Checkpoint, 
+			Event Player.Cheat ? Event Player.SavedCheckpoint : Event Player.Checkpoint, 
 			Event Player.CurrentRunTime,
 			Event Player.Mistakes)
 		));
@@ -2075,7 +2067,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 				Custom String("     {0}\nRefresh Orbs", Icon String(Recycle)),
 				Custom String("  {0}\nBots", Ability Icon String(Hero(Ashe), Button(Ultimate))), 
 				Custom String("    {0}\nAntiOrbs", Icon String(No)), 
-				Custom String("     {0}\nJump pads", Ability Icon String(Hero(Baptiste), Button(Crouch))), 
+				Custom String("   {0}\nClouds", Ability Icon String(Hero(Baptiste), Button(Crouch))), 
 				Custom String("    {0}\nTeleports", Icon String(Spiral)),
 				Array(Custom String("  {0}\nTools", Icon String(Bolt)), 1), 
 				Array(Custom String("   {0}\nOptions", Ability Icon String(Hero(Torbjörn), Button(Ability 2))), 2)
@@ -2123,7 +2115,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		
 		"Checkpoint Screen"
 		Global.MenuOptions[0] = Custom String(
-			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
+			"Position:\nSize:\nFacing Dir.:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
 		);
         "Orbs Screen"
         Global.MenuOptions[1] = Custom String(
@@ -2241,7 +2233,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Wait(0.6, Ignore Condition);
 				Abort;
 			End;
-			"Resetting the save changes button is invalid"
+			"Resetting the 'Save Changes' button is invalid"
 			Small Message(Event Player, Custom String("Hold [Crouch] + {0} to reset to default", Input Binding String(Button(Jump))));
 			Wait(0.6, Abort When False);
 
@@ -3002,7 +2994,7 @@ rule("EditMode: Subroutine CreateGlobalEditModeHUD")
 				Update Every Frame(
 					Eye Position(Local Player) + Local Player.PalettePosition[Evaluate Once(Global.i)]
 				),
-			1.7, Do Not Clip, Visible To Position String and Color, Local Player.PalettePage == 0 && Local Player.ObjectType == Evaluate Once(Global.i) ? Color(Blue) : Angle Between Vectors(Facing Direction Of(Local Player), Local Player.PalettePosition[Evaluate Once(Global.i)]) < 3.5 ? Color(Green) : Custom Color(201, 201, 201, 255), Default Visibility);
+			1.7, Do Not Clip, Visible To Position String and Color, Local Player.PalettePage == 0 && Local Player.ObjectType == Evaluate Once(Global.i) ? Color(Turquoise) : Angle Between Vectors(Facing Direction Of(Local Player), Local Player.PalettePosition[Evaluate Once(Global.i)]) < 3.5 ? Color(Green) : Custom Color(201, 201, 201, 255), Default Visibility);
 		End;
 		"SelectedHero"
 		Create In-World Text(Local Player.PaletteOpen && Local Player.PalettePage == 3 ? Local Player : Null, 
@@ -3643,7 +3635,7 @@ rule("Subroutine InitializePlayerBot")
 			Event Player.Bot.BotIcons = Last Created Entity;
 		End;
 		
-		Disable Nameplates(Event Player.Bot, All Players(All Teams));
+		Disable Nameplates(Event Player.Bot, Remove From Array(All Players(All Teams), Event Player));
 	}
 }
 rule("Subroutine UpdateBotPosition")
@@ -3893,8 +3885,12 @@ rule("Subroutine CreatePlayerHUD")
 			Null,
 			Top, 2, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
 		"Right HUD Elements"
-		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
-			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
+		Create HUD Text(Event Player, Null, Null, 
+			Custom String("Time: {0} sec\n{1}\n", 
+				Event Player.CurrentRunTime, 
+				Event Player.Cheat ? Custom String("Paused at level: {0}", Event Player.SavedCheckpoint) : 
+					Custom String("Mistakes: {0}", Event Player.Mistakes)), 
+			Right, 0, Null, Null, Event Player.Cheat && (Total Time Elapsed % 3 > 1.5) ? Color(Orange) : Color(White),  Visible To String and Color, Default Visibility);
 		
 		"Create player name tag"
 			Create In-World Text(All Players(All Teams), Custom String("{0} {1}{2}", Event Player.PlayerName, Event Player.Checkpoint, Event Player.Cheat ? Custom String("({0})", Event Player.SavedCheckpoint) : Empty Array), Event Player, 1.300, Do Not Clip, Visible To Position String And Color, Event Player.PlayerNameColor, Default Visibility);
@@ -3966,6 +3962,7 @@ rule("Subroutine ResetWithMistake")
 		Log To Inspector(Custom String("{0} - Reset with mistake", Event Player));
 		"// TODO: Toggle this if you want glitch levels like in taws or peace"
 		Cancel Primary Action(Event Player);
+		Skip If(Event Player.Cheat, 1);
 		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
 		Call Subroutine(TeleportToCurrentCheckpoint);
 		Call Subroutine(ResetCheckpoint);
@@ -3985,7 +3982,7 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.Resetting = True;
 		Event Player.LeftCheckpoint = False;	
 		
-		If(Event Player.Checkpoint == 0);
+		If(!Event Player.Cheat && Event Player.Checkpoint == 0);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 			Event Player.CurrentRunTime = 0;
 		End;
@@ -4009,7 +4006,7 @@ rule("Subroutine ResetCheckpoint")
 
 		Event Player.Crouch = Event Player.StartingAbilities[0];
 		Event Player.Jump = Event Player.StartingAbilities[1];
-		"TODO: Implement melee ability rules"
+		Event Player.Melee = Event Player.StartingAbilities[2];
 		Event Player.Ultimate = Event Player.StartingAbilities[3];
 		Event Player.Ability1 = Event Player.StartingAbilities[4];
 		Event Player.Ability2 = Event Player.StartingAbilities[5];
@@ -4167,13 +4164,17 @@ rule("Subroutine SetCurrentAbilities")
 		Abort If(Event Player.FreeMode || Event Player.Finished);
 		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
 
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
+		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		Set Melee Enabled(Event Player, Event Player.Melee);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
-		Set Crouch Enabled(Event Player, Event Player.Crouch);
-		Skip If(Event Player.MenuOpen, 1);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
+		
+		Abort If(Event Player.MenuOpen);
 		Set Jump Enabled(Event Player, Event Player.Jump);
+		Set Primary Fire Enabled(Event Player, Event Player.PrimaryFire && True);
+		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire && True);
 		"// TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
@@ -4193,15 +4194,17 @@ rule("Subroutine EnableAllAbilities")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Enabled All Abilities", Event Player));
-		Set Ability 1 Enabled(Event Player, True);
-		Set Ability 2 Enabled(Event Player, True);
-		Set Ultimate Ability Enabled(Event Player, True);
 		Set Crouch Enabled(Event Player, True);
 		Set Jump Enabled(Event Player, True);
+		Set Melee Enabled(Event Player, True);
+		Set Ultimate Ability Enabled(Event Player, True);
+		Set Ability 1 Enabled(Event Player, True);
+		Set Ability 2 Enabled(Event Player, True);
 		Allow Button(Event Player, Button(Crouch));
 		Allow Button(Event Player, Button(Jump));
 		Set Primary Fire Enabled(Event Player, True);
 		Set Secondary Fire Enabled(Event Player, True);
+		Set Reload Enabled(Event Player, True);
 	}
 }
 rule("Subroutine PlayerCompletedRun")
@@ -4263,6 +4266,29 @@ rule("Subroutine GetGoalData")
 		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
 	}
 }
+rule("Subroutine: TogglePlayerCollision")
+{
+	event
+	{
+		Subroutine;
+		TogglePlayerCollision;
+
+	}
+	actions
+	{
+		If(Event Player.Collision && !Event Player.FreeMode);
+			Small Message(Event Player, Custom String("Cant disable collision outside of free mode"));
+			Abort;
+		End;
+		Event Player.Collision = !Event Player.Collision;
+		If(Event Player.Collision);
+			Enable Movement Collision with Environment(Event Player);
+		Else;
+			Disable Movement Collision with Environment(Event Player, False);
+		End;
+		Small Message(Event Player, Custom String("Collision with environment {0}", Event Player.Collision ? Custom String("Enabled") : Custom String("Disabled")));
+	}
+}
 rule("Subroutine GetStartingAbilities")
 {
 	event
@@ -4273,24 +4299,12 @@ rule("Subroutine GetStartingAbilities")
 
 	actions
 	{
-		"// TODO: Refactor to use compressed abilities"
-		disabled Event Player.StartingAbilities = 
-			Array(
-				Global.Checkpoints[Event Player.Checkpoint][3],
-				True,
-				Global.Bots[Event Player.Checkpoint] ? True : False,
-				False,
-				False,
-				True,
-				True,
-				True
-			);
-		
-		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
-
 		"Experimental ability encoding with ability charges support V2"
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][8];
+		Abort If(Last Of(Event Player.StartingAbilities) == Event Player.AbilitiesTemp);
+		Event Player.StartingAbilities[8] = Event Player.AbilitiesTemp;
 
+		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
 		For Player Variable(Event Player, AbilitiesI, 7, -1, -1);
 			"Abilities with only True/False values:\n0: Crouch\n1: Jump\n2: Melee\n3: Ultimate"
 			If(Event Player.AbilitiesI < 4);
@@ -4307,14 +4321,12 @@ rule("Subroutine GetStartingAbilities")
 		disabled Abort;
 
 		"Heroes that need a friendly bot to use their movement ability get their starting abilities overriden"
-		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Global.Settings[11]));
-			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
-				Event Player.StartingAbilities[4] = 0;
-			Else;
-				"TODO: add a check to see if bot is ally or enemy"
-				Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
-			End;
-
+		Abort If(!Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Global.Settings[11]));
+		If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
+			Event Player.StartingAbilities[4] = 0;
+		Else;
+			"TODO: add a check to see if bot is ally or enemy"
+			Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
 		End;
 	}
 }
@@ -4412,7 +4424,7 @@ rule("Subroutine ClearGlobalVariables")
 		Global.AbilityEncoding = Null;
 	}
 }
-rule("Subroutine Taw'sDecompressData")
+rule("Subroutine TawsDecompressData")
 {
 	event
 	{
@@ -4861,7 +4873,6 @@ rule("Server load widget by GigaMercy")
 		Null, Right, 0, Null, Text Count > 96 ? Color(Red) : Text Count > 64 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);	
 	}
 }
-
 rule("Fix bot outline by GigaMercy")
 {
 	event
@@ -4886,6 +4897,24 @@ rule("Fix bot outline by GigaMercy")
 		Skip If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6], 1);
 		Resurrect(Event Player.Bot);
 		"◈ Set the bot outline color here ◈"
-		Start Forcing Player Outlines(Event Player.Bot, Event Player, True, Color(Blue), Always);
+		Start Forcing Player Outlines(Event Player.Bot, Event Player, True, Custom Color(163, 214, 178, 255), Always);
+	}
+}
+rule("DEBUG: Load peak recording")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	conditions
+	{
+		Global.DebugMode == True;
+		Server Load Peak > 100;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("Load Peak @ {0}", Server Load Peak));
+		Wait(1, Ignore Condition);
+		Loop If Condition Is True;
 	}
 }
