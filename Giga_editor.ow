@@ -833,17 +833,17 @@ rule("Press [Interact] + [Reload] to toggle Free Mode")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		Event Player.Finished == False;
 		Is Button Held(Event Player, Button(Interact)) == True;
 		Is Button Held(Event Player, Button(Reload)) == True;
 	}
 	actions
 	{
-		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(
+		Abort If((Event Player.Finished && !Global.EditMode) || Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(
 		Reload), Button(Jump), Button(Crouch))), Is Button Held(Event Player, Current Array Element)));
+
 		If(Event Player.FreeMode);
 			Skip If(Event Player.Collision, 1);
-			Call Subroutine(TogglePlayerCollision);
+				Call Subroutine(TogglePlayerCollision);
 			Call Subroutine(TeleportToCurrentCheckpoint);
 			If(Is Using Ultimate(Event Player));
 				Call Subroutine(CancelUltimate);
@@ -1490,10 +1490,10 @@ rule("Detect Grabbing RefreshOrb v2")
 						Start Rule(UpdateBotPosition, Restart Rule);
 						Event Player.BotCompletedSections[Event Player.CurrentBotSection] = True;
 					End;
-					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
-					Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
-					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;
-					Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
+					Event Player.Ability1 += Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? 1 : 0;
+					Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
+					Event Player.Ability2 += Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? 1 : 0;
+					Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? True : Event Player.Ultimate;
 					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
 					Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
@@ -1602,9 +1602,9 @@ rule("Update Bot Status")
 			Call Subroutine(CancelMomentum);
 		End;
 		"Failsafe"
-		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] != False);
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
 			Teleport(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
-			Wait(0.008, Ignore Condition);
+			Wait(0.016, Ignore Condition);
 		Else;
 			Teleport(Event Player, Nearest Walkable Position(Global.BotPenCoords));
 		End;
@@ -1638,7 +1638,7 @@ rule("Mercy Bot hold Jump when floating")
 		Loop If Condition Is True;
 	}
 }
-rule("Detect Using Ability 1 v2")
+rule("Detect Using Ability 1 v4")
 {
 	event
 	{
@@ -1655,19 +1655,14 @@ rule("Detect Using Ability 1 v2")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Detected using Ability1", Event Player));
-		Event Player.Ability1 = False;
-		Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 99999);
+		Event Player.Ability1 -= 1;
+		Wait Until((Ability Cooldown(Event Player, Button(Ability 1)) != 0), 99999);
 
-		If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7]);
-			Wait(0.016, IgnoreCondition);
-			Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
-		Else;
-			Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
-			Wait(0.016, IgnoreCondition);
-			"Disable this if you want to set the cooldowns through lobby settings"
-			Set Ability Cooldown(Event Player, Button(Ability 1), 0);
-		End;
-
+		Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7], 2);
+			Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
+			Wait(0.016, Ignore Condition);
+		"Disable this if you want to set the cooldowns through lobby settings"
+		Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
 		Log To Inspector(Custom String("{0} - Finished using Ability1", Event Player));
 	}
 }
@@ -1689,20 +1684,16 @@ rule("Detect Using Ability 2")
 	}
 	actions
 	{
-		Skip If(Hero Of(Event Player) == Hero(Mercy), 12);
+		Event Player.Ability2 -= 1;
+		If(Hero Of(Event Player) != Hero(Mercy));
 			Log To Inspector(Custom String("{0} - Detected using Ability2", Event Player));
-			Event Player.Ability2 = False;
 			Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) != 0, 99999);
-			If(Event Player.FreeMode);
-				Wait(0.016, IgnoreCondition);
-				Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
-			Else;
-				Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
-				Wait(0.016, IgnoreCondition);
-				"Disable this if you want to set the cooldowns through lobby settings"
-				Set Ability Cooldown(Event Player, Button(Ability 2), 0);
-			End;
+			Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7], 1);
+				Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
+			Wait(0.016, Ignore Condition);
+			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 			Abort;
+		End;
 		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
 		Event Player.MercyRezTimer = 0;
 		"Start chasing mercy resurrect time"
@@ -1731,9 +1722,10 @@ rule("Detect Using Ability 2")
 			"Not implemented yet"
 			disabled Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8]);
 			Event Player.BotCondition = True;
-		Else;
-			Set Ability 2 Enabled(Event Player, False);
 		End;
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
+		Wait(0.016, Ignore Condition);
+		Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 	}
 }
 rule("Detect Using Secondary Fire abilities")
@@ -1757,7 +1749,7 @@ rule("Detect Using Secondary Fire abilities")
 		Event Player.SecondaryFire = False;
 
 		If(Event Player.FreeMode || Event Player.SecondaryFire);
-			Wait(0.016, IgnoreCondition);
+			Wait(0.016, Ignore Condition);
 			Set Ability Cooldown(Event Player, Button(Secondary Fire), 0.1);
 		End;
 		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire && True);
@@ -1784,15 +1776,15 @@ rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
 	actions
 	{
 		"This was added to be compatible with Taw's bot sections that have no refresh orb, they advance automatically after using your GA"
-		Event Player.Ability1 = True;
+		Event Player.Ability1 += 1;
 		Log To Inspector(Custom String("{0} - Used GA & theres no refresh orb. advancing bot now", Event Player));
 		Event Player.CurrentBotSection += 1;
 		Event Player.BotCompletedSections[Event Player.CurrentBotSection] = True;
 		Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
 		Call Subroutine(UpdateBotPosition);
-		Wait(0.016, IgnoreCondition);
+		Wait(0.016, Ignore Condition);
 		Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
-		Wait(0.016, IgnoreCondition);
+		Wait(0.016, Ignore Condition);
 		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
 		Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 	}
@@ -1814,6 +1806,8 @@ rule("Regen ultimate in FreeMode")
 	}
 	actions
 	{
+		Wait(0.1, Ignore Condition);
+		Abort If(!Event Player.FreeMode);
 		Log To Inspector(Custom String("{0} - Regen ultimate", Event Player));
 		Set Ultimate Charge(Event Player, 100);
 	}
@@ -1865,7 +1859,7 @@ rule("Resurrect Player after dying")
 		Resurrect(Event Player);
 	}
 }
-rule("BunnyHop: Standing on ground resets the bhop")
+disabled rule("BunnyHop: Standing on ground resets the bhop")
 {
 	event
 	{
@@ -1884,7 +1878,7 @@ rule("BunnyHop: Standing on ground resets the bhop")
 		Event Player.BhopActive = False;
 	}
 }
-rule("BunnyHop: Jumping loses the bhop")
+disabled rule("BunnyHop: Jumping loses the bhop")
 {
 	event
 	{
@@ -1902,7 +1896,7 @@ rule("BunnyHop: Jumping loses the bhop")
 		Event Player.BhopReady = False;
 	}
 }
-rule("BunnyHop: Leaving the ground enables Bunny Hop")
+disabled rule("BunnyHop: Leaving the ground enables Bunny Hop")
 {
 	event
 	{
@@ -1921,7 +1915,7 @@ rule("BunnyHop: Leaving the ground enables Bunny Hop")
 		Event Player.BhopReady = False;
 	}
 }
-rule("BunnyHop: Detect using bhop")
+disabled rule("BunnyHop: Detect using bhop")
 {
 	event
 	{
@@ -1939,7 +1933,7 @@ rule("BunnyHop: Detect using bhop")
 		Event Player.BhopActive = False;
 	}
 }
-rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
+disabled rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
 {
 	event
 	{
@@ -1995,7 +1989,7 @@ rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v2")
 		End;
 	}
 }
-rule("BunnyHop: Mercy SJ while touching ground resets bhop")
+disabled rule("BunnyHop: Mercy SJ while touching ground resets bhop")
 {
 	event
 	{
@@ -2077,7 +2071,6 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 				Custom String("  {0}\nNoClip", Icon String(No)),
 				Custom String("      {0}\nSlow crouch", Ability Icon String(Hero(Wrecking Ball), Button(Crouch))),
 				Array(Custom String("      {0}\nSwitch heroes", Ability Icon String(Hero(Echo), Button(Ultimate))), 3),
-				Custom String("      {0}\nWho's the best?", Icon String(Question Mark)),
 				Custom String("       {0}\n   Focus mode", Icon String(Eye))
 			),
 			Array(
@@ -2115,7 +2108,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		
 		"Checkpoint Screen"
 		Global.MenuOptions[0] = Custom String(
-			"Position:\nSize:\nFacing Dir.:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
+			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
 		);
         "Orbs Screen"
         Global.MenuOptions[1] = Custom String(
@@ -2855,7 +2848,7 @@ rule("Palette Wheel click")
 				Event Player.Preferences[1] = !Event Player.Preferences[1];
 				Small Message(Event Player, Event Player.Preferences[1] ? Custom String("Slow crouch enabled. Crouching slows you to 15% speed") : Custom String("Slow crouch disabled"));
 				Else;
-				Small Message(Event Player, Custom String("Ur the best :3"));
+				Small Message(Event Player, Custom String("Focus mode not implemented yet"));
 				Else;
 			End;
 		Else If(Event Player.PalettePage == 2);
@@ -2924,7 +2917,7 @@ rule("EditMode: Trigger player update")
 			Abort;
 	}
 }
-rule("EditMode: Slow crouch rule")
+rule("EditMode: Slow crouch when moving object")
 {
 	event
 	{
@@ -2936,7 +2929,9 @@ rule("EditMode: Slow crouch rule")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Global.EditMode == True;
-		Event Player.Preferences[1] == True;
+		disabled Event Player.Preferences[1] == True;
+		Event Player.ObjectMoveGhost != Null;
+		Is On Ground(Event Player) == True;
 		Is Button Held(Event Player, Button(Crouch)) == True;
 	}
 	actions
@@ -3040,12 +3035,9 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 			disabled Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i < 8 ? Event Player.i > 3 && Event Player.EditTempObject[Event Player.i] == 0 ? Custom String("Disabled") : Event Player.EditTempObject[Event Player.i] : Empty Array);
 			Event Player.MenuTempData = 
 				Custom String("{0}{1}\n", 
-					Event Player.MenuTempData, 
-					Event Player.i < 8 ? 
-						Event Player.EditTempObject[Event Player.i] ? 
-							Event Player.EditTempObject[Event Player.i] : 
-							Custom String("Disabled") : 
-						Empty Array);
+					Event Player.MenuTempData,
+					((Event Player.EditTempObject[Event Player.i] >= 7) ? Custom String("∞") : 
+					Event Player.EditTempObject[Event Player.i]));
 		End;	
 	}
 }
@@ -3065,7 +3057,7 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
 				Global.Checkpoints[Event Player.Checkpoint][2] == Null ? Custom String("Not Set") : Global.Checkpoints[Event Player.Checkpoint][2], 
 				Global.Checkpoints[Event Player.Checkpoint][3], 
-				Custom String("Require Ground: {0}\n{1}\nUnlimited Abilities: {2}", 
+				Custom String("Require Ground: {0}\n{1}\nFree Walking: {2}", 
 					Global.Checkpoints[Event Player.Checkpoint][4],
 					Custom String("Tolerance Above/Below: {0}/{1}\nDistance: {2}",
 						Global.Checkpoints[Event Player.Checkpoint][5], 
@@ -3658,9 +3650,9 @@ rule("Subroutine UpdateBotPosition")
 			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] ? True : False,
 			Global.Checkpoints[Event Player.Checkpoint][3] ? Global.Settings[20] : Global.Settings[19], Always);
 		"// For mercy parkours"	
-		If(Hero Of(Event Player) == Hero(Mercy));
-			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5];
-			Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
+		If(Hero Of(Event Player) == Hero(Mercy) && !Event Player.FreeMode);
+			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? 1 : 0;
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 		End;
 		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
 		Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5];
@@ -3909,7 +3901,7 @@ rule("Subroutine SetUpCheckpoint")
 		Log To Inspector(Custom String("{0} - SetUpCheckpoint {1}", Event Player, Event Player.Checkpoint));
 		Event Player.Finished = Count Of(Global.Checkpoints) > 0 ? Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1 : True;
 		Call Subroutine(GetGoalData);
-		Skip If(!Global.EditMode, 8);
+		Skip If(!Global.EditMode, 9);
 			If(Event Player.ObjectMoveGhost);
 				Destroy Effect(Event Player.ObjectMoveGhost[2]);
 				Wait(0.016, Ignore Condition);
@@ -3945,8 +3937,6 @@ rule("Subroutine SetUpCheckpoint")
 			Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
 		Skip If(Event Player.Collision, 1);
 			Call Subroutine(TogglePlayerCollision);
-		Skip If(Hero Of(Event Player) == Global.Settings[11], 1);
-			disabled Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 	}
 }
 rule("Subroutine ResetWithMistake")
@@ -4012,9 +4002,11 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.Ability2 = Event Player.StartingAbilities[5];
 		Event Player.PrimaryFire = Event Player.StartingAbilities[6];
 		Event Player.SecondaryFire = Event Player.StartingAbilities[7];
-		"// TODO: Temporarily enabled here, should come from cp flags"
-		Call Subroutine(SetCurrentAbilities);
 		Call Subroutine(UpdateBotPosition);
+		Call Subroutine(SetCurrentAbilities);
+		
+		Skip If((Hero Of(Event Player) == Global.Settings[11] )|| Event Player.FreeMode, 1);
+			Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Event Player.Resetting = False;
 	}
 }
@@ -4167,9 +4159,10 @@ rule("Subroutine SetCurrentAbilities")
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
 		Set Melee Enabled(Event Player, Event Player.Melee);
 		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Wait(0.032, Ignore Condition);
 		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2 && True);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 		
 		Abort If(Event Player.MenuOpen);
 		Set Jump Enabled(Event Player, Event Player.Jump);
@@ -4299,6 +4292,18 @@ rule("Subroutine GetStartingAbilities")
 
 	actions
 	{
+		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Hero Of(Event Player)));
+			Event Player.StartingAbilities = Array(Global.Checkpoints[Event Player.Checkpoint][3], True, True, False, 0, 0, 1, 1);
+			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
+				Event Player.StartingAbilities[4] = 0;
+			Else;
+				"TODO: add a check to see if bot is ally or enemy"
+				Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
+			End;
+			Log To Inspector(Custom String("{0} - Set alternative abilities (mercy/kiriko)", Event Player));
+			Event Player.StartingAbilities[4] = True;
+			Abort;
+		End;
 		"Experimental ability encoding with ability charges support V2"
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][8];
 		Abort If(Last Of(Event Player.StartingAbilities) == Event Player.AbilitiesTemp);
@@ -4316,18 +4321,14 @@ rule("Subroutine GetStartingAbilities")
 			End;
 			Event Player.AbilitiesTemp %= Global.AbilityEncoding[Event Player.AbilitiesI];
 		End;	
+		
 		Log To Inspector(Custom String("{0} - Finished ability decompression", Event Player));
 		"To modders: disable this if you want to configure starting abilities manually in each level"
-		disabled Abort;
+		Abort;
 
 		"Heroes that need a friendly bot to use their movement ability get their starting abilities overriden"
 		Abort If(!Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Global.Settings[11]));
-		If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
-			Event Player.StartingAbilities[4] = 0;
-		Else;
-			"TODO: add a check to see if bot is ally or enemy"
-			Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
-		End;
+		
 	}
 }
 rule("Subroutine GetPaletteWheelButtons")
@@ -4652,7 +4653,7 @@ rule("Subroutine PeaceDecompressData")
 	actions
 	{
 		"Workshop setting: Bot Floating?"
-		Global.PeaceEditorVariables[0] = True;
+		Global.PeaceEditorVariables[0] = False;
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = False;
 		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.8 - 1"
@@ -4790,7 +4791,7 @@ rule("Subroutine PeaceDecompressData")
 					); 
 				End;
 			End;
-			Wait(0.004, Ignore Condition);
+			Wait(0.016, Ignore Condition);
 		End;
 
 		"Translate Peace's customization options"
