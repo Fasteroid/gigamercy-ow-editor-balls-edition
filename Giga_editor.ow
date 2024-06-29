@@ -68,7 +68,7 @@ settings
 		General
 		{
 			No Ammunition Requirement: On
-			Ability Cooldown Time: 5%			
+			Ability Cooldown Time: 100%			
 			enabled heroes
 			{
 				Mercy
@@ -80,8 +80,6 @@ settings
 	{
 		Edit Mode: On
 		Debug Mode: [1]
-		Player Hero: Mercy
-		Bot Hero: Mercy
 		Server Load Widget: On
 	}
 
@@ -115,7 +113,7 @@ variables
 		15: VIPs
 		16: PeaceEditorVariables
 		17: PeaceCheckpoint2
-		18: free2
+		18: TempVal
 		19: free3
 		20: RGB
 		21: TawsCheckpointInstructionText
@@ -126,7 +124,7 @@ variables
 		26: MapData
 		27: RequireGrabAllRefreshOrbs
 		28: PeaceVips
-		29: ExportCommonValues
+		29: ECV
 		30: RefreshOrbStyle
 		31: MenuOptions
 		32: PaletteMenu
@@ -155,7 +153,9 @@ variables
 		55: MenuObjectNames
 		56: MapDataSchema
 		57: AbilityEncoding
-
+		58: PlayerAbilityMode
+		59: ZeroCooldownMode
+		60: EditModeDefaults
 	player:
 		0:  Checkpoint
 		1:  Finished
@@ -339,8 +339,6 @@ rule("◈ Customize colors and texts")
 		"Hint text color"
 		Global.Settings[23] = Color(Turquoise);
 
-
-
 		"------Texts & Icons------"
 		disabled End;
 		"Goal Checkpoint text"
@@ -351,18 +349,11 @@ rule("◈ Customize colors and texts")
 		Global.Top5Prefix = Array(Custom String("1st"), Custom String("2nd"), Custom String("3rd"),Custom String("4th"), Custom String("5th"));
 		"Scoreboard title"
 		Global.Settings[17] = Custom String("Scoreboard:");
-		
-		"------Bot & Player Settings------"
-		disabled End;
-		"Player Hero"
-		Global.Settings[11] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Player Hero"), Mercy, 0);
-		"Bot Hero"
-		Global.Settings[10] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Bot Hero"), Kiriko, 1);
-		"Where to store unused bots by default"
-		Global.BotPenCoords = Vector(0, 200, 0);
 
-		"Goal Checkpoint Effect"
-		Global.Settings[22] = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Goal Checkpoint Effect"), 0, Array(Custom String("Light Shaft"), Custom String("Sparkles"), Custom String("Clouds")), 2);
+		"-------Other stuff--------"
+		disabled End;
+		"Place to store unused bots"
+		Global.BotPenCoords = Vector(0, 200, 0);
 	}
 }
 rule("◈ Creator and Code")
@@ -382,7 +373,7 @@ rule("◈ Creator and Code")
 			Global.CreatorAndCode[1] = Custom String("Code");
 		End;
 		"Only edit this if you want a custom map title"
-		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Settings[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
+		Global.MapTitle = Custom String("");
 	}
 }
 rule("◈ VIPs / Custom player tags")
@@ -439,13 +430,8 @@ rule("◈ Per-level in world texts")
 	{
 		"These settings wont apply if you copied your data from peace editor"
 		Abort If(Global.WorldTexts);
-		"Index: Checkpoint number
-		[0]: Your text
-		[1]: World coordinates
-		[2]: Text scale
-		[3]: Color
-		* Only one world text per level"
-		Global.WorldTexts[0] = Array(Custom String(""), Vector(0,0,0), 1, Color(Red)); 
+		"Index: Checkpoint number\n[0]: Your text\n[1]: World coordinates\n[2]: Text scale\n[3]: Color\n* Only one world text per level"
+		Global.WorldTexts[0] = Array(Custom String(""), Vector(0,0,0), 4, Color(White)); 
 	}
 }
 rule("◈ Per-level hint/tip texts")
@@ -459,7 +445,7 @@ rule("◈ Per-level hint/tip texts")
 		"These settings wont apply if you copied your data from peace editor"
 		Abort If(Global.WorldTexts);
 		"Index: Checkpoint number, then your text. Only one hint text per level"
-		Global.HintTexts[0] =Custom String(""); 
+		Global.HintTexts[0] = Custom String(""); 
 	}
 }
 rule("——————————————————— Initialization Settings ———————————————————")
@@ -491,7 +477,7 @@ rule("Global Initialization")
 		Start Forcing Spawn Room(Team 1, Color(Red));
 		Start Forcing Spawn Room(Team 2, Color(Red));
 		
-		"Decompress data"
+		"Decompress Giga editor data"
 		If(Global.MapData);
 			Call Subroutine(DecompressMapData);
 		"Detect Taw's Editor data"
@@ -893,7 +879,7 @@ rule("————————————————————— Effects �
 		Ongoing - Global;
 	}
 }
-rule("Create Start and Finish checkpoints")
+rule("Create Start and Finish Checkpoint rings")
 {
 	event
 	{
@@ -926,6 +912,7 @@ rule("Create Start and Finish checkpoints")
 		Default Visibility);
 		"Create Goal checkpoint Text"
 		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], Event Player.GoalCoords + Vector(0, 0.5, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Settings[6], Default Visibility);
+
 		"Create Goal checkpoint effects"
 		For Player Variable(Event Player, j, 0, Count Of(Global.Settings[16]), 1);
 			Skip(Global.Settings[22] * 2);
@@ -1193,9 +1180,6 @@ rule("Calculate RGB values for rainbow text")
 	{
 		Ongoing - Global;
 	}
-	conditions
-	{
-	}
 	actions
 	{
 		Abort If(Global.DebugMode == True);
@@ -1324,7 +1308,7 @@ rule("Detect Landing Outside")
 		End;
 	}
 }
-rule("Detect Arriving on Goal or Teleport")
+rule("Detect Landing on Goal or Teleport")
 {
 	event
 	{
@@ -1342,9 +1326,13 @@ rule("Detect Arriving on Goal or Teleport")
 		"// TODO: Get OnGround flag from current goal in case the level has a teleport"
 		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
 		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
+
 		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
-		((Y Component Of(Position Of(Event Player)) <= Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0]) &&
-		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True;
+
+		((Y Component Of(Position Of(Event Player)) <= 
+			Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0]) &&
+		(Y Component Of(Position Of(Event Player)) >= 
+			Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True;
 	}
 	actions
 	{
@@ -1655,14 +1643,14 @@ rule("Detect Using Ability 1 v4")
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Detected using Ability1", Event Player));
-		Event Player.Ability1 -= 1;
-		Wait Until((Ability Cooldown(Event Player, Button(Ability 1)) != 0), 99999);
+		Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7], 1);
+			Event Player.Ability1 -= 1;
+		Wait Until((Ability Cooldown(Event Player, Button(Ability 1)) != 0), Hero Of(Event Player) == Hero(Genji) ? 0.5 : 99999);
 
-		Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7], 2);
-			Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
-			Wait(0.016, Ignore Condition);
-		"Disable this if you want to set the cooldowns through lobby settings"
-		Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
+		Wait(0.016, Ignore Condition);
+		Skip If(!Global.ZeroCooldownMode, 1);
+			Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
 		Log To Inspector(Custom String("{0} - Finished using Ability1", Event Player));
 	}
 }
@@ -1684,12 +1672,12 @@ rule("Detect Using Ability 2")
 	}
 	actions
 	{
-		Event Player.Ability2 -= 1;
 		If(Hero Of(Event Player) != Hero(Mercy));
 			Log To Inspector(Custom String("{0} - Detected using Ability2", Event Player));
-			Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) != 0, 99999);
 			Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][7], 1);
-				Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
+				Event Player.Ability2 -= 1;
+			Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) != 0, 99999);
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 			Wait(0.016, Ignore Condition);
 			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 			Abort;
@@ -1725,7 +1713,8 @@ rule("Detect Using Ability 2")
 		End;
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 		Wait(0.016, Ignore Condition);
-		Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
+		Skip If(!Global.ZeroCooldownMode, 1);
+			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 	}
 }
 rule("Detect Using Secondary Fire abilities")
@@ -1739,20 +1728,20 @@ rule("Detect Using Secondary Fire abilities")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		Ability Cooldown(Event Player, Button(Secondary Fire)) == True;
+		Ability Cooldown(Event Player, Button(Secondary Fire)) > 0;
 		Event Player.Resetting == False;
 	}
 	actions
 	{
 		Log To Inspector(Custom String("{0} - Detected using Secondary Fire", Event Player));
-		"TODO: Support ability charges"
-		Event Player.SecondaryFire = False;
-
-		If(Event Player.FreeMode || Event Player.SecondaryFire);
-			Wait(0.016, Ignore Condition);
+		Skip If(Event Player.FreeMode, 1);
+			Event Player.SecondaryFire -= 1;
+		Wait Until((Ability Cooldown(Event Player, Button(Secondary Fire)) != 0), 99999);
+		
+		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire > 0);
+		Wait(0.016, Ignore Condition);
+		Skip If(!Global.ZeroCooldownMode, 1);
 			Set Ability Cooldown(Event Player, Button(Secondary Fire), 0.1);
-		End;
-		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire && True);
 	}
 }
 rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
@@ -1785,7 +1774,7 @@ rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
 		Wait(0.016, Ignore Condition);
 		Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
 		Wait(0.016, Ignore Condition);
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1 && True);
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
 		Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
 	}
 }
@@ -2094,7 +2083,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Custom String("Cloud"),
 			Custom String("Teleport"));
 		
-		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)"
+		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)\n9: 0,1,Infinite"
 		Global.MapDataSchema = Array(
 			Array(2, 5, 2, 1, 1, 5, 5, 1, 8),
 			Array(2, 5),
@@ -2102,13 +2091,18 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Array(2, 5, 2, 1, 1, 1, 1, 1),
 			Array(2, 5),
 			Array(2, 5, 3),
-			Array(2, 5, 2, 5, 5),
-			Array(1, 1, 1, 1, Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)
+			Array(2, 5, 2, 5, 5)
 		);
+		If(Global.PlayerAbilityMode == 3);
+			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(1, 1, 1, 1, Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)));
+		Else;
+		"// TODO: Add selector for Disabled/Enabled/Infinite abilities"
+			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(1, 1, 1, 1, Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)));
+		End;
 		
 		"Checkpoint Screen"
 		Global.MenuOptions[0] = Custom String(
-			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nThresh. Above:\nThresh. Below:\nInf. Abilities:\nStarting abilities >>\n"
+			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nZ Limit Above:\nZ Limit Below:\nInf. Abilities:\nStarting abilities >>\n"
 		);
         "Orbs Screen"
         Global.MenuOptions[1] = Custom String(
@@ -3499,14 +3493,32 @@ rule("Subroutine InitializeGlobalVariables")
 
 	actions
 	{
-		Global.DebugMode = Workshop Setting Combo(Custom String("Giga editor options"), Custom String("Debug Mode"), 0, Array(Custom String("Disabled"), Custom String("Only Inspector"), Custom String("Full Debug")), 2);
-		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 2);		
-		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 2);	
+		Global.DebugMode = Workshop Setting Combo(Custom String("Giga editor options"), Custom String("Debug Mode"), 0, Array(Custom String("Disabled"), Custom String("Only Inspector"), Custom String("Full Debug")), 100);
+		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);		
+		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 99);	
 		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
 		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 1);
-		Global.RequireGrabAllRefreshOrbs = Workshop Setting Toggle(Custom string("Gameplay Options"), Custom String("Require grabbing all Refresh Orbs?"), True, 2);	
-		Global.ButtonList = Array(Button(Crouch), Button(Jump), Button(Interact), Button(Ability 1), Button(Ability 2), Button(Ultimate), Button(Melee), Button(Reload));
+		Global.PlayerAbilityMode = Workshop Setting Combo(Custom String("Gameplay Options"), Custom String("Player ability restrictions"), 0, Array(Custom String("Single use"), Custom String("Multiple uses"), Custom String("Unlimited")), 2);		
+		Global.ZeroCooldownMode = Workshop Setting Toggle(Custom String("Gameplay Options"), Custom String("Instant cooldowns"), True, 3);
+		Global.RequireGrabAllRefreshOrbs = Workshop Setting Toggle(Custom String("Gameplay Options"), Custom String("Require grabbing all Refresh Orbs"), True, 4);
 
+		"Edit Mode defaults"
+		Global.EditModeDefaults[0] = Workshop Setting Real(Custom String("Giga editor options"), Custom String("Default - Checkpoint radius"), 1.6, 0.4, 4, 1);
+		Global.EditModeDefaults[1] = Workshop Setting Real(Custom String("Giga editor options"), Custom String("Default - Orb radius"), 0.5, 0.1, 2, 2);
+		Global.EditModeDefaults[2] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Default - Require landing on ground"), True, 4);
+		Global.EditModeDefaults[3] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Default - Allow crouch"), True, 3);
+
+
+		"------Bot & Player Settings------"
+		disabled End;
+		"Player Hero"
+		Global.Settings[11] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Player Hero"), Mercy, 0);
+		"Bot Hero"
+		Global.Settings[10] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Bot Hero"), Mercy, 1);
+		"Goal Checkpoint Effect"
+		Global.Settings[22] = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Goal Checkpoint Effect"), 0, Array(Custom String("Light Shaft"), Custom String("Sparkles"), Custom String("Clouds")), 2);
+
+		Global.ButtonList = Array(Button(Crouch), Button(Jump), Button(Interact), Button(Ability 1), Button(Ability 2), Button(Ultimate), Button(Melee), Button(Reload));
 		Call Subroutine(CreateGlobalHUD);
 		Global.Checkpoints = Empty Array;
 		Global.Bots = Empty Array;
@@ -3571,13 +3583,13 @@ rule("Subroutine InitializePlayerVariables")
 		End;
 		If(Global.EditMode);
 			Event Player.NewObjectDefaults = Array(
-				Array(Null, 1.6, Null, True, True, 1.6, 1.6, False, 9223),
-				Array(Null, 0.5),
-				Array(Null, 0.5, -1, True, False, False),
+				Array(Null, Global.EditModeDefaults[0], Null, True, Global.EditModeDefaults[2], Global.EditModeDefaults[0], Global.EditModeDefaults[0], False, Global.EditModeDefaults[3] ? 9223 : 9222),
+				Array(Null, Global.EditModeDefaults[1]),
+				Array(Null, Global.EditModeDefaults[1], -1, True, False, False),
 				Array(Null, 1, Null, False, False, False, True),
 				Array(Null, 2),
-				Array(Null, 1.5, 8),
-				Array(Null, 1.6, Null, 1.6, 1.6)
+				Array(Null, 1.5, 10),
+				Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[0], Global.EditModeDefaults[0])
 			);
 			Event Player.PalettePage = 0;
 		End;
@@ -3715,7 +3727,9 @@ rule("Subroutine CreateGlobalHUD")
 
 	actions
 	{
-		"Map Creator and code"
+		Skip If(String Length(Global.MapTitle) > 0, 1 );
+			Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Settings[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
+		"Map Title"
 		Create HUD Text(All Players(All Teams), Null, Custom String("{0}\n{1}", Global.MapTitle, String Slice(Global.EnPadding, 0, 85)), Null,
 		Left, 0, Null, Global.Settings[18] != Null ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
 		
@@ -4301,7 +4315,6 @@ rule("Subroutine GetStartingAbilities")
 				Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
 			End;
 			Log To Inspector(Custom String("{0} - Set alternative abilities (mercy/kiriko)", Event Player));
-			Event Player.StartingAbilities[4] = True;
 			Abort;
 		End;
 		"Experimental ability encoding with ability charges support V2"
@@ -4383,7 +4396,7 @@ rule("Subroutine ClearGlobalVariables")
 		Global.VIPs = Null;
 		Global.PeaceEditorVariables = Null;
 		Global.PeaceCheckpoint2 = Null;
-		Global.free2 = Null;
+		Global.TempVal = Null;
 		Global.free3 = Null;
 		Global.RGB = Null;
 		Global.TawsCheckpointInstructionText = Null;
@@ -4394,7 +4407,7 @@ rule("Subroutine ClearGlobalVariables")
 		disabled Global.MapData = Null;
 		Global.RequireGrabAllRefreshOrbs = Null;
 		Global.PeaceVips = Null;
-		Global.ExportCommonValues = Null;
+		Global.ECV = Null;
 		Global.RefreshOrbStyle = Null;
 		Global.MenuOptions = Null;
 		Global.PaletteMenu = Null;
@@ -4423,6 +4436,8 @@ rule("Subroutine ClearGlobalVariables")
 		Global.MenuObjectNames = Null;
 		Global.MapDataSchema = Null;
 		Global.AbilityEncoding = Null;
+		Global.PlayerAbilityMode = Null;
+		Global.ZeroCooldownMode = Null;
 	}
 }
 rule("Subroutine TawsDecompressData")
@@ -4655,9 +4670,9 @@ rule("Subroutine PeaceDecompressData")
 		"Workshop setting: Bot Floating?"
 		Global.PeaceEditorVariables[0] = False;
 		"Workshop setting: Land On Arrival Point?"
-		Global.PeaceEditorVariables[1] = False;
+		Global.PeaceEditorVariables[1] = Global.EditModeDefaults[2];
 		"Default orb radius. Peace orbs are larger than they appear, their true size is around 0.8 - 1"
-		Global.PeaceEditorVariables[4] = 0.5;
+		Global.PeaceEditorVariables[4] = Global.EditModeDefaults[1];
 		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
 		Global.PeaceEditorVariables[7] = 1.5;
 		"Peace editor stores unused bots near these coordinates"
