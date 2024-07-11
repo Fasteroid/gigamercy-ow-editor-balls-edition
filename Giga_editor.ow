@@ -801,19 +801,29 @@ rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
 	actions
 	{
 		Abort If(Event Player.MenuOpen);
-		Wait(0.6, Abort When False);
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Ultimate), Button(Ability 2))), Is Button Held(Event Player, Current Array Element)));
 		Event Player.SpectatorMode = !Event Player.SpectatorMode;
 
-		If(!Event Player.SpectatorMode);
-			Resurrect(Event Player);
-			Call Subroutine(ResetCheckpoint);
-			Enable Built-In Game Mode Respawning(Event Player);
-		Else;
+		If(Event Player.SpectatorMode);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.LastPos = Position Of(Event Player);
 			Disable Built-In Game Mode Respawning(Event Player);
 			Kill(Event Player, Null);
+			"TODO: Test w aeter if removing this wait keeps the body and nametag in the map"
+			Wait(0.016, Ignore Condition);
+			Teleport(Event Player, Vector(0, -999, 0));
+		Else;
+			If(Event Player.FreeMode);
+				Teleport(Event Player, Event Player.LastPos);
+			Else;
+				Call Subroutine(TeleportToCurrentCheckpoint);
+				Call Subroutine(ResetCheckpoint);
+			End;
+			Wait(0.016, Ignore Condition);
+			Enable Built-In Game Mode Respawning(Event Player);
+			Resurrect(Event Player);
 		End;
+		Wait(0.6, Ignore Condition);
 	}
 }
 rule("Press [Interact] + [Reload] to toggle Free Mode")
@@ -2150,8 +2160,10 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			"Position:\nSize:\nTP Coords:\nTolerance Above:\nTolerance Below:\n");
 
 		"Level starting abilities Screen"
-        Global.MenuOptions[7] = Custom String(
+        disabled Global.MenuOptions[7] = Custom String(
 			"Ultimate:\nAbility 1:\nAbility 2:\nSecondary Fire:\nSave changes <<\n");
+        Global.MenuOptions[7] = Custom String(
+			"Crouch:\nJump:\nMelee:\nUltimate:\nAbility 1:\nAbility 2:\nPrimary Fire:\nSecondary Fire:\nSave changes <<\n");
 
 		Global.ContextualMenuOptions[0] = Array(Custom String(">>dropdown here\n"));
 
