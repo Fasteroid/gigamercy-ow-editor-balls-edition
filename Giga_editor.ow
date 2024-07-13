@@ -529,7 +529,7 @@ rule("Player Initialization")
 
 	actions
 	{
-		Event Player.FreeMode = Count Of(Global.Checkpoints) <= 0;
+		Event Player.FreeMode = True;
 		Log To Inspector(Custom String("{0} - Joined match", Event Player));
 		Wait Until(Has Spawned(Event Player) && Global.InitDone, 99999);
 		Log To Inspector(Custom String("{0} - Initialization Start", Event Player));
@@ -567,6 +567,7 @@ rule("Player Initialization")
 			Set Facing(Event Player, Direction Towards(Position Of(Event Player), Event Player.GoalCoords), To World);
 		Start Scaling Player(Event Player, Event Player.Scale, True);
 		Log To Inspector(Custom String("{0} - Initialization Done", Event Player));
+		Event Player.FreeMode = Count Of(Global.Checkpoints) <= 0;
 	}
 }
 rule("————————————————————— Controls ——————————————————————")
@@ -597,10 +598,10 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 		"These buttons create/destroy objects, we dont want to open menu during those events"
 		Abort If(Is True For Any(Array(Button(Primary Fire), Button(Secondary Fire)), Is Button Held(Event Player, Current Array Element)) || !Is Button Held(Event Player, Button(Interact)));
 
-		Skip If(Global.EditMode, 2);
+		If(!Global.EditMode);
 			Event Player.HideSidebarControls = !Event Player.HideSidebarControls;
 			Abort;
-		
+		End;
 		"For safety"
 		disabled Event Player.PaletteOpen = False;
 		Event Player.MenuPage = Event Player.ObjectType;
@@ -706,7 +707,7 @@ rule("Press [Reload] to reset current checkpoint")
 	}
 	actions
 	{
-		Wait(0.016, Ignore Condition);
+		Wait(0.032, Ignore Condition);
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Button(Reload)), Is Button Held(Event Player, Current Array Element)));
 		"Sometimes going into free mode triggered this rule, if the keys were released in a specific order"
 		disabled If(Is Button Held(Event Player, Button(Interact)) == True || Is Button Held(Event Player, Button(Melee)) == True);
@@ -1334,10 +1335,11 @@ rule("Detect Landing Outside")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		Event Player.GoalCoords != Null;
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
-		Is On Ground(Event Player) == True;
 		Event Player.LeftCheckpoint == True;
+		Is On Ground(Event Player) == True;
 	}
 	actions
 	{
@@ -1667,6 +1669,7 @@ rule("Mercy Bot hold Jump when floating")
 	{
 		Is Dummy Bot(Event Player) == True;
 		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4] == False;
+		Is Alive(Event Player) == True;
 	}
 	actions
 	{
@@ -1740,7 +1743,8 @@ rule("Detect Using Ability 2")
 		Stop Chasing Player Variable(Event Player, MercyRezTimer);
 		Event Player.Ability2 = 0;
 		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
-			Resurrect(Event Player.Bot);
+			"Why tho?"
+			disabled Resurrect(Event Player.Bot);
 			"// TODO: Rework this once we allow other bot ability rewards. ?___?"
 			Small Message(Event Player, 
 				Custom String("{0} Resurrected!{1}",
