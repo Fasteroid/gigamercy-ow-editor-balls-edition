@@ -38,7 +38,7 @@ settings
 		{
 			enabled maps
 			{
-				Esperança 0
+				Circuit Royal 0
 			}
 		}
 
@@ -78,14 +78,14 @@ settings
 
 	workshop
 	{
-		Edit Mode: Off
-		Debug Mode: [1]
+		Edit Mode: On
+		Debug Mode: [2]
 		Server Load Widget: On
 		Player Hero: Mercy
 		Bot Hero: Mercy
-		Goal Checkpoint Effect: 1
+		Goal Checkpoint Effect: 0
 		Default - Orb radius: 0.5
-		Default - Require landing on ground: Off
+		Default - Require landing on ground: On
 	}
 
 	extensions
@@ -125,11 +125,11 @@ variables
 		22: TempArray
 		23: i
 		24: j
-		25: free
+		25: EditModeDefaults
 		26: MapData
 		27: RequireGrabAllRefreshOrbs
 		28: PeaceVips
-		29: ECV
+		29: TempBot
 		30: RefreshOrbStyle
 		31: MenuOptions
 		32: PaletteMenu
@@ -160,9 +160,8 @@ variables
 		57: AbilityEncoding
 		58: PlayerAbilityMode
 		59: ZeroCooldownMode
-		60: EditModeDefaults
-		61: ContextualMenuOptions
-		62: InitDone
+		60: ContextualMenuOptions
+		61: InitDone
 	player:
 		0:  Checkpoint
 		1:  Finished
@@ -552,6 +551,7 @@ rule("Player Initialization")
 		End;
 		Wait(0.016, Ignore Condition);
 		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.FreeMode = Count Of(Global.Checkpoints) <= 0;
 		Call Subroutine(SetUpCheckpoint);
 		
 		If(Global.EditMode);
@@ -567,7 +567,6 @@ rule("Player Initialization")
 			Set Facing(Event Player, Direction Towards(Position Of(Event Player), Event Player.GoalCoords), To World);
 		Start Scaling Player(Event Player, Event Player.Scale, True);
 		Log To Inspector(Custom String("{0} - Initialization Done", Event Player));
-		Event Player.FreeMode = Count Of(Global.Checkpoints) <= 0;
 	}
 }
 rule("————————————————————— Controls ——————————————————————")
@@ -1076,7 +1075,7 @@ rule("Create/Destroy current level RefreshOrbs")
 				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
 				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
 				Visible To Position Radius and Color);
-				Event Player.Temp = Last Created Entity;
+				Event Player.Temp = Last Created Entity; 
 				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
 				Sparkles, Global.Settings[4], 
 				Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
@@ -1701,10 +1700,8 @@ rule("Detect Using Ability 1 v4")
 
 		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0 || Event Player.FreeMode);
 		Wait(0.016, Ignore Condition);
-		End;
 		Skip If(!Global.ZeroCooldownMode, 1);
 			Set Ability Cooldown(Event Player, Button(Ability 1), 0.1);
-		disabled Log To Inspector(Custom String("{0} - Finished using Ability1", Event Player));
 	}
 }
 rule("Detect Using Ability 2")
@@ -1719,8 +1716,6 @@ rule("Detect Using Ability 2")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Using Ability 2(Event Player) == True;
-		Event Player.FreeMode == False;
-		Event Player.Finished == False;
 		disabled Event Player.Resetting == False;
 	}
 	actions
@@ -1728,11 +1723,13 @@ rule("Detect Using Ability 2")
 		If(Hero Of(Event Player) != Hero(Mercy));
 			Log To Inspector(Custom String("{0} - Detected using Ability2", Event Player));
 			Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][5], 1);
-				Event Player.Ability2 -= 1;
+				Event Player.Ability2 = Global.PlayerAbilityMode == 0 ? 0 : Event Player.Ability2 - 1;
 			Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) != 0, 99999);
-			Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
+			
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0 || Event Player.FreeMode);
 			Wait(0.016, Ignore Condition);
-			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
+			Skip If(!Global.ZeroCooldownMode, 1);
+				Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 			Abort;
 		End;
 		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
@@ -1742,6 +1739,11 @@ rule("Detect Using Ability 2")
 		Wait Until(!Is Using Ability 2(Event Player), 1.750);
 		Stop Chasing Player Variable(Event Player, MercyRezTimer);
 		Event Player.Ability2 = 0;
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
+		Wait(0.016, Ignore Condition);
+		Skip If(!Global.ZeroCooldownMode, 1);
+			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
+		Abort If(Event Player.FreeMode || Event Player.Finished);
 		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
 			"Why tho?"
 			disabled Resurrect(Event Player.Bot);
@@ -1765,10 +1767,6 @@ rule("Detect Using Ability 2")
 			disabled Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8]);
 			Event Player.BotCondition = True;
 		End;
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
-		Wait(0.016, Ignore Condition);
-		Skip If(!Global.ZeroCooldownMode, 1);
-			Set Ability Cooldown(Event Player, Button(Ability 2), 0.1);
 	}
 }
 rule("Detect Using Secondary Fire abilities")
@@ -1792,7 +1790,8 @@ rule("Detect Using Secondary Fire abilities")
 			Event Player.SecondaryFire -= 1;
 		Wait Until((Ability Cooldown(Event Player, Button(Secondary Fire)) != 0), 99999);
 		
-		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire > 0);
+		Skip If(Event Player.FreeMode || Global.Checkpoints[Event Player.Checkpoint][5], 1);
+			Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire > 0);
 		Wait(0.016, Ignore Condition);
 		Skip If(!Global.ZeroCooldownMode, 1);
 			Set Ability Cooldown(Event Player, Button(Secondary Fire), 0.1);
@@ -1874,12 +1873,12 @@ rule("Player Left Match, destroy their bot")
 			Event Player.CurrentRunTime,
 			Event Player.Mistakes)
 		));
-		Global.TempVal = First Of(Filtered Array(All Players(All Teams), Is Dummy Bot(Current Array Element) && Current Array Element.Bot == Event Player));
+		Global.TempBot = First Of(Filtered Array(All Players(All Teams), Is Dummy Bot(Current Array Element) && Current Array Element.Bot == Event Player));
 
-		Abort If(Global.TempVal == Null);
+		Abort If(Global.TempBot == Null);
 
-		Log To Inspector(Custom String("Destroying Orphan bot: {0}", Global.TempVal));
-		Destroy Dummy Bot(Team Of(Global.TempVal), Slot Of(Global.TempVal));
+		Log To Inspector(Custom String("Destroying Orphan bot: {0}", Global.TempBot));
+		Destroy Dummy Bot(Team Of(Global.TempBot), Slot Of(Global.TempBot));
 	}
 }
 rule("Resurrect Player after dying")
@@ -2105,7 +2104,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
     actions
     {
 		Global.NewObjectDefaults = Array(
-			Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[3], Global.EditModeDefaults[2], 9223),
+			Array(Null, Global.EditModeDefaults[0], False, Global.EditModeDefaults[3], Global.EditModeDefaults[2], Global.PlayerAbilityMode == 2, 9223),
 			Array(Null, Global.EditModeDefaults[1]),
 			Array(Null, Global.EditModeDefaults[1], -1, True, False, False),
 			Array(Null, 1, Null, False, False, False, True),
@@ -2854,9 +2853,8 @@ rule("Press [Melee] to open/close palette wheel")
 	}
 	actions
 	{
-		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
-		Wait Until(!Is Button Held(Event Player, Button(Melee)), 9999);
-		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Melee), Button(Crouch), Button(Jump))), Is Button Held(Event Player, Current Array Element)));
+		Wait Until(!Is Button Held(Event Player, Button(Melee)) || Is True For Any(Array(Button(Interact), Button(Primary Fire), Button(Secondary Fire)), Is Button Held(Event Player, Current Array Element)), 9999);
+		Abort If Condition Is True;
 
 		Event Player.PaletteOpen = !Event Player.PaletteOpen;
 		If(Event Player.PaletteOpen);
@@ -3101,15 +3099,15 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 		For Player Variable(Event Player, i, 0, Count Of(Event Player.EditTempObject), 1);
 			Skip(Value In Array(Array(0, 2, 4, 6, 2, 2, 8, 10), Event Player.MenuPage));
 			"TODO: could rewrite this to save element space"
-			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == Null) ? Custom String("Not set") : Event Player.EditTempObject[Event Player.i]);
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == False) ? Custom String("Not set") : Event Player.EditTempObject[Event Player.i]);
 		Continue;
 			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.EditTempObject[Event Player.i]);
 		Continue;
 			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && Event Player.EditTempObject[2] < 0 ? Custom String("Just refresh") : Event Player.EditTempObject[Event Player.i]);
 		Continue;
-			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == Null) ? Custom String("Look At player") : Event Player.EditTempObject[Event Player.i]);
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == False) ? Custom String("Look At player") : Event Player.EditTempObject[Event Player.i]);
 		Continue;
-			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == Null) ? Custom String("To next level") : Event Player.EditTempObject[Event Player.i]);
+			Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i == 2 && (Event Player.EditTempObject[2] == False) ? Custom String("To next level") : Event Player.EditTempObject[Event Player.i]);
 		Continue;
 			"TODO: Clean zeroes and null values from output"
 			disabled Event Player.MenuTempData = Custom String("{0}{1}\n", Event Player.MenuTempData, Event Player.i < 8 ? Event Player.i > 3 && Event Player.EditTempObject[Event Player.i] == 0 ? Custom String("Disabled") : Event Player.EditTempObject[Event Player.i] : Empty Array);
@@ -3135,16 +3133,16 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 		Create In-World Text(Count Of(Global.Checkpoints) > 0 && !Event Player.Preferences[0] ? Event Player : Null,
 		Custom String("Coordinates: {0}\nSize: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
 			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
-				Global.Checkpoints[Event Player.Checkpoint][2] == Null ? Custom String("Not Set") : Global.Checkpoints[Event Player.Checkpoint][2], 
+				Global.Checkpoints[Event Player.Checkpoint][2] ? Global.Checkpoints[Event Player.Checkpoint][2] : Custom String("Not Set"), 
 				Global.Checkpoints[Event Player.Checkpoint][3], 
 				Custom String("Require Ground: {0}\n{1}\nFree Walking: {2}", 
 					Global.Checkpoints[Event Player.Checkpoint][4],
 					Custom String("Tolerance Above/Below: {0}/{1}\nDistance: {2}",
-						Global.Checkpoints[Event Player.Checkpoint][6], 
 						Global.Checkpoints[Event Player.Checkpoint][7], 
+						Global.Checkpoints[Event Player.Checkpoint][8], 
 						Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
 					),
-					Global.Checkpoints[Event Player.Checkpoint][7]
+					Global.Checkpoints[Event Player.Checkpoint][4]
 				)
 			)
 		),
@@ -3497,7 +3495,7 @@ rule("Subroutine GetEditMenuText")
 		End;
 	}
 }
-rule("EditMode: Export map data (NOT FINAL JUST FOR BETA VERSIONS)")
+rule("EditMode: Export map data (compression v1, omitting defaults from orange options)")
 {
 	event
 	{
@@ -3512,27 +3510,23 @@ rule("EditMode: Export map data (NOT FINAL JUST FOR BETA VERSIONS)")
 	}
 	actions
 	{
-		Small Message(Host Player, Custom String("Keep holding {0} + {1} + {2} to export",
+		Small Message(Host Player, Custom String("Hold {0} + {1} + {2} to export",
 					Input Binding String(Button(Ability 1)),
 					Input Binding String(Button(Ability 2)),
 					Input Binding String(Button(Ultimate))
 					));
-		Wait(0.5, Abort When False);
-		Big Message(Host Player, Custom String("Exporting in 3..."));
-		Wait(1.6, Abort When False);
-		Big Message(Host Player, Custom String("2"));
-		Wait(1.6, Abort When False);
-		Big Message(Host Player, Custom String("1"));
-		Wait(1.6, Abort When False);
+		Wait(1, Abort when False);
+		Abort If Condition Is False;
 		
+		Global.DebugMode = False;
+		Wait(0.016, Ignore Condition);
 		Disable Inspector Recording;
 		Set Player Variable(All Players(All Teams), Checkpoint, 99999);
 		Set Player Variable(All Players(All Teams), SpectatorMode, True);
 		Set Player Variable(All Players(All Teams), Finished, True);
 		Set Status(All Players(All Teams), Null, Frozen, 99999);
-		"Needed to stop the RGB somehow"
+		"Needed to stop the RGB rule"
 		Global.DebugMode = True;
-
 		Destroy All Effects;
 		Wait(0.016, Ignore Condition);
 		Destroy All HUD Text;
@@ -3543,37 +3537,94 @@ rule("EditMode: Export map data (NOT FINAL JUST FOR BETA VERSIONS)")
 		Wait(0.016, Ignore Condition);
 		Destroy All Dummy Bots;
 		Wait(0.016, Ignore Condition);
-
 		Call Subroutine(ClearGlobalVariables);
 		Start Camera(All Players(All Teams), Vector(0, -998, 0), Vector(0, -999, 0), 0);
+		Wait(0.016, Ignore Condition);
 		"Bring up server load widget just for export"
 		Global.ServerLoad = True;
-		
+	
 		Big Message(All Players(All Teams), Custom String("Exporting Data, please wait..."));
 		Global.MapData = Empty Array;
 
-
+		Create Progress Bar HUD Text(All Players(All Teams), (Global.i / Evaluate Once(Count Of(Global.Checkpoints))) * 100, Custom String("Compressing checkpoint: {0}/{1}", Global.i, Evaluate Once(Count Of(Global.Checkpoints))), Top, 0, Color(Green), Color(White), Visible To Values And Color, Default Visibility);
+		
 		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
 			Log To Inspector(Custom String("Exporting CP. {0}", Global.i));
-			Global.TempArray = Array(Global.Checkpoints[Global.i], Count Of(Global.Bots[Global.i]) > 0 ? Global.Bots[Global.i] : False, Empty Array);
 
-			Skip If(Count Of(Global.Orbs[Global.i]) == 0 || Global.Orbs[Global.i] == False, 1);
-				Modify Global Variable At Index(TempArray, 2, Append To Array, Array(Append To Array(Array(1), Global.Orbs[Global.i])));
-			Skip If(Count Of(Global.RefreshOrbs[Global.i]) == 0 || Global.RefreshOrbs[Global.i] == False, 1);
-				Modify Global Variable At Index(TempArray, 2, Append To Array, Array(Append To Array(Array(2),Global.RefreshOrbs[Global.i])));
-			Skip If(Count Of(Global.AntiOrbs[Global.i]) == 0 || Global.AntiOrbs[Global.i] == False, 1);
-				Modify Global Variable At Index(TempArray, 2, Append To Array, Array(Append To Array(Array(3), Global.AntiOrbs[Global.i])));
-			Skip If(Count Of(Global.Clouds[Global.i]) == 0 || Global.Clouds[Global.i] == False, 1);
-				Modify Global Variable At Index(TempArray, 2, Append To Array, Array(Append To Array(Array(4), Global.Clouds[Global.i])));
-			Skip If(Count Of(Global.Teleports[Global.i]) == 0 || Global.Teleports[Global.i] == False, 1);
-				Modify Global Variable At Index(TempArray, 2, Append To Array, Array(Append To Array(Array(5), Global.Teleports[Global.i])));
-			Wait(0.016, Ignore Condition);
+			Global.TempVal = Global.Checkpoints[Global.i];
+			"Export CP. [0]: Coords\n[1]: Radius (w/optional thresholds)\n[2]: Facing Direction\n[3]: Compressed Flags\n[4]: Compressed Starting Abilities\n[5+]: Optional object arrays"
+			Global.TempArray = Array(Global.TempVal[0]);
 
-			Skip If(Count Of(Global.TempArray[2]) > 0, 1);
-				Modify Global Variable(TempArray, Remove From Array By Index, 2);
+			"Export Radius + Thresholds together if they exist"
+			If(Count Of(Global.TempVal) > 7 && (Global.TempVal[6] != Global.TempVal[1] || Global.TempVal[7] != Global.TempVal[1]));
+				"Vector(Radius, Thresh_Above, Thresh_Below)"
+				Global.TempArray[1] = Vector(Global.TempVal[1], Global.TempVal[6], Global.TempVal[7]);
+			"Export just radius. False means use the default values"
+			Else If(Global.TempVal[1] != Global.EditModeDefaults[0]);
+				"Omit checkpoint radius if it matches the global defaults"
+				Global.TempArray[1] = Global.TempVal[1];
+			End;
+			Skip If(!Global.TempVal[2], 1);
+				"Export Facing Direction"
+				Global.TempArray[Count Of(Global.TempArray)] = Global.TempVal[2];
+			"RequireLandingOnGround::2^0\nFreeWalking::2^1\nAllowCrouch::2^2\nReserved::2^3-16"
+			Modify Global Variable(TempArray, Append To Array, (Global.TempVal[3] ? 1 : 0) + (Global.TempVal[4] ? 2 : 0) +	(Global.TempVal[5] ? 4 : 0));
+			Modify Global Variable(TempArray, Append To Array, Global.TempVal[6]);
 			Global.MapData[Global.i] = Global.TempArray;
+			Global.TempArray = Empty Array;
 			Wait(0.016, Ignore Condition);
+
+			Skip If(Count Of(Global.Orbs[Global.i]) == 0 || Global.Orbs[Global.i] == False, 2);
+				"ID_1: Level orbs. If radius is the same as default then export coordinates only"
+				Global.TempArray[Count Of(Global.TempArray)] = Append To Array(Array(1), Mapped Array(Global.Orbs[Global.i], Current Array Element[1] == Global.EditModeDefaults[1] ? Current Array Element[0] : Current Array Element));
+				Wait(0.016, Ignore Condition);
+			Skip If(Count Of(Global.RefreshOrbs[Global.i]) == 0 || Global.RefreshOrbs[Global.i] == False, 2);
+				"ID_2: Level RefreshOrbs. Compress all flags into a single number."
+				Global.TempArray[Count Of(Global.TempArray)] = Append To Array(Array(2), Mapped Array(Global.RefreshOrbs[Global.i], 
+						Array(
+							Current Array Element[0],
+							Current Array Element[1],
+							Current Array Element[2],
+							(Current Array Element[3] ? 1 : 0) + 
+							(Current Array Element[4] ? 2 : 0) +
+							(Current Array Element[5] ? 4 : 0))
+						)
+				);
+				Wait(0.016, Ignore Condition);
+			Skip If(Count Of(Global.Bots[Global.i]) == 0 || Global.Bots[Global.i] == False, 2);
+				"ID_3: Level Bots. Compresses all flags into a single number. Ignore bot scale"
+				Global.TempArray[Count Of(Global.TempArray)] = Append To Array(Array(3), 
+					Mapped Array(Global.Bots[Global.i], 
+						Array(
+							Current Array Element[0],
+							Current Array Element[2],
+							(Current Array Element[3] ? 1 : 0) +
+							(Current Array Element[4] ? 2 : 0) + 
+							(Current Array Element[5] ? 4 : 0) +
+							(Current Array Element[6] ? 8 : 0))
+						)
+				);
+				Wait(0.016, Ignore Condition);
+			Skip If(Count Of(Global.AntiOrbs[Global.i]) == 0 || Global.AntiOrbs[Global.i] == False, 2);
+				"ID_4: Level AntiOrbs. If radius is the same as default then export coordinates only"
+				Global.TempArray[Count Of(Global.TempArray)] = Append To Array(Array(4), Mapped Array(Global.AntiOrbs[Global.i], Current Array Element[1] == 2 ? Current Array Element[0] : Current Array Element));
+				Wait(0.016, Ignore Condition);
+			Skip If(Count Of(Global.Clouds[Global.i]) == 0 || Global.Clouds[Global.i] == False, 2);
+				"ID_5: Level Clouds."
+				Global.TempArray[Count Of(Global.TempArray)] =  Append To Array(Array(5), Global.Clouds[Global.i]);
+				Wait(0.016, Ignore Condition);
+			Skip If(Count Of(Global.Teleports[Global.i]) == 0 || Global.Teleports[Global.i] == False, 2);
+				"ID_6: Level Teleports. Slice teleport position if its not set"
+				Global.TempArray[Count Of(Global.TempArray)] =  Append To Array(Array(6), 
+				Array Slice(Global.Teleports[Global.i], 0, Global.Teleports[Global.i][2] ? 3 : 2));
+				Wait(0.016, Ignore Condition);
+
+			Skip If(Count Of(Global.TempArray) == 0, 2);
+				Modify Global Variable At Index(MapData, Global.i, Append To Array, Global.TempArray);
+				Wait(0.016, Ignore Condition);
 		End;
+		Destroy All Progress Bar HUD Text;
+		Wait(0.016, Ignore Condition);
 		Global.Checkpoints = Null;
 		Global.Orbs = Null;
 		Global.RefreshOrbs = Null;
@@ -3584,8 +3635,10 @@ rule("EditMode: Export map data (NOT FINAL JUST FOR BETA VERSIONS)")
 		Global.TempArray = Null;
 		Global.i = Null;
 		Global.j = Null;
+		Global.TempVal = Null;
 		Global.DebugMode = Null;
 		Global.PlayerData = Null;
+		Global.AbilityEncoding = Null;
 		Global.ServerLoad = Null;
 		
 		Global.RGB = Null;
@@ -3617,6 +3670,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 99);	
 		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
 		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 1);
+		
 		Global.PlayerAbilityMode = Workshop Setting Combo(Custom String("Gameplay Options"), Custom String("Player ability restrictions"), 0, Array(Custom String("Single use"), Custom String("Multiple uses"), Custom String("Unlimited")), 2);		
 		Global.ZeroCooldownMode = Workshop Setting Toggle(Custom String("Gameplay Options"), Custom String("Instant cooldowns"), True, 3);
 		Global.RequireGrabAllRefreshOrbs = Workshop Setting Toggle(Custom String("Gameplay Options"), Custom String("Require grabbing all Refresh Orbs"), True, 4);
@@ -4139,50 +4193,28 @@ rule("Subroutine CreatePlayerDebugModeHUD")
 
 	actions
 	{
-		"Ability 1 related info"
-		Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
-		Event Player.Ability1, 
-		Ability Cooldown(Event Player, Button(Ability 1)), 
-		Custom String("{0}\nAbility 1 Charges: {1}", 
-			Is Using Ability 1(Event Player) || False,
-			Ability Charge(Event Player, Button(Ability 1)))
-		), Null,
-		Right, 99, Null, 
-		Color(Orange), Null,  Visible To String and Color, Default Visibility);
-		
-		"Ability 2 related info"
-		Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nVar Ability2: {0}\nAbility 2 CD: {1}\nIsUsingAbility2: {2}", 
-		Event Player.Ability2, 
-		Ability Cooldown(Event Player, Button(Ability 2)), 
-		Custom String("{0}\nAbility 2 Charges: {1}", 
-			Is Using Ability 2(Event Player) || False,
-			Ability Charge(Event Player, Button(Ability 2)))
-		), Null,
-		Right, 100, Null,  
-		Color(Aqua), Null, Visible To String and Color, Default Visibility);
-		
-		"Secondary Fire related info"
-		Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nVar SecondaryFire: {0}\nSecondary CD: {1}\nIsFiringSecondary: {2}", 
-		Event Player.SecondaryFire, 
-		Ability Cooldown(Event Player, Button(Secondary Fire)), 
-		Custom String("{0}\nAbility Charge: {1}", 
-			Is Firing Secondary(Event Player) || False,
-			Ability Charge(Event Player, Button(Secondary Fire)))
-		), Null,
-		Right, 100, Null, 
-		Color(Aqua), Null, Visible To String and Color, Default Visibility);
-
+		"Debug workshop functions & counters for player abilities"
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \n{0}\n{1}\n{2}",
+				Custom String("{0} ({1})-CD:{2}", Ability Icon String(Hero Of(Event Player), Button(Ability 1)), Is Using Ability 1(Event Player) ? Custom String("√") : Custom String("X"), 
+					Custom String("{0}-Uses:{1}", Ability Cooldown(Event Player, Button(Ability 1)), Event Player.Ability1)),
+				Custom String("{0} ({1})-CD:{2}", Ability Icon String(Hero Of(Event Player), Button(Ability 2)), Is Using Ability 2(Event Player) ? Custom String("√") : Custom String("X"), 
+					Custom String("{0}-Uses:{1}", Ability Cooldown(Event Player, Button(Ability 2)), Event Player.Ability2)),
+				Custom String("{0}\n{1}",
+					Custom String("{0} ({1}) CD:{2}", Ability Icon String(Hero Of(Event Player), Button(Secondary Fire)), Is Firing Secondary(Event Player) ? Custom String("√") : Custom String("X"), 
+						Custom String("{0}-Uses:{1}", Ability Cooldown(Event Player, Button(Secondary Fire)), Event Player.SecondaryFire)),
+					Custom String("{0} ({1})-CD:{2}", Ability Icon String(Hero Of(Event Player), Button(Ultimate)), Is Using Ultimate(Event Player) ? Custom String("√") : Custom String("X"), 
+						Custom String("{0}-Uses:{1}", Ability Cooldown(Event Player, Button(Ultimate)), Event Player.Ultimate))
+				)
+		), Right, 20, Null, Null, Color(Orange), Visible To And String, Default Visibility);
 		"Bunnyhop related info"
-		disabled Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nIs On Ground: {0}\nIs In Air: {1}\nIs Crouching: {2}", 
-		Is On Ground(Event Player), 
-		Is In Air(Event Player), 
-		Custom String("{0}\nIs Jumping: {1}\nBHop ready?: {2}", 
-			Is Crouching(Event Player),
-			Is Jumping(Event Player),
-			Event Player.BhopReady)
-		), Null,
-		Right, 101, Null, 
-		Color(Blue), Null, Visible To String and Color, Default Visibility);
+		Create HUD Text(Event Player, Null, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \n({0})...Is On Ground\n({1})...Is In Air\n{2}", 
+		Is On Ground(Event Player) ? Custom String("√") : Custom String("X"), 
+		Is In Air(Event Player) ? Custom String("√") : Custom String("X"), 
+		Custom String("({0})...Is Crouching\n({1})...Is Jumping\n({2})...BHop ready?", 
+			Is Crouching(Event Player) ? Custom String("√") : Custom String("X"),
+			Is Jumping(Event Player) ? Custom String("√") : Custom String("X"),
+			Event Player.BhopReady ? Custom String("√") : Custom String("X"))
+		), Right, 101, Null, Null, Color(Blue), Visible To String and Color, Default Visibility);
 
 		"Checkpoint landing debug"
 		Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nDistance to Goal: {0}\nPlayer Y: {1}\nGoal Y: {2}", 
@@ -4197,13 +4229,6 @@ rule("Subroutine CreatePlayerDebugModeHUD")
 		
 		"Throttle debug"
 		Create HUD Text(Event Player, Null, Custom String("‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ ‒ \nThrottle: {0}", Throttle Of(Event Player)), Null, Right, 103, Color(White), Color(White), Color(White), Visible To And String, Default Visibility);
-		"Debug XYZ Datum"
-		disabled Create Beam Effect(
-			Event Player, 
-			Good Beam,
-			Eye Position(Event Player),
-			Update Every Frame(Eye Position(Event Player) + Vector(1,0,0)), 
-			Color(Red), Position and Radius);
 	}
 }
 rule("Subroutine CancelMomentum")
@@ -4390,6 +4415,7 @@ rule("Subroutine GetStartingAbilities")
 
 	actions
 	{
+		"Mercy & Kiriko parkour abilities are dependant on existing bot"
 		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Hero Of(Event Player)));
 			Event Player.StartingAbilities = Array(Global.Checkpoints[Event Player.Checkpoint][3], True, True, False, 0, 0, 1, 1);
 			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
@@ -4402,7 +4428,7 @@ rule("Subroutine GetStartingAbilities")
 			Abort;
 		End;
 		"Experimental ability encoding with ability charges support V2"
-		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][5];
+		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][6];
 		Abort If(Last Of(Event Player.StartingAbilities) == Event Player.AbilitiesTemp);
 		Event Player.StartingAbilities[8] = Event Player.AbilitiesTemp;
 
@@ -4481,11 +4507,10 @@ rule("Subroutine ClearGlobalVariables")
 		disabled Global.TempArray = Null;
 		disabled Global.i = Null;
 		disabled Global.j = Null;
-		Global.free = Null;
+		Global.TempBot = Null;
 		disabled Global.MapData = Null;
 		Global.RequireGrabAllRefreshOrbs = Null;
 		Global.PeaceVips = Null;
-		Global.ECV = Null;
 		Global.RefreshOrbStyle = Null;
 		Global.MenuOptions = Null;
 		Global.PaletteMenu = Null;
@@ -4516,6 +4541,8 @@ rule("Subroutine ClearGlobalVariables")
 		disabled Global.AbilityEncoding = Null;
 		Global.PlayerAbilityMode = Null;
 		Global.ZeroCooldownMode = Null;
+		Global.ContextualMenuOptions = Null;
+		Global.InitDone = Null;
 	}
 }
 rule("Subroutine TawsDecompressData")
@@ -4531,7 +4558,7 @@ rule("Subroutine TawsDecompressData")
 		"Workshop Setting: Single Use Shift/Unlimited GA (Affects all checkpoints)"
 		Global.TawsEditorVariables[0] = False;
 		"Workshop Setting: Default Checkpoint Radius"
-		Global.TawsEditorVariables[1] = 2;
+		Global.TawsEditorVariables[1] = Global.EditModeDefaults[0];
 
 		"Give credits to the original editor maker"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Taw"), Custom String("Taw"), Color(Purple));
@@ -4552,7 +4579,7 @@ rule("Subroutine TawsDecompressData")
 					Array(
 						Current Array Element[0][3][0],
 						Current Array Element[0][3][1], 
-						Null, 
+						False, 
 						Current Array Element[0][3][2],
 						Current Array Element[0][3][3]
 					) : False);
@@ -4619,7 +4646,7 @@ rule("Subroutine TawsDecompressData")
 			Array(
 				Current Array Element[0][0],
 				Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
-				Current Array Element[0][2] == 0 ? Null : Current Array Element[0][2])
+				Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
 			);                                       
 
 		"Extract Bots, Orbs, Flags"
@@ -4688,11 +4715,12 @@ rule("Subroutine TawsDecompressData")
 			Global.TempArray = Empty Array;		
 			"Save Checkpoint flags"
 			Modify Global Variable At Index(Checkpoints, Global.i, Append To Array, 
-			Array(Global.TawsEditorVariables[2][Global.i][2], 
-			Global.TawsEditorVariables[2][Global.i][3], 
+			Array(Global.TawsEditorVariables[2][Global.i][3], 
+			Global.TawsEditorVariables[0],
+			9223,
 			Global.TawsEditorVariables[2][Global.i][5], 
-			Global.TawsEditorVariables[2][Global.i][6],
-			Global.TawsEditorVariables[0]));
+			Global.TawsEditorVariables[2][Global.i][6]
+			));
 			
 			Skip If(Global.i % 3 != 0, 1);
 			Wait(0.016, Ignore Condition);
@@ -4768,7 +4796,7 @@ rule("Subroutine PeaceDecompressData")
 		Array(
 			Current Array Element[0],
 			Current Array Element[1],
-			Null,
+			False,
 			Current Array Element[2],
 			Global.PeaceEditorVariables[1],
 			Current Array Element[4],
@@ -4781,7 +4809,7 @@ rule("Subroutine PeaceDecompressData")
 			Current Array Element[3] != False ? Array(Array(
 				Current Array Element[3][0],
 				1,
-				Null,
+				False,
 				False,
 				!Global.PeaceEditorVariables[0],
 				Current Array Element[3][1],
