@@ -38,7 +38,7 @@ settings
 		{
 			enabled maps
 			{
-				Circuit Royal 0
+				Hanamura 0
 			}
 		}
 
@@ -1849,7 +1849,7 @@ rule("Regen ultimate in FreeMode")
 	actions
 	{
 		Wait(0.1, Ignore Condition);
-		Abort If(!Event Player.FreeMode);
+		Abort If Condition Is False;
 		Set Ultimate Charge(Event Player, 100);
 	}
 }
@@ -2560,10 +2560,10 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				Call Subroutine(GetGoalData);
 				Else;
 			End;
-			Event Player.ObjectIndex += 1;
+			Event Player.ObjectIndex = -1;
 			Call Subroutine(SetEditModeObjectIndex);
 
-			Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+			Small Message(Event Player, Custom String("Created new {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"), Event Player.ObjectIndex));
 		End;
 		If(Event Player.ObjectType == 3 && Count Of(Global.Bots[Event Player.Checkpoint]) == 1);
 			"Trigger a GetStartingAbilities call"
