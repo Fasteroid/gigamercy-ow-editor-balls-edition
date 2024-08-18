@@ -2463,6 +2463,7 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		Else If(Event Player.MenuOpen);
+			Call Subroutine(GetEditTempObject);
 			Call Subroutine(GetEditMenuTempData);
 		End;
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
@@ -2640,7 +2641,24 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 				disabled Modify Global Variable At Index(Teleports, Event Player.Checkpoint, Remove From Array By Index, Event Player.ObjectIndex);
 				Global.Teleports[Event Player.Checkpoint] = Null;
 				Else;
+				End;
 			End;
+			"Update refresh orbs that pointed to bots with index equal or greater"
+			If(Event Player.ObjectType == 3);
+				Event Player.EditTempArray = Global.RefreshOrbs[Event Player.Checkpoint];
+				"I was drunk when i coded this mkay dont judge"
+				For Player Variable(Event Player, j, 0, Count Of(Event Player.EditTempArray), 1);
+					Skip If(Event Player.EditTempArray[Event Player.j] >= Event Player.ObjectIndex, 1);
+						Continue;
+					Event Player.EditTempArray[Event Player.j] = 
+					Mapped Array(
+						Event Player.EditTempArray[Event Player.j], 
+						Current Array Index == 2 ? 
+							Current Array Element == Event Player.ObjectIndex ? -1 : 
+							Current Array Element > Event Player.ObjectIndex ? Current Array Element -1 :
+						Current Array Element : Current Array Element); 
+				End;
+				Global.RefreshOrbs[Event Player.Checkpoint] = Event Player.EditTempArray;
 		End;
 			Event Player.ObjectIndex = Event Player.ObjectIndex > 0 ? Event Player.ObjectIndex - 1 : 0;
 			Call Subroutine(SetEditModeObjectIndex);
@@ -3093,8 +3111,7 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 		"TODO: Temporary, maybe merge these two subs"
 		Call Subroutine(GetEditMenuText);
 		Event Player.MenuTempData = Empty Array;
-		Skip If(Event Player.ObjectSelectAura != Null, 1);
-		Abort;
+		Abort If(Event Player.ObjectSelectAura == Null);
 
 		For Player Variable(Event Player, i, 0, Count Of(Event Player.EditTempObject), 1);
 			Skip(Value In Array(Array(0, 2, 4, 6, 2, 2, 8, 10), Event Player.MenuPage));
