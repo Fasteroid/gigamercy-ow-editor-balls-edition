@@ -12,7 +12,7 @@ settings
 		Map Rotation: Paused
 		Match Voice Chat: Enabled
 		Max Spectators: 12
-		Max Team 1 Players: 8
+		Max Team 1 Players: 6
 		Max Team 2 Players: 0
 		Return To Lobby: After A Game
 		Swap Teams After Match: No
@@ -509,6 +509,13 @@ rule("Global Initialization")
 			Call Subroutine(CreateGlobalEditModeHUD);
 			Wait(0.016, Ignore Condition);
 		End;
+		"TEST: Cleanup empty texts to conserve memory"
+		Global.WorldTexts = Mapped Array(Global.WorldTexts, String Length(Current Array Element[0]) > 0 ? Current Array Element : False);
+		Global.BigMessages = Mapped Array(Global.BigMessages, String Length(Current Array Element[0]) > 0 ? Current Array Element : False);
+		Wait(0.016, Ignore Condition);
+		Global.SmallMessages = Mapped Array(Global.SmallMessages, String Length(Current Array Element[0]) > 0 ? Current Array Element : False);
+		Global.HintTexts = Mapped Array(Global.HintTexts, String Length(Current Array Element[0]) > 0 ? Current Array Element : False);
+		Global.VIPs = Filtered Array(Global.VIPs, String Length(Current Array Element[0]) > 0);
 		Global.InitDone = True;
 	}
 }
@@ -1414,7 +1421,7 @@ rule("Detect Landing on Goal or Teleport")
 				"// TODO: Set a color for finish explosion in config"
 				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
 				Wait(0.1, Ignore Condition);
-				Abort If(Event Player.Cheat);
+				Abort If(Event Player.Cheat || Global.EditMode);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.PlayerName, Event Player.CurrentRunTime));
 				Call Subroutine(PlayerCompletedRun);
 			"Player finished current checkpoint"
@@ -1842,6 +1849,7 @@ rule("Regen ultimate in FreeMode")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
+		Has Spawned(Event Player) == True;
 		Event Player.FreeMode == True;
 		Is Using Ultimate(Event Player) == False;
 		Ultimate Charge Percent(Event Player) < 100;
@@ -2104,7 +2112,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
     actions
     {
 		Global.NewObjectDefaults = Array(
-			Array(Null, Global.EditModeDefaults[0], False, Global.EditModeDefaults[3], Global.EditModeDefaults[2], Global.PlayerAbilityMode == 2, 9223),
+			Array(Null, Global.EditModeDefaults[0], False, Global.EditModeDefaults[3], Global.EditModeDefaults[2], Global.PlayerAbilityMode == 2, 1155),
 			Array(Null, Global.EditModeDefaults[1]),
 			Array(Null, Global.EditModeDefaults[1], -1, True, False, False),
 			Array(Null, 1, Null, False, False, False, True),
@@ -2165,10 +2173,10 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		);
 		"Single use abilities mode"
 		If(Global.PlayerAbilityMode == 0);
-			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(1, 1, 1, 1, 8)));
+			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(1, 1, 1, 1, 1, 1, 8)));
 		Else;
 		"// TODO: Add selector for Disabled/Enabled/Infinite abilities"
-			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)));
+			Modify Global Variable(MapDataSchema, Append To Array, Array(Array(Array(4,7), Array(4,7), Array(4,7), Array(4,7), Array(4,7), Array(4,7), 8)));
 		End;
 		
 		"Checkpoint Screen"
@@ -2211,7 +2219,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
         disabled Global.MenuOptions[7] = Custom String(
 			"Ultimate:\nAbility 1:\nAbility 2:\nSecondary Fire:\nSave changes <<\n");
         Global.MenuOptions[7] = Custom String(
-			"Crouch:\nJump:\nMelee:\nUltimate:\nAbility 1:\nAbility 2:\nPrimary Fire:\nSecondary Fire:\nSave changes <<\n");
+			"Crouch:\nAbility 1:\nAbility 2:\nSecondary Fire:\nPrimary Fire:\nUltimate:\nSave changes <<\n");
 
 		Global.ContextualMenuOptions[0] = Array(Custom String(">>dropdown here\n"));
 
@@ -3131,7 +3139,7 @@ rule("EditMode: Subroutine GetEditMenuTempData")
 			Event Player.MenuTempData = 
 				Custom String("{0}{1}\n", 
 					Event Player.MenuTempData,
-					((Event Player.EditTempObject[Event Player.i] >= 7) ? Custom String("∞") : 
+					((Event Player.EditTempObject[Event Player.i] == 7) ? Custom String("∞") : 
 					Event Player.EditTempObject[Event Player.i]));
 		End;	
 	}
@@ -3720,7 +3728,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                                                                ");
 		Global.PlayerData = Empty Array;
-		Global.AbilityEncoding = Array(1, 2, 4, 8, 16, 128, 1024, 8192);
+		Global.AbilityEncoding = Array(1, 2, 16, 128, 1024, 2048);
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -4169,11 +4177,12 @@ rule("Subroutine ResetCheckpoint")
 			Event Player.BotCompletedSections[0] = !Global.EditMode;
 			Event Player.Bot.CurrentBotSection = 0;
 		End;
-		Event Player.Ability1 = Event Player.StartingAbilities[4];
-		Event Player.Ability2 = Event Player.StartingAbilities[5];
-		Event Player.Ultimate = Event Player.StartingAbilities[3];
-		Event Player.SecondaryFire = Event Player.StartingAbilities[7];
 		Event Player.Crouch = Event Player.StartingAbilities[0];
+		Event Player.Ability1 = Event Player.StartingAbilities[1];
+		Event Player.Ability2 = Event Player.StartingAbilities[2];
+		Event Player.SecondaryFire = Event Player.StartingAbilities[3];
+		Event Player.PrimaryFire = Event Player.StartingAbilities[4];
+		Event Player.Ultimate = Event Player.StartingAbilities[5];
 		Call Subroutine(UpdateBotPosition);
 		Skip If(Event Player.FreeMode, 1);
 			Call Subroutine(SetCurrentAbilities);
@@ -4300,16 +4309,16 @@ rule("Subroutine SetCurrentAbilities")
 		Abort If(Event Player.FreeMode || Event Player.Finished);
 		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
 
-		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		Set Crouch Enabled(Event Player, Event Player.Crouch > 0);
 		disabled Set Melee Enabled(Event Player, Event Player.Melee);
-		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate > 0);
 		Wait(0.032, Ignore Condition);
 		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
 		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
 		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
 		
 		Abort If(Event Player.MenuOpen);
-		disabled Set Primary Fire Enabled(Event Player, Event Player.PrimaryFire && True);
+		Set Primary Fire Enabled(Event Player, Event Player.PrimaryFire > 0);
 		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire > 0);
 		"// TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
 		If(Event Player.Crouch);
@@ -4432,37 +4441,42 @@ rule("Subroutine GetStartingAbilities")
 
 	actions
 	{
-		"Mercy & Kiriko parkour abilities are dependant on existing bot"
-		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Hero Of(Event Player)));
-			Event Player.StartingAbilities = Array(Global.Checkpoints[Event Player.Checkpoint][3], True, True, False, 0, 0, 1, 1);
-			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
-				Event Player.StartingAbilities[4] = 0;
-			Else;
-				"TODO: add a check to see if bot is ally or enemy"
-				Event Player.StartingAbilities[4] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
-			End;
-			disabled Log To Inspector(Custom String("{0} - Get alternative abilities (mercy/kiriko)", Event Player));
-			Abort;
-		End;
 		"Experimental ability encoding with ability charges support V2"
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][6];
-		Abort If(Last Of(Event Player.StartingAbilities) == Event Player.AbilitiesTemp);
-		Event Player.StartingAbilities[8] = Event Player.AbilitiesTemp;
-
-		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
-		For Player Variable(Event Player, AbilitiesI, 7, -1, -1);
-			"Abilities with only True/False values:\n0: Crouch\n1: Jump\n2: Melee\n3: Ultimate"
-			If(Event Player.AbilitiesI < 4);
-				Event Player.StartingAbilities[Event Player.AbilitiesI] = Event Player.AbilitiesTemp >= Global.AbilityEncoding[Event Player.AbilitiesI];
-
-			"Rest of abilities that allow setting multiple charges"
-			Else;
-				Event Player.StartingAbilities[Event Player.AbilitiesI] = Round To Integer(Event Player.AbilitiesTemp / Global.AbilityEncoding[Event Player.AbilitiesI], Down);
-			End;
-			Event Player.AbilitiesTemp %= Global.AbilityEncoding[Event Player.AbilitiesI];
-		End;	
+		Abort If(Event Player.StartingAbilities[6] == Event Player.AbilitiesTemp);
 		
+		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
+
+		Event Player.StartingAbilities = Mapped Array(Global.AbilityEncoding, Round To Integer((Event Player.AbilitiesTemp % Array(2, 16, 128, 1024, 2048, 4096)[Current Array Index]) / Current Array Element, Down));
+
+		"Mercy & Kiriko parkour abilities are dependant on existing bot"
+		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Hero Of(Event Player)));
+			disabled Event Player.StartingAbilities = Array(Global.Checkpoints[Event Player.Checkpoint][3], True, True, False, 0, 0, 1, 1);
+			"Remove first GA if fist bot depends on a refresh orb"
+			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
+				Event Player.StartingAbilities[1] = 0;
+			Else;
+				"Set GA enabled if theres a bot on the first part of the level. TODO: add a check to see if bot is ally or enemy"
+				Event Player.StartingAbilities[1] = Global.Bots[Event Player.Checkpoint][0] ? 1 : 0;
+			End;
+			Log To Inspector(Custom String("{0} - Applied bot abilities (mercy/kiriko)", Event Player));
+			Abort;
+		End;
+		Event Player.StartingAbilities[6] = Event Player.AbilitiesTemp;
+
 		Log To Inspector(Custom String("{0} - Finished ability decompression", Event Player));
+		disabled For Player Variable(Event Player, AbilitiesI, 7, -1, -1);
+			"Abilities with only True/False values:\n0: Crouch\n1: Jump\n2: Melee\n3: Ultimate"
+		disabled 	If(Event Player.AbilitiesI < 4);
+		disabled 		Event Player.StartingAbilities[Event Player.AbilitiesI] = Event Player.AbilitiesTemp >= Global.AbilityEncoding[Event Player.AbilitiesI];
+
+		 	"Rest of abilities that allow setting multiple charges"
+		disabled 	Else;
+		disabled 		Event Player.StartingAbilities[Event Player.AbilitiesI] = Round To Integer(Event Player.AbilitiesTemp / Global.AbilityEncoding[Event Player.AbilitiesI], Down);
+		disabled 	End;
+		disabled 	Event Player.AbilitiesTemp %= Global.AbilityEncoding[Event Player.AbilitiesI];
+		disabled End;	
+		
 	}
 }
 rule("Subroutine GetPaletteWheelButtons")
@@ -4732,9 +4746,10 @@ rule("Subroutine TawsDecompressData")
 			Global.TempArray = Empty Array;		
 			"Save Checkpoint flags"
 			Modify Global Variable At Index(Checkpoints, Global.i, Append To Array, 
-			Array(Global.TawsEditorVariables[2][Global.i][3], 
+			Array(Global.TawsEditorVariables[2][Global.i][2],
+			Global.TawsEditorVariables[2][Global.i][3], 
 			Global.TawsEditorVariables[0],
-			9223,
+			Global.TawsEditorVariables[2][Global.i][2] ? 1155 : 1154,
 			Global.TawsEditorVariables[2][Global.i][5], 
 			Global.TawsEditorVariables[2][Global.i][6]
 			));
@@ -4817,7 +4832,7 @@ rule("Subroutine PeaceDecompressData")
 			Current Array Element[2],
 			Global.PeaceEditorVariables[1],
 			Current Array Element[4],
-			Current Array Element[2] ? 9223 : 9222)
+			Current Array Element[2] ? 1155 : 1154)
 		);
 
 		"Extract initial bots. // TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
