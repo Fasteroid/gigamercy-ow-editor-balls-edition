@@ -4446,7 +4446,7 @@ rule("Subroutine SetUpCheckpoint")
 			Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
 		Skip If(Event Player.Collision, 1);
 			Call Subroutine(TogglePlayerCollision);
-		Skip If(Event Player.Bot == Null || Global.Bots[Event Player.Checkpoint] == False, 1);
+		Skip If(Event Player.Bot == Null || Global.Bots[Event Player.Checkpoint] == True, 1);
 			Small Message(Event Player, Custom String("  No {0} for this level", Hero Of(Event Player.Bot)));
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
 			Small Message(Event Player, Custom String("  This level allow free walking", Hero Of(Event Player.Bot)));
@@ -4501,6 +4501,7 @@ rule("Subroutine ResetCheckpoint")
 		If(Global.RefreshOrbs[Event Player.Checkpoint] && 
 			Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == 0));
 			Event Player.Bot.CurrentBotSection = -1;
+			Event Player.CurrentBotSection = -1;
 		Else;
 			Event Player.CurrentBotSection = 0;
 			"No lo se rick..."
@@ -5182,7 +5183,7 @@ rule("Subroutine PeaceDecompressData")
 	actions
 	{
 		"Workshop setting: Bot Floating?"
-		Global.PeaceEditorVariables[0] = Global.EditModeDefaults[7];
+		Global.PeaceEditorVariables[0] = Global.EditModeDefaults[9];
 		"Workshop setting: Land On Arrival Point?"
 		Global.PeaceEditorVariables[1] = Global.EditModeDefaults[5];
 		"Default orb radius. Peace orbs have a large collision sphere, equivalent size is around 0.7 - 1"
@@ -5219,7 +5220,7 @@ rule("Subroutine PeaceDecompressData")
 				1,
 				Global.EditModeDefaults[4],
 				False,
-				!Global.PeaceEditorVariables[0],
+				Global.PeaceEditorVariables[0],
 				Current Array Element[3][1],
 				Current Array Element[3][2])) : Empty Array
 		);
@@ -5350,7 +5351,7 @@ rule("Subroutine PeaceDecompressData")
 		If(Global.RefreshOrbStyle == 0);
 			Global.RefreshOrbStyle = 1;
 		End;
-		If(Count Of(Global.PeaceOrTawsVar) > 0 && String Length(Global.PeaceOrTawsVar[0]) > 0);
+		If(Count Of(Global.PeaceOrTawsVar) > 1 || String Length(Global.PeaceOrTawsVar[0]) > 0);
 			Global.HintTexts = Mapped Array(Global.PeaceOrTawsVar, Current Array Element == 0 ? False : Current Array Element);
 		End;
 		"Cleanup"
