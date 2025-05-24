@@ -3,8 +3,8 @@ settings
 	main
 	{
 		Mode Name: "Giga Parkour Editor"
-		Description: "<fgfb861cff>》This editor is in beta. Code: MEDQA《</fg>\n\n◈ Expect a few bugs here and there\n◈ Import maps from old Peace & Taw's!\n◈ Rules/Buttons/Menus are subject to change\n◈ Exported maps will always be compatible!\n◈ Feel free to test & play in public lobbies\n\n By GigaMercy\n\nReach out on the Mercy pk discord!\ndiscord.gg/mercyparkour\nBeta revision 8 (2024-11-18)"
-	}
+		Description: "<fgfb861cff>》This editor is in beta. Code: MEDQA《</fg>\n\n◈ Expect a few bugs here and there\n◈ Import maps from old Peace & Taw's!\n◈ Rules/Buttons/Menus are subject to change\n◈ Exported maps will always be compatible!\n◈ Feel free to test & play in public lobbies\n\n By GigaMercy\n\nReach out on the Mercy pk discord!\ndiscord.gg/mercyparkour\nBeta revision 8.1 (2025-04-08)" 
+		}
 
 	lobby
 	{
@@ -46,7 +46,7 @@ settings
 		{
 			enabled maps
 			{
-				Dorado 0
+				Hanamura 0
 			}
 		}
 
@@ -292,7 +292,7 @@ subroutines
 	33: GetEditMenuText
 	34: SavePlayerProgress
 }
-rule("——————————————— ︾ Giga Parkour Editor BETA rev 8 ︾ ————————————————")
+rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.1 ︾ ————————————————")
 {
 	event
 	{
@@ -302,7 +302,8 @@ rule("——————————————— ︾ Giga Parkour Editor BETA
 	{
 		"Inspired by Peace (T6QQT) & Taw's (G361B) editors for Mercy Parkours!\nFeatures:\n> Supports importing maps from Peace/Taw editors\n> Readable controls for Consoles\n> Multiplayer editing\n> Better performance\n> Planning to support all heroes!"
 		disabled True == True;
-		"Beta Rev 8 (2024-Sep-18):\n- Added rule to auto-restart lobby\n- Added export map instructions\n- Improved bhop detection\n- Fixed ghost cp bug when editing last level\n- Fixed free mode being disabled on last level\n- Fixed ability exploit when touching checkpoint"
+		"Beta Rev 8 (2024-Sep-18):\n- Added rule to auto-restart lobby\n- Added export map instructions\n- Improved bhop detection\n- Fixed ghost cp bug when editing last level\n- Fixed free mode being disabled on last level\n- Fixed ability exploit when touching checkpoin
+		"
 		disabled True == True;
 		"Beta Rev 7 (2024-Sep-13):\n- Added subroutine to save player progress, allow for continuing where you left off\n- Fixed bug when importing scoreboard colors from Peace\n- Fixed some Edit hud issues\n- Added Taw's CheckpointInstructionTexts\n- Fixed bug with secondary fire being disabled"
 		disabled True == True;
@@ -339,12 +340,10 @@ rule("——————————————— ︾ Giga Parkour Editor BETA
 		"Parkour Editor by GigaMercy"
 		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224));
 		"Special Thanks!!"
-		Modify Global Variable(VIPs, Append To Array, 
-		Array(
-			Array(Custom String("Aeternalys"), Custom String("{0}Aeternalys", Ability Icon String(Hero(D.va), Button(Ultimate))), Custom Color(64, 224, 208, 224)),
-			Array(Custom String("maylanix"), Custom String("maylanix {0}", Icon String(Skull)),
-			Custom Color(255, 153, 187, 255))
-		));
+		Modify Global Variable(VIPs, Append To Array, Array(
+			Array(Custom String("Aeternalys"), Custom String("{0}Aeternalys", Ability Icon String(Hero(D.Va), Button(Ultimate))), Custom Color(64, 224, 208, 224)), 
+			Array(Custom String("maylanix"), Custom String("{0} maylanix", Icon String(Skull)), Custom Color(255, 153, 187, 255)), 
+			Array(Custom String("poobie"), Custom String("{0} poobie", Ability Icon String(Hero(Mercy), Button(Jump))), Custom Color(102, 120, 255, 255))));
 	}
 }
 rule("◈ Paste your map data here")
@@ -394,15 +393,15 @@ rule("◈ Customize colors and texts")
 		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255));
 		"Default Player nameplate color"
 		Global.Settings[14] = Color(White);
-		"Scoreboard color"
+		"Scoreboard title color"
 		Global.Settings[15] = Color(Red);
 		"Goal effect color. Sparkles and cloud accept multiple colors"
 		Global.Settings[16] = Array(Color(Red), Color(Yellow));
-		"Map title color. Disable this rule if you want rainbow effect"
+		"Map title color. Disable this line if you want rainbow effect"
 		disabled Global.Settings[18] = Color(Red);
-		"Crouch disabled bot outline color"
+		"Crouch disabled bot icon/outline color"
 		Global.Settings[19] = Color(Red);
-		"Crouch enabled bot outline color"
+		"Crouch enabled bot icon/outline color"
 		Global.Settings[20] = Color(Aqua);
 		"Goal Icon Color"
 		Global.Settings[21] = Color(Green);
@@ -881,6 +880,7 @@ rule("Press [Interact] to TP to player (Free Mode only)")
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Interact))), Is Button Held(Event Player, Current Array Element)));
 		
 		Abort If(Is Dummy Bot(Player Closest To Reticle(Event Player, Team(All))) || !Is In View Angle(Event Player, Player Closest To Reticle(Event Player, All Teams), 10));
+		Abort If(!Is Alive(Player Closest To Reticle(Event Player, All Teams)));
 		Teleport(Event Player, Player Closest To Reticle(Event Player, Team(All)));
 	}
 }
@@ -1698,24 +1698,22 @@ rule("Bot: Update Bot Status")
 		Event Player.CallUpdate = False;
 		Event Player.Temp = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection];
 		
+		"// TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
 		If(Is Using Ultimate(Event Player));
 			Kill(Event Player, Null);
 		End;
+		"[5]: Bot resurrect"
 		If(Event Player.Temp[5]);
 			Kill(Event Player, Null);
 		Else;
 			Resurrect(Event Player);
 		End;
-		"// TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
+		"[4]: Bot gravity"
 		If(Event Player.Temp[4]);
 			Stop Holding Button(Event Player, Button(Jump));
-			disabled Clear Status(Event Player, Rooted);
 			Set Gravity(Event Player, 100);
-		"Bot Floating on this level, also affects when bot goes to storage"
 		Else;
 			Set Gravity(Event Player, 0);
-			disabled Set Status(Event Player.Bot, Null, Rooted, 99999);
-			"// TODO: Refactor this to use the same function as the player, dont copy paste"
 			Call Subroutine(CancelMomentum);
 		End;
 		"Teleport Bot to current level position"
@@ -1988,8 +1986,8 @@ rule("Regen ultimate in FreeMode")
 		Set Ultimate Charge(Event Player, 100);
 	}
 }
-rule("Destroy bot after player leaves v2")
-{	
+rule("Destroy bot after player leaves v2") 
+{
 	event
 	{
 		Ongoing - Each Player;
@@ -2875,7 +2873,7 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Event Player.ObjectSelectAura[0]);
 				Event Player.ObjectMoveGhost[1] = Event Player.ObjectSelectAura[1];
 
-				Skip(Value In Array(Array(0,Global.OrbStyle == 1 ? 3 : 6,Global.RefreshOrbStyle == 1 ? 3 : 6,12,6,8,0), Event Player.ObjectType));
+				Skip(Value In Array(Array(0, (Global.OrbStyle == 1 ? 3 : 6), (Global.RefreshOrbStyle == 1 ? 3 : 6), 12, 6, 8, 0), Event Player.ObjectType));
 				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
 				Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 				Skip(9);
@@ -3910,8 +3908,8 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 		Create HUD Text(All Players(All Teams), Custom String("           Step 3. Saving your map           "), Null, Null, Top, 30, Color(Orange), Null, Null, Visible To And String, Default Visibility);
 		"Instructions pt.3: Content"
 		Create HUD Text(All Players(All Teams), Null, 
-			Custom String("1. Open the game menu, click on \"Open Workshop Editor\"\n2. Open the rule  \"Paste your map data here\" (top of the list)\n{0}", 
-				Custom String("3. Delete any existing data before continuing\n4. Click on the \"Paste\" button (Orange [+] sign)\n{0}", 	
+			Custom String("1. Open the game menu, click on \"Open Workshop Editor\"\n2. Open the rule  \"Paste your map data here\" (top of the list)\n{0}",
+			Custom String("3. Delete any existing data before continuing\n4. Click on the \"Paste\" button (Orange [+] sign)\n{0}", 	
 					Custom String("5. You should see a big action like: Global.MapData = Array(Array(...\n          {0} Don't continue if your data is missing {0}\n", 
 						Icon String(Warning)))), Null, Top, 31, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
 		
@@ -3921,10 +3919,8 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 		Create HUD Text(All Players(All Teams), Null, 
 			Custom String("1. Navigate to Lobby > Settings > Workshop settings (orange button)\n2. Disable Edit mode (under Editor Options)\n{0}", 
 				Custom String("3. Go back to lobby settings & create a new code with the \"Share\" button\n4. Edit the marked rules to customize map title,{0}",
-					Custom String(" VIPs, colors & texts\n5. Restart the lobby"))), Null, Top, 41, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
+				Custom String(" VIPs, colors & texts\n5. Restart the lobby"))), Null, Top, 41, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
 
-		"Credits"
-		Create HUD Text(All Players(All Teams), Null, Null, Custom String("\nTutorials coming soon to youtube.com/@gigamercy"), Top, 100, Color(White), Color(White), Color(White), Visible To And String, Default Visibility);
 	}
 }
 rule("———————————————————— Subroutines ——————————————————————")
@@ -4070,8 +4066,6 @@ rule("Subroutine InitializePlayerBot")
 		Event Player.Bot.Owner = Event Player;
 		Disable Nameplates(Event Player.Bot, Remove From Array(All Players(All Teams), Event Player));
 		Disable Built-In Game Mode Respawning(Event Player.Bot);
-		disabled Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
-		disabled Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
 		Set Player Variable(Event Player.Bot, Scale, 1);
 		Set Gravity(Event Player.Bot, 0);
 		Set Status(Event Player.Bot, Null, Invincible, 99999);
@@ -4485,8 +4479,6 @@ rule("Subroutine SetUpCheckpoint")
 		
 		"Set facing direction"
 		If(Global.Checkpoints[Event Player.Checkpoint][2]);
-			"TODO FIXME: Added this to see if face direction bug is fixed or not"
-			disabled Wait(0.016, Ignore Condition);
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
 			Skip If(Global.DebugMode < 2, 1);
 				Small Message(Event Player, Custom String("  Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
@@ -4578,9 +4570,8 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.PrimaryFire = Event Player.StartingAbilities[4];
 		Event Player.Ultimate = Event Player.StartingAbilities[5];
 		Call Subroutine(UpdateBotPosition);
-		disabled Skip If(Event Player.FreeMode, 1);
-			Start Rule(SetCurrentAbilities, Restart Rule);
-		
+		Start Rule(SetCurrentAbilities, Restart Rule); 
+
 		Skip If((Hero Of(Event Player) == Global.Settings[11] ) || Event Player.FreeMode, 1);
 			Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Event Player.Resetting = False;
@@ -5509,5 +5500,34 @@ rule("DEBUG: Load peak recording")
 		Log To Inspector(Custom String("Load Peak @ {0}", Server Load Peak));
 		Wait(1, Ignore Condition);
 		Loop If Condition Is True;
+	}
+}
+
+rule("Respawn missing bots for Giga editor (Rev 8 and lower)")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Entity Exists(Event Player.Bot) == True;
+	}
+
+	actions
+	{
+		Wait(1, Ignore Condition);
+		Wait Until(!Entity Exists(Event Player.Bot), 99999);
+		Small Message(Event Player, Custom String("Detected bot missing"));
+		Wait(0.500 + Slot Of(Event Player) * 0.200, Ignore Condition);
+		Event Player.Bot = Null;
+		Call Subroutine(InitializePlayerBot);
+		Call Subroutine(SetUpCheckpoint);
+		Small Message(Event Player, Custom String("Bot Restored"));
+		Loop;
 	}
 }
