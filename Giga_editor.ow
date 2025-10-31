@@ -3,7 +3,7 @@ settings
 	main
 	{
 		Mode Name: "Giga Parkour Editor"
-		Description: "<fgfb861cff>》This editor is in beta. Code: MEDQA《</fg>\n\n◈ Expect a few bugs here and there\n◈ Import maps from old Peace & Taw's!\n◈ Rules/Buttons/Menus are subject to change\n◈ Exported maps will always be compatible!\n◈ Feel free to test & play in public lobbies\n\n By GigaMercy\n\nReach out on the Mercy pk discord!\ndiscord.gg/mercyparkour\nBeta revision 8.1 (2025-04-08)" 
+		Description: "<fgfb861cff>》This editor is in beta. Code: MEDQA《</fg>\n\n◈ Expect a few bugs here and there\n◈ Import maps from old Peace & Taw's!\n◈ Rules/Buttons/Menus are subject to change\n◈ Exported maps will always be compatible!\n◈ Feel free to test & play in public lobbies\n\n By GigaMercy\n\nReach out on the Mercy pk discord!\ndiscord.gg/mercyparkour\nBeta revision 8.2 (2025-05-23)"
 		}
 
 	lobby
@@ -46,7 +46,7 @@ settings
 		{
 			enabled maps
 			{
-				Hanamura 0
+				Dorado 0
 			}
 		}
 
@@ -292,7 +292,7 @@ subroutines
 	33: GetEditMenuText
 	34: SavePlayerProgress
 }
-rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.1 ︾ ————————————————")
+rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.2 ︾ ————————————————")
 {
 	event
 	{
@@ -2265,7 +2265,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Array(Null, Global.EditModeDefaults[0], False, False, Global.EditModeDefaults[5], Global.EditModeDefaults[7], Global.EditModeDefaults[6] ? 1155 : 1154),
 			Array(Null, Global.EditModeDefaults[1]),
 			Array(Null, Global.EditModeDefaults[1], -1, True, False, False),
-			Array(Null, False, Global.EditModeDefaults[4], Global.EditModeDefaults[8], Global.EditModeDefaults[9], False, True),
+			Array(Null, False, Global.EditModeDefaults[4], Global.EditModeDefaults[8], Global.EditModeDefaults[9], Global.EditModeDefaults[10], Global.EditModeDefaults[11]), 
 			Array(Null, Global.EditModeDefaults[2]),
 			Array(Null, Global.EditModeDefaults[3], 10),
 			Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[0], Global.EditModeDefaults[0])
@@ -3971,7 +3971,8 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.EditModeDefaults[7] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Checkpoints - Free Walking"), False, 8);
 		Global.EditModeDefaults[8] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Hold crouch"), False, 9);
 		Global.EditModeDefaults[9] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Gravity"), True, 10);
-
+		Global.EditModeDefaults[10] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Require Resurrect"), False, 11);
+		Global.EditModeDefaults[11] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Refresh GA after Rez"), True, 12);
 		"------Troubleshooting------"
 		disabled End;
 		Global.ServerLoad = Workshop Setting Toggle(Custom String("Troubleshooting"), Custom String("Server Load Widget"), False, 99);	
