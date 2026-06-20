@@ -102,7 +102,7 @@ variables
 		35: Ultimate
 		36: Ability1
 		37: Ability2
-		38: PrimaryFire
+		38: GrappleRetraction
 		39: SecondaryFire
 		40: TempFreeMode
 		41: CallUpdate
@@ -592,7 +592,7 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 			Set Move Speed(Event Player, 100);
 			Set Jump Enabled(Event Player, True);
 		End;
-		Set Primary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.PrimaryFire || Event Player.FreeMode);
+		Set Primary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.GrappleRetraction || Event Player.FreeMode);
 		Set Secondary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.SecondaryFire > 0 || Event Player.FreeMode);
 		Call Subroutine(GetEditMenuTempData);
 	}
@@ -1357,6 +1357,45 @@ rule("——————————————————— Parkour Engine r
 	}
 }
 
+rule("Disable grapple retraction after leaving the ground if specified")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == False;
+		
+		// 1. Only enforce this if the current level explicitly bans retraction
+		Event Player.GrappleRetraction == False; 
+	}
+
+	actions
+	{
+		Wait Until(Is Firing Secondary(Event Player) == True && Is On Ground(Event Player) == False, 99999);
+
+		// overwatch provides no clean way to do this, so we have to disable *all* of the inputs related to grapple retraction
+		Set Ability 1 Enabled(Event Player, False);
+		Set Primary Fire Enabled(Event Player, False);
+		Set Jump Enabled(Event Player, False);
+		Disallow Button(Event Player, Button(Interact));
+
+		Wait Until(Is Firing Secondary(Event Player) == False, 99999);
+		
+		Set Ability 1 Enabled(Event Player, True);
+		Set Primary Fire Enabled(Event Player, True);
+		Set Jump Enabled(Event Player, True);
+		Allow Button(Event Player, Button(Interact));
+
+		Loop If Condition Is True;
+	}
+}
+
 rule("Detect Leaving Checkpoint")
 {
 	event
@@ -1407,7 +1446,6 @@ rule("Detect Landing Outside")
 		"Free walking"
 		Abort If(Global.Checkpoints[Event Player.Checkpoint][5]);
 		Skip If(Hero Of(Event Player) == Hero(Mercy), 2);
-		Wait Until(Is Using Ability 1(Event Player) == False, 9999);
 		Abort If(!Is On Ground(Event Player));
 		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
 		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && (Y Component Of(Position Of(
@@ -1808,43 +1846,13 @@ rule("Detect Using Ability 2")
 
 	actions
 	{
-		If(Hero Of(Event Player) != Hero(Mercy));
-			Log To Inspector(Custom String("{0} - Detected using Ability2", Event Player));
-			Skip If(Event Player.FreeMode || Event Player.StartingAbilities[2] >= 7, 1);
-			Event Player.Ability2 = Global.PlayerAbilityMode == 0 ? 0 : Event Player.Ability2 - 1;
-			Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) > 0 || Event Player.Resetting, 99999);
-			Abort If(Event Player.Resetting);
-			Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0 || Event Player.FreeMode);
-			Abort;
-		End;
-		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
-		Event Player.MercyRezTimer = 0;
-		"Start chasing mercy resurrect time"
-		Chase Player Variable At Rate(Event Player, MercyRezTimer, 99999, 1, None);
-		Wait Until(!Is Using Ability 2(Event Player), 1.750);
-		Stop Chasing Player Variable(Event Player, MercyRezTimer);
-		Event Player.Ability2 = 0;
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
-		Abort If(Event Player.FreeMode || Event Player.Finished);
-		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
-			"Why tho?"
-			disabled Resurrect(Event Player.Bot);
-			"// TODO: Rework this once we allow other bot ability rewards. ?___?"
-			Small Message(Event Player, Custom String("  {0} Resurrected!{1}", Global.Settings[10],
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6] ? Custom String(", {0}{1}{2} also refreshed",
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6] ? Ability Icon String(Hero Of(Event Player), Button(
-				Ability 1)) : Empty Array, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7] ? Ability Icon String(
-				Hero Of(Event Player), Button(Ability 2)) : Empty Array,
-				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8] ? Ability Icon String(Hero Of(Event Player), Button(
-				Ultimate)) : Empty Array) : Empty Array));
-			"Resurrection refresh GA"
-			Set Ability 1 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6]);
-			"Not implemented yet"
-			disabled Set Ability 2 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7]);
-			"Not implemented yet"
-			disabled Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][8]);
-			Event Player.BotCondition = True;
-		End;
+		Log To Inspector(Custom String("{0} - Detected using Ability2", Event Player));
+		Skip If(Event Player.FreeMode || Event Player.StartingAbilities[2] >= 7, 1);
+		Event Player.Ability2 = Global.PlayerAbilityMode == 0 ? 0 : Event Player.Ability2 - 1;
+		Wait Until(Ability Cooldown(Event Player, Button(Ability 2)) > 0 || Event Player.Resetting, 99999);
+		Abort If(Event Player.Resetting);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0 || Event Player.FreeMode);
+		Abort;
 	}
 }
 
@@ -2230,31 +2238,6 @@ rule("BunnyHop: Mercy SJ while touching ground resets bhop")
 	}
 }
 
-rule("Crouch disabled message")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Is Button Held(Event Player, Button(Crouch)) == True;
-		Event Player.Crouch == False;
-		Event Player.Finished == False;
-		Event Player.FreeMode == False;
-	}
-
-	actions
-	{
-		Small Message(Event Player, Custom String("  Crouch not allowed for this level"));
-		Wait(1, Ignore Condition);
-	}
-}
-
 rule("Restart match before game lasts for too long")
 {
 	event
@@ -2331,13 +2314,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)\n9: "
 		Global.MapDataSchema = Array(Array(2, 5, 2, 0, 1, 1, 8), Array(2, 5), Array(2, 5, 4, 1, 1, 1), Array(2, 5, 2, 1, 1, 1, 1), Array(2,
 			5), Array(2, 5, 3), Array(2, 5, 2, 5, 5));
-		"Single use abilities mode"
-		If(Global.PlayerAbilityMode == 0);
-			Global.MapDataSchema[7] = Array(1, Array(4, 1), Array(4, 1), Array(4, 1), 1, 1, 8);
-		Else;
-			"// TODO: Add selector for Disabled/Enabled/Infinite abilities"
-			Global.MapDataSchema[7] = Array(1, Array(4, 7), Array(4, 7), Array(4, 7), 1, 1, 8);
-		End;
+		Global.MapDataSchema[7] = Array(1, 1, 1, 8);
 		"Checkpoint Screen"
 		disabled Global.MenuOptions[0] = Custom String(
 			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nZ Limit Above:\nZ Limit Below:\nInf. Abilities:\nStarting abilities >>\n");
@@ -2360,11 +2337,8 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		Global.MenuOptions[5] = Custom String("Position:\nSize:\nStrength:\n");
 		"Teleports Screen"
 		Global.MenuOptions[6] = Custom String("Position:\nSize:\nTP Coords:\nLimit Above:\nLimit Below:\n");
-		"Level starting abilities Screen"
-		disabled Global.MenuOptions[7] = Custom String("Ultimate:\nAbility 1:\nAbility 2:\nSecondary Fire:\nSave changes <<\n");
 		"Default abilities text"
-		Global.MenuOptions[7] = Custom String(
-			"Crouch:\nAbility 1:\nAbility 2:\nSecondary Fire:\nPrimary Fire:\nUltimate:\nSave changes <<\n");
+		Global.MenuOptions[7] = Custom String("Piledrive:\nGrapple:\nRetraction:\nSave changes <<\n");
 		Global.ContextualMenuOptions[0] = Array(Custom String(">>dropdown here\n"));
 	}
 }
@@ -2564,7 +2538,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				"Save starting abilities"
 				If(Event Player.MenuPage == 0);
 					Event Player.Temp = Mapped Array(Event Player.EditTempObject, Current Array Element * Global.AbilityEncoding[Current Array Index]);
-					Event Player.Temp = Event Player.Temp[0] + Event Player.Temp[1] + Event Player.Temp[2] + Event Player.Temp[3] + Event Player.Temp[4] + Event Player.Temp[5];
+					Event Player.Temp = Event Player.Temp[0] + Event Player.Temp[1] + Event Player.Temp[2];
 					Call Subroutine(GetEditTempObject);
 					Event Player.EditTempObject[6] = Event Player.Temp;
 					Log To Inspector(Custom String("{0} - Compressed abilities: {1}", Event Player, Event Player.EditTempObject[6]));
@@ -3638,10 +3612,7 @@ rule("EditMode: Subroutine GetEditMenuText")
 	actions
 	{
 		If(Event Player.MenuPage == 7);
-			Event Player.EditMenuText = Custom String("Crouch:\nAbility 1 ({0}):\nAbility 2 ({1}):\n{2}", Ability Icon String(
-				Global.Settings[11], Button(Ability 1)), Ability Icon String(Global.Settings[11], Button(Ability 2)), Custom String(
-				"Secondary Fire ({0}):\nPrimary Fire:\nUltimate ({1}):\nSave changes <<\n", Ability Icon String(Global.Settings[11], Button(
-				Secondary Fire)), Ability Icon String(Global.Settings[11], Button(Ultimate))));
+			Event Player.EditMenuText = Custom String("Piledrive:\nGrapple:\nGrapple Retraction:\nSave changes <<");
 			Abort;
 		End;
 		Event Player.EditMenuText = Global.MenuOptions[Event Player.MenuPage];
@@ -3927,8 +3898,8 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                     ");
 		Global.PlayerData = Empty Array;
-		"V3 encoding"
-		Global.AbilityEncoding = Array(1, 2, 16, 128, 1024, 2048);
+		"V4 encoding - piledrive, grapple, grapple retraction"
+		Global.AbilityEncoding = Array(1, 2, 4);
 	}
 }
 
@@ -4340,8 +4311,6 @@ rule("Subroutine SetUpCheckpoint")
 		Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
 		Skip If(Event Player.Collision, 1);
 		Call Subroutine(TogglePlayerCollision);
-		Skip If(Event Player.Bot == Null || Global.Bots[Event Player.Checkpoint] == True, 1);
-		Small Message(Event Player, Custom String("  No {0} for this level", Hero Of(Event Player.Bot)));
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
 		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
 	}
@@ -4403,12 +4372,9 @@ rule("Subroutine ResetCheckpoint")
 			Event Player.BotCompletedSections[0] = !Global.EditMode;
 			Event Player.Bot.CurrentBotSection = 0;
 		End;
-		Event Player.Crouch = Event Player.StartingAbilities[0];
-		Event Player.Ability1 = Event Player.StartingAbilities[1];
-		Event Player.Ability2 = Event Player.StartingAbilities[2];
-		Event Player.SecondaryFire = Event Player.StartingAbilities[3];
-		Event Player.PrimaryFire = Event Player.StartingAbilities[4];
-		Event Player.Ultimate = Event Player.StartingAbilities[5];
+		Event Player.Crouch            = Event Player.StartingAbilities[0];
+		Event Player.SecondaryFire     = Event Player.StartingAbilities[1];
+		Event Player.GrappleRetraction = Event Player.StartingAbilities[2];
 		Call Subroutine(UpdateBotPosition);
 		Start Rule(SetCurrentAbilities, Restart Rule);
 		Skip If(Hero Of(Event Player) == Global.Settings[11] || Event Player.FreeMode, 1);
@@ -4537,15 +4503,7 @@ rule("Subroutine SetCurrentAbilities")
 		Abort If(Event Player.FreeMode || Event Player.Finished);
 		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
 		Set Crouch Enabled(Event Player, Event Player.Crouch);
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
-		Set Ability 2 Enabled(Event Player, Event Player.Ability2 > 0);
-		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
-		Wait(0.032, Ignore Condition);
-		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
-		Abort If(Event Player.MenuOpen);
-		Set Primary Fire Enabled(Event Player, Event Player.PrimaryFire);
-		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire > 0);
-		"// TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
+		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire);
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
 		Else;
@@ -4566,13 +4524,8 @@ rule("Subroutine EnableAllAbilities")
 	{
 		Log To Inspector(Custom String("{0} - Enabled All Abilities", Event Player));
 		Set Crouch Enabled(Event Player, True);
-		Set Ultimate Ability Enabled(Event Player, True);
-		Set Ability 1 Enabled(Event Player, True);
-		Set Ability 2 Enabled(Event Player, True);
 		Allow Button(Event Player, Button(Crouch));
-		Set Primary Fire Enabled(Event Player, True);
 		Set Secondary Fire Enabled(Event Player, True);
-		Set Reload Enabled(Event Player, True);
 	}
 }
 
@@ -4681,45 +4634,16 @@ rule("Subroutine GetStartingAbilities")
 
 	actions
 	{
-		"Experimental ability encoding with ability charges support V2"
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][6];
-		"TODO: Figure out if performance is an issue in lobbies"
-		disabled Abort If(Event Player.StartingAbilities[6] == Event Player.AbilitiesTemp);
 		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
-		"OLD METHOD: Crouch at bit 2^0, hard to enforce type values"
-		disabled Event Player.StartingAbilities = Mapped Array(Global.AbilityEncoding, Round To Integer(Event Player.AbilitiesTemp % Array(2, 16,
-			128, 1024, 2048, 4096)[Current Array Index] / Current Array Element, Down));
-		Event Player.StartingAbilities = Mapped Array(Array(2, 16, 128, 1024, 2048, 4096),
-			Current Array Index > 0 && Current Array Index < 4 ? Round To Integer(
-			Event Player.AbilitiesTemp % Current Array Element / Global.AbilityEncoding[Current Array Index], Down)
-			: Event Player.AbilitiesTemp % Current Array Element >= Global.AbilityEncoding[Current Array Index]);
+		Event Player.StartingAbilities = Mapped Array(
+			Array(2, 4, 8),
+			Event Player.AbilitiesTemp % Current Array Element >= Global.AbilityEncoding[Current Array Index]
+		);
 		Abort If(Event Player.MenuPage == 7);
-		"Mercy & Kiriko parkour have abilities that depend on existing bot"
-		If(Array Contains(Array(Hero(Mercy), Hero(Kiriko)), Hero Of(Event Player)));
-			"Remove first GA if first bot depends on a refresh orb"
-			If(Global.RefreshOrbs[Event Player.Checkpoint] == True && Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint],
-				Current Array Element[2] == 0));
-				Event Player.StartingAbilities[1] = 0;
-			Else If(Count Of(Global.Bots[Event Player.Checkpoint]) < 1);
-				"Disable GA if theres no bot on the first part of the level. TODO: add a check to see if bot is ally or enemy"
-				Event Player.StartingAbilities[1] = 0;
-			End;
-			Log To Inspector(Custom String("{0} - Applied bot abilities (mercy/kiriko)", Event Player));
-			Abort;
-		End;
 		Event Player.StartingAbilities[6] = Event Player.AbilitiesTemp;
+
 		Log To Inspector(Custom String("{0} - Finished ability decompression", Event Player));
-		disabled For Player Variable(Event Player, AbilitiesI, 7, -1, -1);
-		"Abilities with only True/False values:\n0: Crouch\n1: Jump\n2: Melee\n3: Ultimate"
-		disabled If(Event Player.AbilitiesI < 4);
-		disabled Event Player.StartingAbilities[Event Player.AbilitiesI] = Event Player.AbilitiesTemp >= Global.AbilityEncoding[Event Player.AbilitiesI];
-		"Rest of abilities that allow setting multiple charges"
-		disabled Else;
-		disabled Event Player.StartingAbilities[Event Player.AbilitiesI] = Round To Integer(
-			Event Player.AbilitiesTemp / Global.AbilityEncoding[Event Player.AbilitiesI], Down);
-		disabled End;
-		disabled Event Player.AbilitiesTemp %= Global.AbilityEncoding[Event Player.AbilitiesI];
-		disabled End;
 	}
 }
 
