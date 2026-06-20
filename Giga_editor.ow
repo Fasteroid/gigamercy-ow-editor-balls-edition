@@ -686,7 +686,7 @@ rule("Press [Reload] to reset current checkpoint")
 	{
 		Is Dummy Bot(Event Player) == False;
 		Is Button Held(Event Player, Button(Reload)) == True;
-		Event Player.Finished == False;
+		Event Player.FreeMode == False;
 	}
 
 	actions
