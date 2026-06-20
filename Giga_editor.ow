@@ -4526,6 +4526,11 @@ rule("Subroutine EnableAllAbilities")
 		Set Crouch Enabled(Event Player, True);
 		Allow Button(Event Player, Button(Crouch));
 		Set Secondary Fire Enabled(Event Player, True);
+
+		Set Ability 1 Enabled(Event Player, True);
+		Set Primary Fire Enabled(Event Player, True);
+		Set Jump Enabled(Event Player, True);
+		Allow Button(Event Player, Button(Interact));
 	}
 }
 
