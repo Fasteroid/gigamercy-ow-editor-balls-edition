@@ -1477,13 +1477,15 @@ rule("Detect Landing on Goal or Teleport")
 		Event Player.Finished == False;
 		Event Player.FreeMode == False;
 		Event Player.LeftCheckpoint == True;
+		"Don't do an invalid access in edit mode"
+		Event Player.Checkpoint + 1 != Count Of(Global.Checkpoints);
 		"// TODO: Get OnGround flag from current goal in case the level has a teleport"
-		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player))
-			|| !Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
+		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) || !Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
 		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
-		(Y Component Of(Position Of(Event Player)) <= Y Component Of(Event Player.GoalCoords)
-			+ Event Player.GoalThresholds[0] && Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords)
-			- Event Player.GoalThresholds[1]) == True;
+		(
+			Y Component Of( Position Of(Event Player) ) <= Y Component Of( Event Player.GoalCoords ) + Event Player.GoalThresholds[0] && 
+			Y Component Of(Position Of(Event Player) ) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]
+		) == True;
 	}
 
 	actions
