@@ -4315,6 +4315,8 @@ rule("Subroutine SetUpCheckpoint")
 		Call Subroutine(TogglePlayerCollision);
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
 		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
+		Skip If(Event Player.GrappleRetraction == False, 1);
+		Small Message(Event Player, Custom String("  This level allows grapple retraction"));
 	}
 }
 
