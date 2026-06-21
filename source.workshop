@@ -1513,7 +1513,9 @@ rule("Detect Landing on Goal or Teleport")
 			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
-				Event Player.FreeMode = True;
+				If( Global.EditMode == False );
+					Event Player.FreeMode = True;
+				End;
 				"// TODO: Consider not duplicating this block if possible"
 				If(Global.Teleports[Event Player.Checkpoint - 1]);
 					Call Subroutine(TeleportToCurrentCheckpoint);
@@ -1522,20 +1524,19 @@ rule("Detect Landing on Goal or Teleport")
 				disabled Call Subroutine(EnableAllAbilities);
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
 				"// TODO: Set a color for finish explosion in config"
-				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0],
-					Global.Checkpoints[Event Player.Checkpoint][1]);
+				Play Effect(
+					All Players(All Teams),
+					Good Pickup Effect, 
+					Color(Aqua), 
+					Global.Checkpoints[Event Player.Checkpoint][0],
+					Global.Checkpoints[Event Player.Checkpoint][1]
+				);
 				"disabled to avoid the 0s scoreboard exploit"
 				disabled Wait(0.100, Ignore Condition);
 				Skip If(Event Player.Cheat || Global.EditMode, 2);
 				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.Nickname,
 					Event Player.CurrentRunTime));
 				Call Subroutine(PlayerCompletedRun);
-			"Player arrived at a teleport"
-			Else If(Global.Teleports[Event Player.Checkpoint - 1]);
-				"// TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
-				disabled Call Subroutine(TeleportToCurrentCheckpoint);
-				Call Subroutine(CancelMomentum);
-				Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
 			End;
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			Call Subroutine(SetUpCheckpoint);
@@ -4277,11 +4278,11 @@ rule("Subroutine SetUpCheckpoint")
 	{
 		Log To Inspector(Custom String("{0} - SetUpCheckpoint {1}", Event Player, Event Player.Checkpoint));
 		disabled Skip If(Global.EditMode, 1);
-		Event Player.Finished = Count Of(Global.Checkpoints) == 0 || Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1;
+		Event Player.Finished = ( Count Of(Global.Checkpoints) == 0 || Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1 ) && Global.EditMode == False;
 		Skip If(!Event Player.Finished, 1);
 		Event Player.FreeMode = True;
 		Call Subroutine(GetGoalData);
-		Skip If(!Global.EditMode, 9);
+		disabled Skip If(!Global.EditMode, 9);
 		If(Event Player.ObjectMoveGhost);
 			Destroy Effect(Event Player.ObjectMoveGhost[2]);
 			Wait(0.016, Ignore Condition);
@@ -4307,8 +4308,7 @@ rule("Subroutine SetUpCheckpoint")
 		"Display current level Big message"
 		Big Message(Event Player, Global.BigMessages[Event Player.Checkpoint]);
 		"// TODO: Consider removing small messages as they are hard to notice"
-		Skip If(String Length(Global.SmallMessages[Event Player.Checkpoint]) == 0 || Global.SmallMessages[Event Player.Checkpoint] == Null,
-			1);
+		Skip If(String Length(Global.SmallMessages[Event Player.Checkpoint]) == 0 || Global.SmallMessages[Event Player.Checkpoint] == Null, 1);
 		"Display current level Small message"
 		Small Message(Event Player, Global.SmallMessages[Event Player.Checkpoint]);
 		Skip If(Event Player.Collision, 1);
@@ -4378,7 +4378,7 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.SecondaryFire     = Event Player.StartingAbilities[1];
 		Event Player.GrappleRetraction = Event Player.StartingAbilities[2];
 		Call Subroutine(UpdateBotPosition);
-		Start Rule(SetCurrentAbilities, Restart Rule);
+		Call Subroutine(SetCurrentAbilities);
 		Skip If(Hero Of(Event Player) == Global.Settings[11] || Event Player.FreeMode, 1);
 		Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
 		Event Player.Resetting = False;
