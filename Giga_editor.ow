@@ -143,6 +143,7 @@ variables
 		76: AbilitiesI
 		77: EditMenuText
 		79: HideSidebarControls
+		80: FireballFreewalk
 }
 
 subroutines
@@ -1442,6 +1443,8 @@ rule("Detect Landing Outside")
 	{
 		"Free walking"
 		Abort If(Global.Checkpoints[Event Player.Checkpoint][5]);
+		"Fireball Free Walking"
+		Abort If(Event Player.FireballFreewalk == True && Speed Of(Event Player) >= 15);
 		Skip If(Hero Of(Event Player) == Hero(Mercy), 2);
 		Abort If(!Is On Ground(Event Player));
 		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
@@ -2312,12 +2315,16 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		Global.MenuObjectNames = Array(Custom String("Checkpoint"), Custom String("Orb"), Custom String("Refresh Orb"), Custom String(
 			"Bot"), Custom String("AntiOrb"), Custom String("Cloud"), Custom String("Teleport"));
 		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)\n9: "
-		Global.MapDataSchema = Array(Array(2, 5, 2, 0, 1, 1, 8), Array(2, 5), Array(2, 5, 4, 1, 1, 1), Array(2, 5, 2, 1, 1, 1, 1), Array(2,
-			5), Array(2, 5, 3), Array(2, 5, 2, 5, 5));
-		Global.MapDataSchema[7] = Array(1, 1, 1, 8);
-		"Checkpoint Screen"
-		disabled Global.MenuOptions[0] = Custom String(
-			"Position:\nSize:\nFacing:\nAllow Crouch:\nRequire ground:\nZ Limit Above:\nZ Limit Below:\nInf. Abilities:\nStarting abilities >>\n");
+		Global.MapDataSchema = Array(
+			Array(2, 5, 2, 0, 1, 1, 8), 
+			Array(2, 5),
+			Array(2, 5, 4, 1, 1, 1), 
+			Array(2, 5, 2, 1, 1, 1, 1), 
+			Array(2, 5), 
+			Array(2, 5, 3), 
+			Array(2, 5, 2, 5, 5)
+		);
+		Global.MapDataSchema[7] = Array(1, 1, 1, 1, 8);
 		"TESTING"
 		Global.MenuOptions[0] = Custom String("Position:\nSize:\nFacing Direction:\n--Reserved--\nLand on ground:\nFree Walking:\n");
 		"Orbs Screen"
@@ -2327,10 +2334,6 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		"Bots Screen"
 		Global.MenuOptions[3] = Custom String(
 			"Position:\n--Reserved--:\nFacing:\nHold Crouch:\nGravity:\nResurrect:\nRefresh Ability 1:\n");
-		"TODO: Implement bot flags, then we can reenable this"
-		disabled Global.MenuOptions[3] = Custom String(
-			"Position:\nFacing:\nCrouch:\nGravity:\nRequire Kill/Rez:\nRefresh GA:\nUse Ability1:\nUse Ability 2:\nUse Ult:\nShoot:\nHold:\n{0}",
-			Custom String("-----Level Overrides-----\nScale:\nHealth:\n"));
 		"AntiOrbs Screen"
 		Global.MenuOptions[4] = Custom String("Position:\nSize:\n");
 		"Clouds Screen"
@@ -2338,7 +2341,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		"Teleports Screen"
 		Global.MenuOptions[6] = Custom String("Position:\nSize:\nTP Coords:\nLimit Above:\nLimit Below:\n");
 		"Default abilities text"
-		Global.MenuOptions[7] = Custom String("Piledrive:\nGrapple:\nRetraction:\nSave changes <<\n");
+		Global.MenuOptions[7] = Custom String("Piledrive:\nGrapple:\nRetraction:\nFireball Freewalk:\nSave changes <<\n");
 		Global.ContextualMenuOptions[0] = Array(Custom String(">>dropdown here\n"));
 	}
 }
@@ -2538,7 +2541,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				"Save starting abilities"
 				If(Event Player.MenuPage == 0);
 					Event Player.Temp = Mapped Array(Event Player.EditTempObject, Current Array Element * Global.AbilityEncoding[Current Array Index]);
-					Event Player.Temp = Event Player.Temp[0] + Event Player.Temp[1] + Event Player.Temp[2];
+					Event Player.Temp = Event Player.Temp[0] + Event Player.Temp[1] + Event Player.Temp[2] + Event Player.Temp[3];
 					Call Subroutine(GetEditTempObject);
 					Event Player.EditTempObject[6] = Event Player.Temp;
 					Log To Inspector(Custom String("{0} - Compressed abilities: {1}", Event Player, Event Player.EditTempObject[6]));
@@ -3612,7 +3615,7 @@ rule("EditMode: Subroutine GetEditMenuText")
 	actions
 	{
 		If(Event Player.MenuPage == 7);
-			Event Player.EditMenuText = Custom String("Piledrive:\nGrapple:\nGrapple Retraction:\nSave changes <<");
+			Event Player.EditMenuText = Global.MenuOptions[7];
 			Abort;
 		End;
 		Event Player.EditMenuText = Global.MenuOptions[Event Player.MenuPage];
@@ -3898,8 +3901,8 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                     ");
 		Global.PlayerData = Empty Array;
-		"V4 encoding - piledrive, grapple, grapple retraction"
-		Global.AbilityEncoding = Array(1, 2, 4);
+		"V4 encoding - piledrive, grapple, grapple retraction, fireball freewalk"
+		Global.AbilityEncoding = Array(1, 2, 4, 8);
 	}
 }
 
@@ -4314,13 +4317,15 @@ rule("Subroutine SetUpCheckpoint")
 		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
 		Skip If(Event Player.GrappleRetraction == False, 1);
 		Small Message(Event Player, Custom String("  This level allows grapple retraction"));
+		Skip If(Event Player.FireballFreewalk == False, 1);
+		Small Message(Event Player, Custom String("  You may touch the ground in fireball state for this level"));
 	}
 }
 
 rule("Subroutine ResetWithMistake")
 {
 	event
-	{
+	{	
 		Subroutine;
 		ResetWithMistake;
 	}
@@ -4355,8 +4360,7 @@ rule("Subroutine ResetCheckpoint")
 			Event Player.CurrentRunTime = 0;
 		End;
 		"Initialize all Orbs on this level to not grabbed"
-		Event Player.GrabbedOrbs = Count Of(Global.Orbs[Event Player.Checkpoint]) > 0 ? Mapped Array(Global.Orbs[Event Player.Checkpoint],
-			False) : Empty Array;
+		Event Player.GrabbedOrbs = Count Of(Global.Orbs[Event Player.Checkpoint]) > 0 ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
 		"Initialize all RefreshOrbs on this level to not grabbed"
 		Event Player.GrabbedRefreshOrbs = Count Of(Global.RefreshOrbs[Event Player.Checkpoint]) > 0 ? Mapped Array(
 			Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
@@ -4376,6 +4380,7 @@ rule("Subroutine ResetCheckpoint")
 		Event Player.Crouch            = Event Player.StartingAbilities[0];
 		Event Player.SecondaryFire     = Event Player.StartingAbilities[1];
 		Event Player.GrappleRetraction = Event Player.StartingAbilities[2];
+		Event Player.FireballFreewalk  = Event Player.StartingAbilities[3];
 		Call Subroutine(UpdateBotPosition);
 		Call Subroutine(SetCurrentAbilities);
 		Skip If(Hero Of(Event Player) == Global.Settings[11] || Event Player.FreeMode, 1);
@@ -4676,7 +4681,7 @@ rule("Subroutine GetStartingAbilities")
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][6];
 		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
 		Event Player.StartingAbilities = Mapped Array(
-			Array(2, 4, 8),
+			Array(2, 4, 8, 16),
 			Event Player.AbilitiesTemp % Current Array Element >= Global.AbilityEncoding[Current Array Index]
 		);
 		Abort If(Event Player.MenuPage == 7);
