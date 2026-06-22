@@ -182,6 +182,8 @@ subroutines
 	32: TogglePlayerCollision
 	33: GetEditMenuText
 	34: SavePlayerProgress
+	35: DisableRetraction
+	36: EnableRetraction
 }
 
 rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.3 ︾ ————————————————")
