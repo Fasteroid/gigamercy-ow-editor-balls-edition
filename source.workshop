@@ -262,8 +262,6 @@ rule("◈ Customize colors and texts")
 	{
 		"------Colors------"
 		disabled End;
-		"Start Checkpoint Ring Color. Accepts multiple Colors"
-		Global.Settings[0] = Array(Color(Red));
 		"Goal Checkpoint Ring Color. Accepts multiple colors"
 		Global.Settings[5] = Array(Color(Aqua));
 		"Goal Checkpoint text Color"
@@ -283,14 +281,22 @@ rule("◈ Customize colors and texts")
 		"Jump Cloud Color"
 		Global.Settings[3] = Color(Red);
 		"Scoreboard Top 5 colors. Accepts multiple colors"
-		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255),
-			Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255));
+		Global.Top5Colors = Array(
+			Custom Color(255, 215, 0, 255), 
+			Custom Color(220, 223, 227, 255), 
+			Custom Color(191, 173, 111, 255),
+			Custom Color(192, 192, 192, 255), 
+			Custom Color(128, 138, 135, 255)
+		);
 		"Default Player nameplate color"
 		Global.Settings[14] = Color(White);
 		"Scoreboard title color"
 		Global.Settings[15] = Color(Red);
 		"Goal effect color. Sparkles and cloud accept multiple colors"
-		Global.Settings[16] = Array(Color(Red), Color(Yellow));
+		Global.Settings[16] = Array(
+			Color(Red), 
+			Color(Yellow)
+		);
 		"Map title color. Disable this line if you want rainbow effect"
 		disabled Global.Settings[18] = Color(Red);
 		"Crouch disabled bot icon/outline color"
@@ -979,43 +985,69 @@ rule("Create Start and Finish Checkpoint rings")
 	actions
 	{
 		Wait Until(Global.InitDone, 99999);
-		"Create starting checkpoint rings"
-		For Player Variable(Event Player, j, 0, Count Of(Global.Settings[0]), 1);
-			Create Effect(Global.Checkpoints[Event Player.Checkpoint][5] ? Null : Event Player, Ring, Global.Settings[0][Evaluate Once(
-				Event Player.j)], Global.Checkpoints[Event Player.Checkpoint][0],
-				Global.Checkpoints[Event Player.Checkpoint][1] - Evaluate Once(Event Player.j * 0.200), Visible To Position Radius and Color);
-		End;
+
+		"Create starting checkpoint rings.  Use various colors depending on level constraints."
+		Create Effect(
+			Global.Checkpoints[Event Player.Checkpoint][5] ? Null : Event Player, 
+			Ring, 
+			Event Player.SecondaryFire == True ? 
+				Event Player.FireballFreewalk == True ?  
+					Color(Purple)
+					:
+					Color(White)
+				:
+				Event Player.Crouch == True ?
+					Color(Orange)
+					:
+					Color(Red)
+			, 
+			Global.Checkpoints[Event Player.Checkpoint][0],
+			Global.Checkpoints[Event Player.Checkpoint][1], 
+			Visible To Position Radius and Color
+		);
+
 		"Create goal checkpoint rings"
-		For Player Variable(Event Player, j, 0, Count Of(Global.Settings[5]), 1);
-			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Ring, Global.Settings[5][Evaluate Once(
-				Event Player.j)], Event Player.GoalCoords, Event Player.GoalRadius - Evaluate Once(Event Player.j * 0.200),
-				Visible To Position Radius and Color);
-		End;
+		Create Effect(
+			Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, 
+			Ring, 
+			Color(Aqua), 
+			Event Player.GoalCoords, 
+			Event Player.GoalRadius,
+			Visible To Position Radius and Color
+		);
+
+		"Create Goal checkpoint light shaft"
+		Create Effect(
+			Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, 
+			Light Shaft, 
+			Color(White), 
+			Event Player.GoalCoords, 
+			Event Player.GoalRadius, 
+			Visible To Position Radius and Color
+		);
+
+
 		"Create Goal checkpoint Icon"
-		Create Icon(Event Player.GoalCoords ? Event Player : Null, Event Player.GoalCoords + Vector(0, 1.500, 0), Flag,
-			Visible To Position and Color, Global.Settings[21], True);
-		"(Alternative) Ability icon on goal"
-		disabled Create In-World Text(
-			Global.Checkpoints[Event Player.Checkpoint + 1] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null,
-			Ability Icon String(Hero(Brigitte), Button(Ultimate)), Event Player.GoalCoords + Vector(0, 1.500, 0), 2, Do Not Clip,
-			Visible To and Position, Global.Settings[21], Default Visibility);
+		Create Icon(
+			Event Player.GoalCoords ? Event Player : Null, 
+			Event Player.GoalCoords + Vector(0, 1.500, 0), 
+			Flag,
+			Visible To Position and Color, 
+			Global.Settings[21],
+			True
+		);
 		"Create Goal checkpoint Text"
-		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null,
-			Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], Event Player.GoalCoords + Vector(0, 0.500,
-			0), 1.500, Do Not Clip, Visible To Position and String, Global.Settings[6], Default Visibility);
-		"Create Goal checkpoint effects. Light shafts dont stack"
-		For Player Variable(Event Player, j, 0, Count Of(Global.Settings[16]), 1);
-			Skip(Global.Settings[22] * 2);
-			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Light Shaft, Evaluate Once(
-				Global.Settings[16][Event Player.j]), Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
-			Abort;
-			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Sparkles, Evaluate Once(
-				Global.Settings[16][Event Player.j]), Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
-			Continue;
-			Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Cloud, Evaluate Once(
-				Global.Settings[16][Event Player.j]), Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
-			Continue;
-		End;
+		Create In-World Text(
+			Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null,
+			Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], 
+			Event Player.GoalCoords + Vector(0, 0.500, 0), 
+			1.500, 
+			Do Not Clip, 
+			Visible To Position and String, 
+			Global.Settings[6], 
+			Default Visibility
+		);
+
 	}
 }
 
@@ -3328,19 +3360,6 @@ rule("EditMode: Subroutine CreatePlayerEditModeHUD")
 			Global.Checkpoints[Event Player.Checkpoint][8], Distance Between(Event Player,
 			Global.Checkpoints[Event Player.Checkpoint][0]))))), Global.Checkpoints[Event Player.Checkpoint][0], 1, Do Not Clip,
 			Visible To Position and String, Color(Green), Default Visibility);
-		"Create Bot text TODO: Replace with contextual menu"
-		disabled Create In-World Text(
-			Event Player.ObjectType == 3 && Global.Bots[Event Player.Checkpoint] && !Event Player.MenuOpen && !Event Player.Preferences[0] ? Event Player : Null,
-			Custom String("{0}\nFacing: {1}\n{2}", Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0],
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2] == Null ? Custom String("Look At Player")
-			: Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2], Custom String("Crouch: {0}\nGravity: {1}\n{2}",
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3],
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4], Custom String(
-			"Resurrect: {0}\nRefresh GA after Rez: {1}\nCurrentPos: {2}",
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6], Position Of(Event Player.Bot)))),
-			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0, 1, 0), 1, Do Not Clip,
-			Visible To Position and String, Color(Aqua), Default Visibility);
 		"Debug landing threshold and goal condition"
 		Create HUD Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}", X Component Of(Position Of(Event Player)),
 			Y Component Of(Position Of(Event Player)), Z Component Of(Position Of(Event Player))), Top, 0, Null, Null, Color(White),
@@ -3839,8 +3858,6 @@ rule("Subroutine InitializeGlobalVariables")
 			"Auto"), Custom String("Orb"), Custom String("Sphere")), 0);
 		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(
 			Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 1);
-		Global.Settings[22] = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Goal Checkpoint Effect"), 0, Array(
-			Custom String("Light Shaft"), Custom String("Sparkles"), Custom String("Clouds")), 2);
 		"------Gameplay Options------"
 		disabled End;
 		"Player Hero"
