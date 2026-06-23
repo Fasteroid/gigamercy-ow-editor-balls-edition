@@ -1469,14 +1469,13 @@ rule("Detect Landing Outside")
 		Event Player.Finished == False;
 		Event Player.LeftCheckpoint == True;
 		Is On Ground(Event Player) == True;
+		( Event Player.FireballFreewalk == False || (Event Player.FireballFreewalk == True && Speed Of(Event Player) < 15) ) == True;
 	}
 
 	actions
 	{
 		"Free walking"
 		Abort If(Global.Checkpoints[Event Player.Checkpoint][5]);
-		"Fireball Free Walking"
-		Abort If(Event Player.FireballFreewalk == True && Speed Of(Event Player) >= 15);
 		Skip If(Hero Of(Event Player) == Hero(Mercy), 2);
 		Abort If(!Is On Ground(Event Player));
 		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
