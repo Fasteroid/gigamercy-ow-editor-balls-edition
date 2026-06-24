@@ -267,10 +267,6 @@ rule("◈ Customize colors and texts")
 		Global.Settings[6] = Color(White);
 		"Teleport pad effect color"
 		Global.Settings[9] = Color(Orange);
-		"Orb color"
-		Global.Settings[1] = Color(Orange);
-		"Orb Icon Color"
-		Global.Settings[12] = Color(Orange);
 		"Refresh Orb Color"
 		Global.Settings[4] = Color(Violet);
 		"Refresh Orb Icon Color"
@@ -291,11 +287,6 @@ rule("◈ Customize colors and texts")
 		Global.Settings[14] = Color(White);
 		"Scoreboard title color"
 		Global.Settings[15] = Color(Red);
-		"Goal effect color. Sparkles and cloud accept multiple colors"
-		Global.Settings[16] = Array(
-			Color(Red), 
-			Color(Yellow)
-		);
 		"Map title color. Disable this line if you want rainbow effect"
 		disabled Global.Settings[18] = Color(Red);
 		"Crouch disabled bot icon/outline color"
@@ -1079,7 +1070,7 @@ rule("Create/Destroy current level Orbs")
 			Create Effect(
 				Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, 
 				Orb,
-				Global.Settings[1], 
+				Color(Orange), 
 				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0],
 				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1],
 				Visible To Position Radius and Color
@@ -1098,7 +1089,7 @@ rule("Create/Destroy current level Orbs")
 				), 
 				Arrow: Down,
 				Visible To and Position,
-				Global.Settings[12], 
+				Color(Yellow), 
 				True
 			);
 			"Save reference for last created icon to player variable"
@@ -1524,7 +1515,7 @@ rule("Detect Landing on Goal or Teleport")
 	actions
 	{
 		If(Is True For Any(Event Player.GrabbedOrbs, Current Array Element == False) && Count Of(Event Player.GrabbedOrbs) > 0);
-			Small Message(Event Player, Custom String("  The Junker Queen demands riches. Collect all coins!"));
+			Small Message(Event Player, Custom String("  The Junker Queen demands riches. Collect all the coins!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && Count Of(
@@ -2330,7 +2321,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Array(Null, Global.EditModeDefaults[3], 10), Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[0],
 			Global.EditModeDefaults[0]));
 		"TODO: Make Palette menu for inserting different types of objects"
-		Global.PaletteMenu = Array(Array(Custom String("     {0}\nCheckpoints", Icon String(Flag)), Custom String("  {0}\nOrbs",
+		Global.PaletteMenu = Array(Array(Custom String("     {0}\nCheckpoints", Icon String(Flag)), Custom String("  {0}\nCoins",
 			Icon String(Circle)), Custom String("     {0}\nRefresh Orbs", Icon String(Recycle)), Custom String("  {0}\nBots",
 			Ability Icon String(Hero(Ashe), Button(Ultimate))), Custom String("    {0}\nAntiOrbs", Icon String(No)), Custom String(
 			"   {0}\nClouds", Ability Icon String(Hero(Baptiste), Button(Crouch))), Custom String("    {0}\nTeleports", Icon String(
