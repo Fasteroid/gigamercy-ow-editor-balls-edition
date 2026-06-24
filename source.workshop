@@ -46,7 +46,6 @@ variables
 		42: SmallMessages
 		43: PeaceOrTawsVar
 		44: Scoreboard
-		45: OrbStyle
 		46: Top5Colors
 		47: Top5Prefix
 		48: EnPadding
@@ -269,9 +268,9 @@ rule("◈ Customize colors and texts")
 		"Teleport pad effect color"
 		Global.Settings[9] = Color(Orange);
 		"Orb color"
-		Global.Settings[1] = Color(Red);
+		Global.Settings[1] = Color(Orange);
 		"Orb Icon Color"
-		Global.Settings[12] = Color(Red);
+		Global.Settings[12] = Color(Orange);
 		"Refresh Orb Color"
 		Global.Settings[4] = Color(Violet);
 		"Refresh Orb Icon Color"
@@ -1077,26 +1076,31 @@ rule("Create/Destroy current level Orbs")
 			Modify Player Variable(Event Player, OrbIcons, Remove From Array By Index, Count Of(Event Player.OrbIcons) - 1);
 		Else;
 			"Option: Create orb effect"
-			If(Global.OrbStyle == 1);
-				Create Effect(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Orb,
-					Global.Settings[1], Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0],
-					Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1],
-					Visible To Position Radius and Color);
-			"Option: Create sphere effect"
-			Else;
-				Create Effect(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere,
-					Global.Settings[1], Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0],
-					Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1],
-					Visible To Position Radius and Color);
-			End;
+			Create Effect(
+				Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, 
+				Orb,
+				Global.Settings[1], 
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0],
+				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1],
+				Visible To Position Radius and Color
+			);
+
 			"Save reference for last created orb to player variable"
 			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
 			Wait(0.016, Ignore Condition);
 			"Action: Create orb icon"
-			Create Icon(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbIcons))] ? Null : Event Player,
-				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] + Vector(0,
-				Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1] / 2, 0), Halo, Visible To and Position,
-				Global.Settings[12], True);
+			Create Icon(
+				Event Player.GrabbedOrbs[ Evaluate Once(Count Of(Event Player.OrbIcons)) ] ? Null : Event Player,
+				Global.Orbs[Event Player.Checkpoint][ Evaluate Once(Count Of(Event Player.OrbIcons)) ][0] + Vector(
+					0,
+					Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1] / 2, 
+					0
+				), 
+				Arrow: Down,
+				Visible To and Position,
+				Global.Settings[12], 
+				True
+			);
 			"Save reference for last created icon to player variable"
 			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
 		End;
@@ -1520,7 +1524,7 @@ rule("Detect Landing on Goal or Teleport")
 	actions
 	{
 		If(Is True For Any(Event Player.GrabbedOrbs, Current Array Element == False) && Count Of(Event Player.GrabbedOrbs) > 0);
-			Small Message(Event Player, Custom String("  You need to grab all orbs!"));
+			Small Message(Event Player, Custom String("  The Junker Queen demands riches. Collect all coins!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && Count Of(
@@ -1602,13 +1606,10 @@ rule("Detect Grabbing Orb v2")
 		disabled Log To Inspector(Custom String("{0} - Grabbed Orb", Event Player));
 		If(Event Player.BotCondition);
 			Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint],
-				Event Player.GrabbedOrbs[Current Array Index] || Distance Between(Position Of(Event Player) + Vector(0, 0.700, 0),
-				Current Array Element[0]) <= 0.700 + Current Array Element[1] || Distance Between(Eye Position(Event Player),
-				Current Array Element[0]) <= 0.700 + Current Array Element[1] ? True : False);
-			Small Message(Event Player, Custom String("  Orb Grab! {0}/{1}", Count Of(Filtered Array(Append To Array(Event Player.GrabbedOrbs,
-				Global.RequireGrabAllRefreshOrbs ? Event Player.GrabbedRefreshOrbs : Empty Array), Current Array Element == True)), Count Of(
-				Event Player.GrabbedOrbs) + (Global.RequireGrabAllRefreshOrbs ? Count Of(Event Player.GrabbedRefreshOrbs) : 0)));
-			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+			Event Player.GrabbedOrbs[Current Array Index] || Distance Between(Position Of(Event Player) + Vector(0, 0.700, 0),
+			Current Array Element[0]) <= 0.700 + Current Array Element[1] || Distance Between(Eye Position(Event Player),
+			Current Array Element[0]) <= 0.700 + Current Array Element[1] ? True : False);
+			Play Effect(Event Player, Brigitte Repair Pack Armor Sound, Null, Event Player, 100);
 		Else;
 			Small Message(Event Player, Custom String("  You need to rez the bot!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
@@ -4260,14 +4261,45 @@ rule("Subroutine CreatePlayerHUD")
 		"Top HUD Elements"
 		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1),
 			Null, Top, 1, Null, Color(White), Null, Visible To and String, Default Visibility);
+
 		"Collected orbs hud text"
-		Create HUD Text(Event Player, Null, Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs)
-			> 0 ? Custom String("Collected Orbs:\n{0}{1}", Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ",
-			Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(
-			Event Player.GrabbedOrbs)) : Empty Array, Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("  {0}: {1}/{2}",
-			Icon String(Recycle), Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)), Count Of(
-			Event Player.GrabbedRefreshOrbs)) : Empty Array) : Custom String("\n"), Null, Top, 2, Null, Color(Orange), Null,
-			Visible To String and Color, Default Visibility);
+		Create HUD Text(
+			Event Player, 
+			Null, 
+			Count Of(Event Player.GrabbedOrbs) > 0 ?
+				Custom String("Collected Coins:") 
+				:
+				Custom String("\n"),
+			Null, 
+			Top, 
+			2,
+			Null, 
+			Color(Orange), 
+			Null,
+			Visible To String and Color, 
+			Default Visibility
+		);
+
+		Create HUD Text(
+			Event Player, 
+			Null, 
+			Count Of(Event Player.GrabbedOrbs) > 0 ?
+				Custom String("{0}/{1}", 
+					Count Of( Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True) ), 
+					Count Of( Event Player.GrabbedOrbs )
+				)
+				: 
+				Custom String("\n"),
+			Null, 
+			Top, 
+			3,
+			Null, 
+			Color(Orange), 
+			Null,
+			Visible To String and Color, 
+			Default Visibility
+		);
+
 		"Right HUD Elements"
 		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\n{1}\n{2}           ", Event Player.CurrentRunTime,
 			Event Player.Cheat ? Custom String("Paused at level: {0}", Event Player.SavedCheckpoint) : Custom String("Mistakes: {0}",
