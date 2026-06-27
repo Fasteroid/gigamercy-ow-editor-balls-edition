@@ -1535,21 +1535,23 @@ rule("Detect Landing on Goal or Teleport")
 			Teleport(Event Player, Global.Teleports[Event Player.Checkpoint][2]);
 			Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Position Of(Event Player), 100);
 		Else;
+
 			Event Player.Checkpoint += 1;
+
+			If(Global.Teleports[Event Player.Checkpoint - 1]);
+				Call Subroutine(TeleportToCurrentCheckpoint);
+				Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Position Of(Event Player), 100);
+			End;
 			"Player finished all checkpoints"
 			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+
 				Stop Chasing Player Variable(Event Player, CurrentRunTime);
+
 				If( Global.EditMode == False );
 					Event Player.FreeMode = True;
 				End;
-				"// TODO: Consider not duplicating this block if possible"
-				If(Global.Teleports[Event Player.Checkpoint - 1]);
-					Call Subroutine(TeleportToCurrentCheckpoint);
-					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Position Of(Event Player), 100);
-				End;
-				disabled Call Subroutine(EnableAllAbilities);
+
 				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
-				"// TODO: Set a color for finish explosion in config"
 				Play Effect(
 					All Players(All Teams),
 					Good Pickup Effect, 
@@ -1557,13 +1559,13 @@ rule("Detect Landing on Goal or Teleport")
 					Global.Checkpoints[Event Player.Checkpoint][0],
 					Global.Checkpoints[Event Player.Checkpoint][1]
 				);
-				"disabled to avoid the 0s scoreboard exploit"
-				disabled Wait(0.100, Ignore Condition);
+
 				Skip If(Event Player.Cheat || Global.EditMode, 2);
-				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.Nickname,
-					Event Player.CurrentRunTime));
+				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.Nickname, Event Player.CurrentRunTime));
 				Call Subroutine(PlayerCompletedRun);
 			End;
+
+
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			Call Subroutine(SetUpCheckpoint);
 			Call Subroutine(SavePlayerProgress);
@@ -2321,7 +2323,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Array(Null, Global.EditModeDefaults[3], 10), Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[0],
 			Global.EditModeDefaults[0]));
 		"TODO: Make Palette menu for inserting different types of objects"
-		Global.PaletteMenu = Array(Array(Custom String("     {0}\nCheckpoints", Icon String(Flag)), Custom String("  {0}\nCoins",
+		Global.PaletteMenu = Array(Array(Custom String("     {0}\nCheckpoints", Icon String(Flag)), Custom String("   {0}\nCoins",
 			Icon String(Circle)), Custom String("     {0}\nRefresh Orbs", Icon String(Recycle)), Custom String("  {0}\nBots",
 			Ability Icon String(Hero(Ashe), Button(Ultimate))), Custom String("    {0}\nAntiOrbs", Icon String(No)), Custom String(
 			"   {0}\nClouds", Ability Icon String(Hero(Baptiste), Button(Crouch))), Custom String("    {0}\nTeleports", Icon String(
