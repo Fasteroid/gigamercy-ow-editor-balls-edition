@@ -143,6 +143,7 @@ variables
 		77: EditMenuText
 		79: HideSidebarControls
 		80: FireballFreewalk
+		81: UnderstandsFireballFreewalk
 }
 
 subroutines
@@ -1474,15 +1475,47 @@ rule("Detect Landing Outside")
 		Skip If(Hero Of(Event Player) == Hero(Mercy), 2);
 		Abort If(!Is On Ground(Event Player));
 		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
-		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && (Y Component Of(Position Of(
-			Event Player)) <= Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0] && Y Component Of(Position Of(
-			Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]) == True);
-		If(Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
-			< Global.Checkpoints[Event Player.Checkpoint][1]);
+		If(
+			(Event Player.FireballFreewalk == True && 
+			Speed Of(Event Player) < 15) == True &&
+			(Event Player.UnderstandsFireballFreewalk == False)
+		);
+			Small Message(Event Player, Custom String("  {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+		End;
+
+		Abort If(
+			Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && ( 
+				Y Component Of( Position Of(Event Player) ) <= Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0] && 
+				Y Component Of( Position Of(Event Player) ) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1]
+			) == True
+		);
+		If( Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) < Global.Checkpoints[Event Player.Checkpoint][1] );
 			Call Subroutine(ResetCheckpoint);
 		Else;
 			Call Subroutine(ResetWithMistake);
 		End;
+	}
+}
+
+rule("Detect Fireball Freewalk Understanding")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is On Ground(Event Player) == True;
+		Event Player.FireballFreewalk == True;
+		Speed Of(Event Player) > 15 == True;
+	}
+
+	actions
+	{
+		Event Player.UnderstandsFireballFreewalk = True;
 	}
 }
 
@@ -4357,9 +4390,9 @@ rule("Subroutine SetUpCheckpoint")
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
 		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
 		Skip If(Event Player.GrappleRetraction == False, 1);
-		Small Message(Event Player, Custom String("  This level allows grapple retraction"));
+		Small Message(Event Player, Custom String("   This level allows grapple retraction"));
 		Skip If(Event Player.FireballFreewalk == False, 1);
-		Small Message(Event Player, Custom String("  You may touch the ground in fireball state for this level"));
+		Small Message(Event Player, Custom String("  {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
 	}
 }
 
