@@ -5256,32 +5256,3 @@ rule("DEBUG: Load peak recording")
 		Loop If Condition Is True;
 	}
 }
-
-rule("Respawn missing bots for Giga editor (Rev 8 and lower)")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Entity Exists(Event Player.Bot) == True;
-	}
-
-	actions
-	{
-		Wait(1, Ignore Condition);
-		Wait Until(!Entity Exists(Event Player.Bot), 99999);
-		Small Message(Event Player, Custom String("Detected bot missing"));
-		Wait(0.500 + Slot Of(Event Player) * 0.200, Ignore Condition);
-		Event Player.Bot = Null;
-		Call Subroutine(InitializePlayerBot);
-		Call Subroutine(SetUpCheckpoint);
-		Small Message(Event Player, Custom String("Bot Restored"));
-		Loop;
-	}
-}
