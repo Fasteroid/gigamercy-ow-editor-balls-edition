@@ -2496,27 +2496,30 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 	conditions
 	{
 		Is Dummy Bot(Event Player) == False;
-		"TODO: Only allow this for players with edit permissions"
 		Global.EditMode == True;
-		Is Button Held(Event Player, Button(Interact)) == True;
-		Is Button Held(Event Player, Button(Primary Fire)) == True;
+		(
+			( Is Button Held(Event Player, Button(Interact)) && Is Button Held(Event Player, Button(Primary Fire)) ) ||
+			( Is Button Held(Event Player, Button(Secondary Fire)) && Is Button Held(Event Player, Button(Primary Fire)) && !Is On Ground(Event Player) )
+		) == True;
 	}
 	actions
 	{
-		Abort If(Event Player.MenuOpen || Is True For Any(Append To Array(Remove From Array(Global.ButtonList, Array(Button(Interact), Button(Jump))), Button(Secondary Fire)), Is Button Held(Event Player, Current Array Element)));
+		Abort If(
+			Event Player.MenuOpen || 
+			Is True For Any(
+				Remove From Array(
+					Global.ButtonList, 
+					Array(
+						Button(Interact),
+						Button(Jump)
+					)
+				), 
+				Is Button Held(Event Player, Current Array Element)
+			)
+		);
 		disabled Wait(0.016, Ignore Condition);
 		If(Event Player.ObjectType == 0);
-			"TODO: Implement option to disable progress bar confirmation"
-			Skip If(True, 8);
-				Event Player.EditConfirmationTimer = 0;
-				Chase Player Variable Over Time(Event Player, EditConfirmationTimer, 100, 0.25, None);
-				Wait Until((Is Button Held(Event Player, Button(Interact)) && Is Button Held(Event Player, Button(Primary Fire))) == False, 0.25);
-				Stop Chasing Player Variable(Event Player, EditConfirmationTimer);
-				Skip If(Event Player.EditConfirmationTimer == 100, 2);
-					Event Player.EditConfirmationTimer = 0;
-					Abort;
-				Event Player.EditConfirmationTimer = 0;
-
+			Event Player.EditConfirmationTimer = 0;
 			Event Player.EditTempObject = Global.NewObjectDefaults[0];
 			Event Player.EditTempObject[0] = Position Of(Event Player);
 
@@ -2593,9 +2596,10 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
-		Wait(0.2, Ignore Condition);
-		"Wait for player to release fire buttons before ending"
-		Wait Until(!(Is Button Held(Event Player, Button(Primary Fire)) || Is Button Held(Event Player, Button(Secondary Fire))) == True, 99999);
+		Wait(0.016, Ignore Condition);
+		
+		"Don't immediately do it again"
+		Wait Until( Is Button Held(Event Player, Button(Primary Fire)) == False, 99999);
 	}
 }
 rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected object")
