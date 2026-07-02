@@ -4547,8 +4547,6 @@ rule("Subroutine SetCurrentAbilities")
 			Start Rule(EnableAllAbilities, Do Nothing);
 		Abort If(Event Player.FreeMode || Event Player.Finished);
 		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
-
-		Set Crouch Enabled(Event Player, Event Player.Crouch);
 		Set Secondary Fire Enabled(Event Player, Event Player.SecondaryFire);
 		If(Event Player.Crouch);
 			Allow Button(Event Player, Button(Crouch));
