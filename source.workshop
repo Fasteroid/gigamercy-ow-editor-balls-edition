@@ -2011,40 +2011,6 @@ rule("ZeroCooldown: Secondary Fire")
 	}
 }
 
-rule("Autoadvance Bot (for compatibility with Taw's editor maps)")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		Mercy;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.LeftCheckpoint == True;
-		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1)
-			== False;
-		Event Player.BotCondition == True;
-		Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) - 1;
-		Ability Cooldown(Event Player, Button(Ability 1)) != 0;
-	}
-
-	actions
-	{
-		"This was added to be compatible with Taw's bot sections that have no refresh orb, they advance automatically after using your GA"
-		Event Player.Ability1 += 1;
-		Log To Inspector(Custom String("{0} - Used GA & theres no refresh orb. advancing bot now", Event Player));
-		Event Player.CurrentBotSection += 1;
-		Event Player.BotCompletedSections[Event Player.CurrentBotSection] = True;
-		Event Player.Bot.CurrentBotSection += 1;
-		Call Subroutine(UpdateBotPosition);
-		Set Ability 1 Enabled(Event Player, Event Player.Ability1 > 0);
-		Small Message(Event Player, Custom String("  GA {0} refreshed", Ability Icon String(Hero(Mercy), Button(Ability 1))));
-	}
-}
-
 rule("Regen ultimate in FreeMode")
 {
 	event
@@ -2068,29 +2034,6 @@ rule("Regen ultimate in FreeMode")
 		Wait(0.100, Ignore Condition);
 		Abort If Condition Is False;
 		Set Ultimate Charge(Event Player, 100);
-	}
-}
-
-rule("Destroy bot after player leaves v2")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == True;
-		Event Player.Owner != Null;
-		Array Contains(All Players(All Teams), Event Player.Owner) == False;
-	}
-
-	actions
-	{
-		Log To Inspector(Custom String("Destroying Orphan bot: {0}", Event Player));
-		Destroy Dummy Bot(Team Of(Event Player), Slot Of(Event Player));
 	}
 }
 
@@ -2213,89 +2156,6 @@ rule("BunnyHop: Detect using bhop")
 		Event Player.BhopReady = False;
 		Event Player.BhopActive = False;
 		Log To Inspector(Custom String("{0} - Bhop used", Event Player));
-	}
-}
-
-rule("BunnyHop: Mercy GA check")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		Mercy;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Is Using Ability 1(Event Player) == True;
-		Is Button Held(Event Player, Button(Ability 1)) == False;
-	}
-
-	actions
-	{
-		Event Player.GACheck = True;
-		Wait Until(Is Using Ability 1(Event Player) == False, 9999);
-		Event Player.GACheck = False;
-	}
-}
-
-rule("BunnyHop: Using Mercy's sling/superjump loses the bhop v4")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		Mercy;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Is Using Ability 1(Event Player) == True;
-		Event Player.BhopActive == True;
-	}
-
-	actions
-	{
-		disabled Log To Inspector(Custom String("{0} - Mercy bunnyhop check", Event Player));
-		Wait Until(!Is Using Ability 1(Event Player) || Evaluate Once(Is Button Held(Event Player, Button(Jump))) != Is Button Held(
-			Event Player, Button(Jump)) || Evaluate Once(Is Button Held(Event Player, Button(Crouch))) != Is Button Held(Event Player,
-			Button(Crouch)), 99999);
-		Wait Until(!Is Using Ability 1(Event Player) || Is Button Held(Event Player, Button(Jump)) || (
-			Event Player.Crouch && Is Button Held(Event Player, Button(Crouch))), 99999);
-		Abort If Condition Is False;
-		disabled Small Message(Event Player, Custom String("  Real GA or sling/sj detected", Event Player));
-		Abort If(Is Button Held(Event Player, Button(Ability 1)) == Event Player.GACheck);
-		disabled Small Message(Event Player, Custom String("  Detected a failed bhop cancel"));
-		disabled Log To Inspector(Custom String("{0} - GA Used sling or sj", Event Player));
-		Event Player.BhopActive = False;
-	}
-}
-
-rule("BunnyHop: Mercy SJ while touching ground resets bhop")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		Mercy;
-	}
-
-	conditions
-	{
-		Event Player.BhopReady == False;
-		Event Player.GACheck == True;
-		disabled Is Using Ability 1(Event Player) == True;
-		Is Button Held(Event Player, Button(Ability 1)) == True;
-		(Is Button Held(Event Player, Button(Crouch)) && Event Player.Crouch) == True;
-		Is Crouching(Event Player) == True;
-	}
-
-	actions
-	{
-		Event Player.BhopActive = True;
-		Small Message(Event Player, Custom String("  Regen bhop!", Event Player));
 	}
 }
 
