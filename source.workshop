@@ -1537,8 +1537,13 @@ rule("Track Maneuver Start")
 	conditions
 	{
 		Event Player.Maneuvering != True;
-		Is On Ground(Event Player) == False;
-		Is Button Held(Event Player, Button(Secondary Fire)) == True;
+		( 
+			Is On Ground(Event Player) == False || 
+			(
+				Speed Of(Event Player) > 15 &&
+				Is Button Held(Event Player, Button(Secondary Fire)) 
+			) 
+		) == True;
 	}
 
 	actions
@@ -1561,6 +1566,7 @@ rule("Track Maneuver End")
 	{
 		Event Player.Maneuvering == True;
 		Is On Ground(Event Player) == True;
+		Speed Of(Event Player) > 15 == False;
 	}
 
 	actions
