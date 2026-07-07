@@ -251,10 +251,39 @@ rule("◈ Paste your map data here")
 		Ongoing - Global;
 	}
 
-	actions
-	{
 
-	}
+actions
+{
+	Global.EditModeDefaults = Array(1.300, 0.500, 2, 1.500, 0);
+	Global.MapData = Array(Array(Vector(63.887, 9.120, 6.509), -128, 1155), Array(Vector(57.784, 7, 2.309), -128, 1155), Array(Vector(
+		48.759, 4, 17.817), -128, 1155), Array(Vector(29.330, 10.437, 25.300), 1.900, -128, 1155), Array(Vector(2.553, 2.767, -0.853),
+		1.200, -128, 1155), Array(Vector(21.104, 9.533, -5.790), 2.100, -128, 1), Array(Vector(35.534, 9, -2.563), 1.800, -128, 1155,
+		Array(1, Vector(33.554, 9.506, -1.769), Vector(31.617, 9.446, -2.395), Vector(29.612, 9.490, -3.762), Vector(27.914, 9.805,
+		-5.894), Vector(26.937, 10.466, -8.624))), Array(Vector(26.849, 11, -23.793), -128, 1155, Array(1, Vector(36.109, 5.383,
+		-18.179))), Array(Vector(56.646, 6.769, -20.602), 3.300, -128, 1155, Array(1, Vector(66.620, 10.218, -24.945), Vector(69.354,
+		12.184, -23.940), Vector(71.094, 14.191, -21.901))), Array(Vector(79.298, 17.472, -7.079), -128, 1155), Array(Vector(56.733,
+		13.216, 25.885), -128, 1155), Array(Vector(70.187, 17, 42.740), 1.800, -128, 0, Array(1, Vector(76.904, 18.445, 41.686))),
+		Array(Vector(80.888, 13.953, 36.092), -128, 1155, Array(1, Vector(71.153, 11.664, 46.413), Vector(68.259, 14.099, 47.364),
+		Vector(66.472, 16.887, 46.164), Vector(66.016, 18.725, 43.541))), Array(Vector(71.200, 17, 35.335), -128, 1155, Array(1,
+		Vector(90.042, 15.426, 43.067))), Array(Vector(99.738, 12.750, 34.445), 1.800, -128, 1, Array(1, Vector(97.255, 17.423,
+		34.148), Vector(101.164, 14.067, 33.959))), Array(Vector(99.942, 20, 30.824), 1.800, -128, 1), Array(Vector(106.077, 20.813,
+		18.282), -128, 1155, Array(1, Vector(121.418, 12.497, 9.382))), Array(Vector(124.294, 10.335, -18.592), -128, 1155, Array(1,
+		Vector(121.556, 11.025, -15.070), Vector(120.051, 9.306, -12.915), Vector(117.843, 8.987, -9.932), Vector(115.728, 10.736,
+		-7.269))), Array(Vector(111.048, 17, -2.101), -128, 1155, Array(1, Vector(102.101, 30.337, 10.811), Vector(106.185, 18.341,
+		-11.251), Vector(93.109, 21.867, -9.883), Vector(92.346, 25.362, 3.820))), Array(Vector(112.250, 13.850, 24.363), -128, 1),
+		Array(Vector(116.067, 18.158, 33.390), -128, 11, Array(1, Vector(130.075, 11.550, 35.109), Vector(129.510, 11.512, 42.469),
+		Vector(129.794, 12.220, 48.577), Vector(133.814, 14.064, 52.761))), Array(Vector(137.001, 14.012, 53.678), -128, 11, Array(1,
+		Vector(114.796, 12.529, 25.397), Vector(129.696, 11.512, 41.299), Vector(127.526, 11.550, 33.825), Vector(120.607, 11.553,
+		29.158))), Array(Vector(106.787, 18.022, 17.018), -128, 3, Array(1, Vector(111.617, 19.865, 16.415), Vector(114.267, 19.707,
+		16.068), Vector(117.289, 18.657, 15.702))), Array(Vector(127.075, 16.001, 16.143), -128, 0, Array(1, Vector(133.733, 21.346,
+		10.891))), Array(Vector(138.841, 17.750, 14.373), 1.600, -128, 0, Array(1, Vector(148.552, 17.092, 14.596))), Array(Vector(
+		149.284, 10.012, 12.055), 3, -128, 11, Array(1, Vector(158.018, 11.272, 7.132), Vector(162.898, 11.512, 9.590), Vector(162.476,
+		11.512, 14.385), Vector(161.062, 11.500, 19.230))), Array(Vector(160.206, 11, 24.384), -128, 11, Array(1, Vector(169.748,
+		11.913, 47.064), Vector(155.531, 11.350, 34.695), Vector(161.003, 11.350, 44.592))), Array(Vector(183.316, 7.012, 50.901),
+		3.500, -128, 11, Array(1, Vector(183.697, 7.849, 52.812)), Array(3, Array(Vector(174.266, 8.562, 48.277), 8))), Array(Vector(
+		189.900, 7.012, 27.699), -128, 1155), Array(Vector(179.872, 11.012, 24.990), -128, 1155), Array(Vector(180.563, 15.012,
+		25.264), -128, 1155));
+}
 }
 
 rule("◈ Customize colors and texts")
@@ -399,7 +428,7 @@ rule("◈ Per-level In-World texts")
 	event
 	{
 		Ongoing - Global;
-	}
+	} 
 
 	actions
 	{
@@ -407,7 +436,15 @@ rule("◈ Per-level In-World texts")
 		Abort If(Global.WorldTexts);
 		"Index: Checkpoint number\n[0]: Your text\n[1]: World coordinates\n[2]: Text scale\n[3]: Color\n* Only one world text per level"
 		disabled End;
-		Global.WorldTexts[0] = Array(Custom String(""), Vector(0, 0, 0), 4, Color(White));
+		Global.WorldTexts[27] = Array(
+			Custom String("                 There's not enough distance to reach fireball speed here.\n{0}", 
+			Custom String("If only there were a way to redirect one's velocity, maybe it'd be possible?\n\n{0}",
+			Custom String("                                                        - The Sign Painter"
+			))), 
+			Vector(183.7, 8.85, 52.81), 
+			1, 
+			Color(White)
+		);
 	}
 }
 
