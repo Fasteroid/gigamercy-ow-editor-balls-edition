@@ -188,7 +188,7 @@ subroutines
 	36: EnableRetraction
 }
 
-rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.3 ︾ ————————————————")
+rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.3, \"fasteroid's balls\" fork ︾ ————————————————")
 {
 	event
 	{
