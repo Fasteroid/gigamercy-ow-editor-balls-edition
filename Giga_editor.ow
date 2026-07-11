@@ -2629,20 +2629,55 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 			Event Player.EditConfirmationTimer = 0;
 			Event Player.EditTempObject = Global.NewObjectDefaults[0];
 			Event Player.EditTempObject[0] = Position Of(Event Player);
-			Global.Checkpoints = Append To Array(Append To Array(Array Slice(Global.Checkpoints, 0, Event Player.Checkpoint + 1), Array(
-				Event Player.EditTempObject)), Array Slice(Global.Checkpoints, Event Player.Checkpoint + 1, 1000000000));
-			Global.Orbs = Append To Array(Append To Array(Array Slice(Global.Orbs, 0, Event Player.Checkpoint + 1), False), Array Slice(
-				Global.Orbs, Event Player.Checkpoint + 1, 1000000000));
-			Global.RefreshOrbs = Append To Array(Append To Array(Array Slice(Global.RefreshOrbs, 0, Event Player.Checkpoint + 1), False),
-				Array Slice(Global.RefreshOrbs, Event Player.Checkpoint + 1, 1000000000));
-			Global.Bots = Append To Array(Append To Array(Array Slice(Global.Bots, 0, Event Player.Checkpoint + 1), False), Array Slice(
-				Global.Bots, Event Player.Checkpoint + 1, 1000000000));
-			Global.AntiOrbs = Append To Array(Append To Array(Array Slice(Global.AntiOrbs, 0, Event Player.Checkpoint + 1), False),
-				Array Slice(Global.AntiOrbs, Event Player.Checkpoint + 1, 1000000000));
-			Global.Clouds = Append To Array(Append To Array(Array Slice(Global.Clouds, 0, Event Player.Checkpoint + 1), False), Array Slice(
-				Global.Clouds, Event Player.Checkpoint + 1, 1000000000));
-			Global.Teleports = Append To Array(Append To Array(Array Slice(Global.Teleports, 0, Event Player.Checkpoint + 1), False),
-				Array Slice(Global.Teleports, Event Player.Checkpoint + 1, 1000000000));
+			Global.Checkpoints = Append To Array(
+				Append To Array(
+					Array Slice(Global.Checkpoints, 0, Event Player.Checkpoint + 1), 
+					Array(Event Player.EditTempObject)
+				),
+				Array Slice(Global.Checkpoints, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.Orbs = Append To Array(
+				Append To Array(
+					Array Slice(Global.Orbs, 0, Event Player.Checkpoint + 1), 
+					False
+				), 
+				Array Slice(Global.Orbs, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.RefreshOrbs = Append To Array(
+				Append To Array(
+					Array Slice(Global.RefreshOrbs, 0, Event Player.Checkpoint + 1), 
+					False
+				),
+				Array Slice(Global.RefreshOrbs, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.Bots = Append To Array(
+				Append To Array(
+					Array Slice(Global.Bots, 0, Event Player.Checkpoint + 1), 
+					False
+				), 
+				Array Slice(Global.Bots, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.AntiOrbs = Append To Array(
+				Append To Array(
+					Array Slice(Global.AntiOrbs, 0, Event Player.Checkpoint + 1), 
+					False
+				),
+				Array Slice(Global.AntiOrbs, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.Clouds = Append To Array(
+				Append To Array(
+					Array Slice(Global.Clouds, 0, Event Player.Checkpoint + 1), 
+					False
+				), 
+				Array Slice(Global.Clouds, Event Player.Checkpoint + 1, 1000000000)
+			);
+			Global.Teleports = Append To Array(
+				Append To Array(
+					Array Slice(Global.Teleports, 0, Event Player.Checkpoint + 1), 
+					False
+				),
+				Array Slice(Global.Teleports, Event Player.Checkpoint + 1, 1000000000)
+			);
 			Small Message(All Players(All Teams), Custom String("  {0} created a checkpoint at index {1}", Event Player,
 				Event Player.Checkpoint));
 			Log To Inspector(Custom String("{0} - Created checkpoint {1}", Event Player, Event Player.Checkpoint));
