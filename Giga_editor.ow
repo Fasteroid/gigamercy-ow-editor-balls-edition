@@ -495,7 +495,7 @@ rule("Player Initialization")
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
 		If(Global.EditMode || Is True For Any(Global.Bots, Current Array Element == True));
-			Call Subroutine(InitializePlayerBot);
+			disabled Call Subroutine(InitializePlayerBot);
 		End;
 		Wait(0.100, Ignore Condition);
 		Call Subroutine(TeleportToCurrentCheckpoint);
