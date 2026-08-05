@@ -109,6 +109,7 @@ settings
 variables
 {
 	global:
+<<<<<<< HEAD
 		0:  EditMode
 		1:  DebugMode
 		2:  NewPeaceCheckpoints
@@ -121,38 +122,36 @@ variables
 		9:  TawsCheckpointHintText
 		10: TawsCheckpointInWorldText
 		11: TawsNoHintText
+=======
+		0: EditMode
+		1: DebugMode
+		3: HintTexts
+		4: Settings
+		5: ButtonList
+		6: Checkpoints
+>>>>>>> get rid of taws and peace stuff
 		12: BotPenCoords
-		13: TawsCPProps
-		14: TawsMaxPlayerCount
 		15: VIPs
-		16: PeaceEditorVariables
-		17: PeaceCheckpoint2
 		18: TempVal
 		19: NewObjectDefaults
 		20: RGB
-		21: TawsCheckpointInstructionText
 		22: TempArray
 		23: i
 		24: j
 		25: EditModeDefaults
 		26: MapData
 		27: RequireGrabAllRefreshOrbs
-		28: PeaceVips
 		29: TempBot
 		30: RefreshOrbStyle
 		31: MenuOptions
 		32: PaletteMenu
 		33: MapTitle
 		34: ServerLoad
-		35: TawsEditorVariables
 		36: CreatorAndCode
 		37: PlayerData
-		38: PeaceConfig
-		39: PeaceTop5Color
 		40: WorldTexts
 		41: BigMessages
 		42: SmallMessages
-		43: PeaceOrTawsVar
 		44: Scoreboard
 		46: Top5Colors
 		47: Top5Prefix 
@@ -258,6 +257,7 @@ variables
 }
 subroutines
 {
+<<<<<<< HEAD
 	0:  InitializeGlobalVariables
 	1:  InitializePlayerVariables
 	2:  DecompressMapData
@@ -269,6 +269,17 @@ subroutines
 	8:  TeleportToCurrentCheckpoint
 	9:  TawsDecompressData
 	10: PeaceDecompressData
+=======
+	0: InitializeGlobalVariables
+	1: InitializePlayerVariables
+	2: DecompressMapData
+	3: CreateGlobalHUD
+	4: CreatePlayerHUD
+	5: SetUpCheckpoint
+	6: ResetCheckpoint
+	7: ResetWithMistake
+	8: TeleportToCurrentCheckpoint
+>>>>>>> get rid of taws and peace stuff
 	11: SetEditModeObjectIndex
 	12: CreatePlayerDebugModeHUD
 	13: CreatePlayerEditModeHUD
@@ -552,6 +563,7 @@ rule("Global Initialization")
 		"Decompress Giga editor data"
 		If(Global.MapData);
 			Call Subroutine(DecompressMapData);
+<<<<<<< HEAD
 		"Detect Taw's Editor data"
 		Else If (Global.TawsCompressedData);
 			Call Subroutine(TawsDecompressData);
@@ -562,6 +574,8 @@ rule("Global Initialization")
 				Global.PeaceCheckpoint2 = Null;
 			End;
 			Call Subroutine(PeaceDecompressData);
+=======
+>>>>>>> get rid of taws and peace stuff
 		End;
 		Log To Inspector(Custom String("Decompression ended"));
 		Wait(0.016, Ignore Condition);
@@ -4865,47 +4879,31 @@ rule("Subroutine ClearGlobalVariables")
 
 		Global.EditMode = Null;
 		Global.DebugMode = Null;
-		Global.NewPeaceCheckpoints = Null;
 		Global.HintTexts = Null;
 		Global.Settings = Null;
 		Global.ButtonList = Null;
 		disabled Global.Checkpoints = Null;
-		Global.PeaceCheckpoint = Null;
-		Global.TawsCompressedData = Null;
-		Global.TawsCheckpointHintText = Null;
-		Global.TawsCheckpointInWorldText = Null;
-		Global.TawsNoHintText = Null;
 		Global.BotPenCoords = Null;
-		Global.TawsCPProps = Null;
-		Global.TawsMaxPlayerCount = Null;
 		Global.VIPs = Null;
-		Global.PeaceEditorVariables = Null;
-		Global.PeaceCheckpoint2 = Null;
 		Global.TempVal = Null;
 		Global.NewObjectDefaults = Null;
 		Global.RGB = Null;
-		Global.TawsCheckpointInstructionText = Null;
 		disabled Global.TempArray = Null;
 		disabled Global.i = Null;
 		disabled Global.j = Null;
 		Global.TempBot = Null;
 		disabled Global.MapData = Null;
 		Global.RequireGrabAllRefreshOrbs = Null;
-		Global.PeaceVips = Null;
 		Global.RefreshOrbStyle = Null;
 		Global.MenuOptions = Null;
 		Global.PaletteMenu = Null;
 		Global.MapTitle = Null;
 		Global.ServerLoad = Null;
-		Global.TawsEditorVariables = Null;
 		Global.CreatorAndCode = Null;
 		Global.PlayerData = Null;
-		Global.PeaceConfig = Null;
-		Global.PeaceTop5Color = Null;
 		Global.WorldTexts = Null;
 		Global.BigMessages = Null;
 		Global.SmallMessages = Null;
-		Global.PeaceOrTawsVar = Null;
 		Global.Scoreboard = Null;
 		Global.OrbStyle = Null;
 		Global.Top5Colors = Null;
@@ -4919,7 +4917,6 @@ rule("Subroutine ClearGlobalVariables")
 		disabled Global.Teleports = Null;
 		Global.MenuObjectNames = Null;
 		Global.MapDataSchema = Null;
-		disabled Global.AbilityEncoding = Null;
 		Global.PlayerAbilityMode = Null;
 		Global.ZeroCooldownMode = Null;
 		Global.ContextualMenuOptions = Null;
@@ -4954,425 +4951,6 @@ rule("Subroutine SavePlayerProgress")
 		"Capped the number of player saves to 128, players with the least progress get deleted first"
 		Abort If(Count Of(Global.PlayerData) < 128);
 		Global.PlayerData = Array Slice(Sorted Array(Global.PlayerData, Current Array Element[0]), 0, 64);
-	}
-}
-rule("Subroutine TawsDecompressData")
-{
-	event
-	{
-		Subroutine;
-		TawsDecompressData;
-	}
-
-	actions
-	{
-		"Workshop Setting: Single Use Shift/Unlimited GA (Affects all checkpoints)"
-		Global.TawsEditorVariables[0] = Global.PlayerAbilityMode;
-		"Workshop Setting: Default Checkpoint Radius"
-		Global.TawsEditorVariables[1] = Global.EditModeDefaults[0];
-
-		"Give credits to the original editor maker"
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Taw"), Custom String("Taw"), Color(Purple));
-
-		Log To Inspector(Custom String("Decompressing Taw's Data..."));
-		"CheckpointFlags"
-		Global.TawsEditorVariables[2] = Empty Array;
-
-
-		"Compression V2"
-		If(Global.TawsCompressedData[Count Of(Global.TawsCompressedData) - 1] == 2);
-			Global.TawsCompressedData = Array Slice(Global.TawsCompressedData, 0, Count Of(Global.TawsCompressedData) - 1);
-
-			"Extract Teleport pads"
-			Global.Teleports = Mapped Array(
-				Global.TawsCompressedData, 
-				Current Array Element[0][3][0]!= 0 ? 
-					Array(
-						Current Array Element[0][3][0],
-						Current Array Element[0][3][1], 
-						False, 
-						Current Array Element[0][3][2],
-						Current Array Element[0][3][3]
-					) : False);
-
-			"Temp extract level flags"
-			Global.TawsEditorVariables[2] = 
-			Mapped Array(
-				Mapped Array(
-					Global.TawsCompressedData, 
-					Array(
-						(Current Array Element[4] - Round To Integer(Current Array Element[4] / 10, Down) * 10) % 8, 
-						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, 
-						Round To Integer(Current Array Element[4] / 1000, Down) / 10
-					)
-				), 
-				Array(
-					Current Array Element[0] % 2 != 0, 
-					0, 
-					(Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0,
-					(Current Array Element[0] - Current Array Element[0] % 4) % 8 != 0, 
-					0, 
-					Current Array Element[2], 
-					Current Array Element[1]
-				)
-			);
-		
-		"Compression V1"
-		Else If(Global.TawsCompressedData[Count Of(Global.TawsCompressedData) - 1] == 1);
-			Global.TawsCompressedData = Array Slice(Global.TawsCompressedData, 0, Count Of(Global.TawsCompressedData) - 1);
-			"Extract Teleport pads"
-			Global.Teleports = Mapped Array(Global.TawsCompressedData, 
-				Array(Current Array Element[0][2],
-				Global.TawsEditorVariables[1], 
-				False, 
-				Global.TawsEditorVariables[1], 
-				Global.TawsEditorVariables[1]));
-
-			Global.TawsEditorVariables[2] = Mapped Array(
-				Global.TawsCompressedData, 
-				Array(
-					Current Array Element[4] % 2 != 0, 
-					0, 
-					(Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, 
-					(Current Array Element[4] - Current Array Element[4] % 4) % 8 != 0,
-					0, 
-					Global.TawsEditorVariables[1], 
-					(Current Array Element[4] - Current Array Element[4] % 4) % 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]
-				)
-			);
-		"Compression V0"
-		Else;	
-			"Extract Teleports"
-			Global.Teleports = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[0][1], Global.TawsEditorVariables[1], False,
-				Global.TawsEditorVariables[1], Global.TawsEditorVariables[1]));
-			Global.TawsEditorVariables[2] = Mapped Array(Global.TawsCompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
-				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
-				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
-		End;
-
-		"Extract Checkpoint coordinates, radius and facing direction"
-		Global.Checkpoints = Mapped Array(
-			Global.TawsCompressedData, 
-			Array(
-				Current Array Element[0][0],
-				Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
-				Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
-			);                                       
-
-		"Extract Bots, Orbs, Flags"
-		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
-			Global.TempArray = Empty Array;
-			If(Global.TawsCompressedData[Global.i][1][0] == 0);
-				Global.TempArray = False;
-			Else;
-				For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][1]), 2);
-					"Translate bot data and flags -> Array(Coords, CrouchEnabled, GravityEnabled)"
-					Global.TempArray[Global.j / 2] =
-						Array(
-							Global.TawsCompressedData[Global.i][1][Global.j],
-							1,
-							Global.EditModeDefaults[4],
-							(Global.TawsCompressedData[Global.i][1][Global.j + 1] % 4 >= 2),
-							(Global.TawsCompressedData[Global.i][1][Global.j + 1] % 2 >= 1),
-							False,
-							True
-						);
-				End;
-			End;
-			"Store Bot array to global data"
-			Global.Bots[Global.i] = Count Of(Global.TempArray) > 0 ? Global.TempArray : False;
-			Global.TempArray = Empty Array;			
-
-			"Extract Orbs/Antiorbs for this level"
-			For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][2]), 2);
-				"Transform orb data"
-				Global.TempArray[Global.j / 2] =  Array(
-					Global.TawsCompressedData[Global.i][2][Global.j],
-					Global.TawsCompressedData[Global.i][2][Global.j + 1]);
-				
-			End;
-			"Store Orb Array to global data"
-			Global.Orbs[Global.i] = Filtered Array(Global.TempArray, Current Array Element[1] > 0);
-			"// TODO: Search for more efficient cleanup operation"
-			If(Count Of(Global.Orbs[Global.i]) == 0);
-				Global.Orbs[Global.i] = False;
-			End;
-			"Antiorbs are encoded with a negative Radius"
-			Global.AntiOrbs[Global.i] = Mapped Array(
-				Filtered Array(Global.TempArray, Current Array Element[1] < 0), 
-				Array(Current Array Element[0], Current Array Element[1] * -1));
-			"// TODO: Search for more efficient cleanup operation"
-			If(Count Of(Global.AntiOrbs[Global.i]) == 0);
-				Global.AntiOrbs[Global.i] = False;
-			End;
-			Global.TempArray = Empty Array;		
-
-			"Extract Refresh Orbs"
-			For Global Variable(j, 0, Count Of(Global.TawsCompressedData[Global.i][3]), 2);
-				"Assume Refresh orbs with coordinates of 0 are not valid"
-				If(Global.TawsCompressedData[Global.i][3][Global.j] != 0);
-				"Transform Refresh Orb data"
-				Global.TempArray[Count Of(Global.TempArray)] = Array(
-					Global.TawsCompressedData[Global.i][3][Global.j],
-					Global.TawsCompressedData[Global.i][3][Global.j + 1],
-					Count Of(Global.TempArray),
-					True,
-					False,
-					False);
-				End;
-			End;
-			Global.RefreshOrbs[Global.i] = Count Of(Global.TempArray) > 0 ? Global.TempArray : False;
-			Global.TempArray = Empty Array;		
-			"Save Checkpoint flags"
-			Modify Global Variable At Index(Checkpoints, Global.i, Append To Array, 
-			Array(
-				False,
-				Global.TawsEditorVariables[2][Global.i][3], 
-				False,
-				(Global.TawsEditorVariables[2][Global.i][2] ? 1155 : 1154) + (Global.TawsEditorVariables[0] == 2 ? 12 : 0),
-				Global.TawsEditorVariables[2][Global.i][5], 
-				Global.TawsEditorVariables[2][Global.i][6]
-			));
-			
-			Skip If(Global.i % 3 != 0, 1);
-			Wait(0.016, Ignore Condition);
-		End;
-		
-		If(Global.TawsCPProps != Null);
-			If(Global.TawsCPProps[0] != Null);
-				Global.Settings[0] = Array(Global.TawsCPProps[0]);
-			End;
-			"Translate Taw's CPProps to Giga editor settings"
-			Global.TawsEditorVariables = Array(False, 10, 13, False, 11, -1, 7, 5, False, 12, False, False, 17, 17, False, False, -2, False, 9, 8, 3);
-			For Global Variable(i, 1, Count Of(Global.TawsEditorVariables), 1);
-				If(Global.TawsCPProps[Absolute Value(Global.TawsEditorVariables[Global.i])] != Null && Global.TawsEditorVariables[Global.i] != False);
-					Global.Settings[Global.i] = Global.TawsEditorVariables[Global.i] > 0 ? 
-						Global.TawsCPProps[Global.TawsEditorVariables[Global.i]] :
-						Array(Global.TawsCPProps[Absolute Value(Global.TawsEditorVariables[Global.i])]);
-				End;
-			End;
-		End;
-		If(Global.OrbStyle == 0);
-			Global.OrbStyle = 2;
-		End;
-		If(Global.RefreshOrbStyle == 0);
-			Global.RefreshOrbStyle = 3;
-		End;
-		If(Global.TawsCheckpointInstructionText != Null); 
-			Global.HintTexts = Global.TawsCheckpointInstructionText;
-		End;
-		If(Global.TawsCheckpointInWorldText != Null);
-			Global.WorldTexts = Mapped Array(
-				Global.TawsCheckpointInWorldText, 
-				Current Array Element != 0 ?
-				Array(
-					Current Array Element[0],
-					Current Array Element[1],
-					Current Array Element[3],
-					Current Array Element[2]) : False);
-		End;
-		Global.TawsCompressedData = Null;
-		Global.TawsEditorVariables = Null;
-		Global.TempArray = Null;
-		Global.i = 0;
-		Global.j = 0;
-	}
-}
-rule("Subroutine PeaceDecompressData")
-{
-	event
-	{
-		Subroutine;
-		PeaceDecompressData;
-	}
-
-	actions
-	{
-		"Workshop setting: Bot Floating?"
-		Global.PeaceEditorVariables[0] = Global.EditModeDefaults[9];
-		"Workshop setting: Land On Arrival Point?"
-		Global.PeaceEditorVariables[1] = Global.EditModeDefaults[5];
-		"Default orb radius. Peace orbs have a large collision sphere, equivalent size is around 0.7 - 1"
-		Global.PeaceEditorVariables[4] = Global.EditModeDefaults[1];
-		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
-		Global.PeaceEditorVariables[7] = Global.EditModeDefaults[3];
-		"Peace editor stores unused bots near these coordinates"
-		disabled Global.BotPenCoords = Vector(-500, -500, -500);
-
-		"Give credits to the original editor maker"
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
-
-		Log To Inspector(Custom String("Peace Decompress Data start"));
-		"Filter all checkpoints that are not teleport levels"
-		Global.PeaceEditorVariables[2] = Filtered Array(Global.PeaceCheckpoint, Current Array Element[5] == False);
-
-		"Extract all non-teleport checkpoints. Assume facingdirection=null, Landing thresholds = 1"
-		Global.Checkpoints = Mapped Array(Global.PeaceEditorVariables[2], 
-		Array(
-			Current Array Element[0],
-			Current Array Element[1],
-			False,
-			False,
-			Global.PeaceEditorVariables[1],
-			False,
-			(Current Array Element[2] ? 1155 : 1154) + (Current Array Element[4] ? 12 : 0))
-		);
-
-		"Extract initial bots. // TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
-		Global.Bots = 
-			Mapped Array(Global.PeaceEditorVariables[2],
-			Current Array Element[3] ? Array(Array(
-				Current Array Element[3][0],
-				1,
-				Global.EditModeDefaults[4],
-				False,
-				Global.PeaceEditorVariables[0],
-				Current Array Element[3][1],
-				Current Array Element[3][2])) : Empty Array
-		);
-		"Teleport CP counter, do not modify"
-		Global.PeaceEditorVariables[6] = 0;
-		Log To Inspector(Custom String("Count of peace checkpoints: {0}", Count Of(Global.Checkpoints) - 1));
-		
-		"Extract and translate level effects"
-		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
-			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
-			
-			"Extract level Normal Orbs"
-			Global.Orbs[Global.i] = 
-				Mapped Array(
-					Filtered Array(
-						Global.PeaceEditorVariables[2][Global.i][6],
-						Current Array Element[1] == False), 
-					Count Of(Current Array Element) > 0 ? 
-						Array(Current Array Element[0], Global.PeaceEditorVariables[4]) : False
-				);
-			"Cleanup empty orb array"
-			If(Global.Orbs[Global.i][0] == False);
-				Global.Orbs[Global.i] = False;
-			End;
-			
-			"Extract level Antiorbs"
-			Global.AntiOrbs[Global.i] = 
-				Count Of(Global.PeaceEditorVariables[2][Global.i][7]) > 0 ? 
-				Global.PeaceEditorVariables[2][Global.i][7] : False;
-
-			"Extract level Clouds, assume Radius of 1"
-			Global.Clouds[Global.i] = 
-				Count Of(Global.PeaceEditorVariables[2][Global.i][8]) > 0 ? 
-				Mapped Array(
-					Global.PeaceEditorVariables[2][Global.i][8], 
-					Array(
-						Current Array Element[0], 
-						Global.PeaceEditorVariables[7], 
-						Current Array Element[1])
-				) : False;
-
-			
-			"Create a teleport pad in levels where the next cp has the teleport flag enabled"
-			If(Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][5] == True);
-				Global.Teleports[Global.i] = Array(
-						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
-						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
-						False,
-						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
-						Global.PeaceCheckpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1]
-					);
-				Global.PeaceEditorVariables[6] += 1;
-			Else;
-				Global.Teleports[Global.i] = False;
-			End;
-			
-			"Temporarily extract level Multi-GA orbs"
-			Global.PeaceEditorVariables[3] = Filtered Array(Global.PeaceEditorVariables[2][Global.i][6], Current Array Element[1] != False);
-
-			"If no Multi-GA orbs, level extraction is complete"
-			If(Count Of(Global.PeaceEditorVariables[3]) == 0);
-				Global.RefreshOrbs[Global.i] = False;
-			Else;
-				Global.RefreshOrbs[Global.i] = Empty Array;
-				
-				"Mapped array wont work with multidimensional arrays... whyyyy? :/"
-				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
-					"Extract Multi-GA level bots"
-					Modify Global Variable At Index(Bots, Global.i, Append To Array,
-						Array(Array(
-							Global.PeaceEditorVariables[3][Global.j][1],
-							1,
-							Global.EditModeDefaults[4],	
-							False,
-							Global.PeaceEditorVariables[0],
-							Global.PeaceEditorVariables[3][Global.j][2],
-							Global.PeaceEditorVariables[3][Global.j][3]
-						))
-					);
-
-					"Extract level Refresh orbs, leave out the bot section # for now"
-					Modify Global Variable At Index(RefreshOrbs, Global.i, Append To Array,
-						Array(Array(
-							Global.PeaceEditorVariables[3][Global.j][0],
-							Global.PeaceEditorVariables[4],
-							Count Of(Global.Bots[Global.i]) - 1,
-							True,
-							False,
-							False
-						))
-					); 
-				End;
-			End;
-			"Clean up empty bot array"
-			If(Count Of(Global.Bots[Global.i]) == 0);
-				Global.Bots[Global.i] = False;
-			End;
-			Wait(0.016, Ignore Condition);
-		End;
-
-		"Translate Peace's customization options"
-		If(Global.PeaceConfig != Null);
-			Global.PeaceEditorVariables = Array(False, 42, 40, 41, 44, -7, 4, False, False, 9, False, False, 43, 45, False, 25, -6, False, 12, False, 1, 5);
-			If(Global.PeaceConfig[0] != Null);
-				Global.Settings[0] = Array(Global.PeaceConfig[0]);
-			End;
-			For Global Variable(i, 1, Count Of(Global.PeaceEditorVariables), 1);
-				If(Global.PeaceConfig[Absolute Value(Global.PeaceEditorVariables[Global.i])] != Null && Global.PeaceEditorVariables[Global.i] != False);
-					Global.Settings[Global.i] = Global.PeaceEditorVariables[Global.i] > 0 ? 
-						Global.PeaceConfig[Global.PeaceEditorVariables[Global.i]] : 
-						Array(Global.PeaceConfig[Absolute Value(Global.PeaceEditorVariables[Global.i])]);
-				End;
-			End;
-			"Extract default Goal CP text, multilanguage support coming soon"
-			Global.Settings[7] = Global.PeaceConfig[2][0];
-			"Goal checkpoint effect color"
-			disabled Global.Settings[16] = Array(Global.PeaceConfig[6]);
-			"Modify scoreboard text if the mapmaker changed it"
-			Global.Settings[17] = String Length(Global.PeaceConfig[24]) > 1 ? Global.PeaceConfig[24] : Global.Settings[17];
-			Modify Global Variable(VIPs, Append To Array, Global.PeaceVips);
-		End;
-		If(Global.PeaceTop5Color != Null);
-			Global.Top5Colors = Global.PeaceTop5Color;
-		End;
-		If(Global.OrbStyle == 0);
-			Global.OrbStyle = 1;
-		End;
-		If(Global.RefreshOrbStyle == 0);
-			Global.RefreshOrbStyle = 1;
-		End;
-		If(Count Of(Global.PeaceOrTawsVar) > 1 || String Length(Global.PeaceOrTawsVar[0]) > 0);
-			Global.HintTexts = Mapped Array(Global.PeaceOrTawsVar, Current Array Element == 0 ? False : Current Array Element);
-		End;
-		"Cleanup"
-		Global.PeaceCheckpoint = Null;
-		Global.PeaceCheckpoint2 = Null;
-		Global.PeaceVips = Null;
-		Global.PeaceEditorVariables = Null;
-		Global.PeaceConfig = Null;
-		Global.PeaceTop5Color = Null;
-		disabled Global.WorldTexts = Null;
-		disabled Global.BigMessages = Null;
-		disabled Global.SmallMessages = Null;
-		Global.PeaceOrTawsVar = Null;
-		Log To Inspector(Custom String("Peace Decompress Data End"));
 	}
 }
 rule("————————————————————— Add-ons ——————————————————————")
