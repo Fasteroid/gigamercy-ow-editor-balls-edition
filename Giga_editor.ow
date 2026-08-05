@@ -1427,14 +1427,13 @@ rule("Detect Landing Outside")
 			) 
 			||
 			(
+				Event Player.FireballSetting == 0 && 
 				(
-					
-					Event Player.FireballSetting == 0 && 
 					Speed Of(Event Player) >= 15 &&
 					Is Button Held(Event Player, Button(Secondary Fire))
+					||
+					Is On Ground(Event Player)
 				)
-				||
-				Is On Ground(Event Player)
 			)
 		) == True;
 	}
