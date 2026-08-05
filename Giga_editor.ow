@@ -169,7 +169,6 @@ variables
 		11: CloudEffects
 		12: BhopReady
 		13: BhopActive
-		14: GACheck
 		15: Owner
 		16: CheckpointWorldTexts
 		17: LastPos
@@ -198,7 +197,6 @@ variables
 		40: TempFreeMode
 		41: CallUpdate
 		42: Resetting
-		43: MercyRezTimer
 		44: StartingAbilities
 		45: EditTempArray
 		46: Nickname
@@ -3941,12 +3939,7 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.EditModeDefaults[3] = Workshop Setting Real(Custom String("Giga editor options"), Custom String("Default - Cloud radius"), 1.5, 0.1, 4, 4);
 		Global.EditModeDefaults[4] = Workshop Setting Combo(Custom String("Giga editor options"), Custom String("Default - Bot Facing direction"), 0, Array(Custom String("Towards Player"), Custom String("Towards Goal")), 5);
 		Global.EditModeDefaults[5] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Checkpoints - Require landing on ground"), True, 6);
-		Global.EditModeDefaults[6] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Checkpoints - Allow crouch"), True, 7);
 		Global.EditModeDefaults[7] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Checkpoints - Free Walking"), False, 8);
-		Global.EditModeDefaults[8] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Hold crouch"), False, 9);
-		Global.EditModeDefaults[9] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Gravity"), True, 10);
-		Global.EditModeDefaults[10] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Require Resurrect"), False, 11);
-		Global.EditModeDefaults[11] = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("New Bots - Refresh GA after Rez"), True, 12);
 		"------Troubleshooting------"
 		disabled End;
 		Global.ServerLoad = Workshop Setting Toggle(Custom String("Troubleshooting"), Custom String("Server Load Widget"), False, 99);	
