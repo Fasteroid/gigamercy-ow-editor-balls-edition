@@ -109,27 +109,12 @@ settings
 variables
 {
 	global:
-<<<<<<< HEAD
-		0:  EditMode
-		1:  DebugMode
-		2:  NewPeaceCheckpoints
-		3:  HintTexts
-		4:  Settings
-		5:  ButtonList
-		6:  Checkpoints
-		7:  PeaceCheckpoint
-		8:  TawsCompressedData
-		9:  TawsCheckpointHintText
-		10: TawsCheckpointInWorldText
-		11: TawsNoHintText
-=======
 		0: EditMode
 		1: DebugMode
 		3: HintTexts
 		4: Settings
 		5: ButtonList
 		6: Checkpoints
->>>>>>> get rid of taws and peace stuff
 		12: BotPenCoords
 		15: VIPs
 		18: TempVal
@@ -164,7 +149,6 @@ variables
 		54: Teleports
 		55: MenuObjectNames
 		56: MapDataSchema
-		57: AbilityEncoding
 		58: PlayerAbilityMode
 		59: ZeroCooldownMode
 		60: ContextualMenuOptions
@@ -209,7 +193,7 @@ variables
 		35: Ultimate
 		36: Ability1
 		37: Ability2
-		38: GrappleRetraction
+		38: FireballSetting
 		39: SecondaryFire
 		40: TempFreeMode
 		41: CallUpdate
@@ -251,25 +235,13 @@ variables
 		77: EditMenuText
 		78: UNUSEDMenuDropdownId
 		79: HideSidebarControls
-		80: FireballFreewalk
-		81: UnderstandsFireballFreewalk
+		80: UnderstandsFirewalk
+		81: UnderstandsNoFireball
 		82: Maneuvering
+		83: CheckpointColor
 }
 subroutines
 {
-<<<<<<< HEAD
-	0:  InitializeGlobalVariables
-	1:  InitializePlayerVariables
-	2:  DecompressMapData
-	3:  CreateGlobalHUD
-	4:  CreatePlayerHUD
-	5:  SetUpCheckpoint
-	6:  ResetCheckpoint
-	7:  ResetWithMistake
-	8:  TeleportToCurrentCheckpoint
-	9:  TawsDecompressData
-	10: PeaceDecompressData
-=======
 	0: InitializeGlobalVariables
 	1: InitializePlayerVariables
 	2: DecompressMapData
@@ -279,7 +251,6 @@ subroutines
 	6: ResetCheckpoint
 	7: ResetWithMistake
 	8: TeleportToCurrentCheckpoint
->>>>>>> get rid of taws and peace stuff
 	11: SetEditModeObjectIndex
 	12: CreatePlayerDebugModeHUD
 	13: CreatePlayerEditModeHUD
@@ -563,19 +534,6 @@ rule("Global Initialization")
 		"Decompress Giga editor data"
 		If(Global.MapData);
 			Call Subroutine(DecompressMapData);
-<<<<<<< HEAD
-		"Detect Taw's Editor data"
-		Else If (Global.TawsCompressedData);
-			Call Subroutine(TawsDecompressData);
-		"Detect Peace's Editor data. Only T6QQT is supported for now"
-		Else If (Global.PeaceCheckpoint || Global.PeaceCheckpoint2);
-			If(Global.PeaceCheckpoint2);
-				Global.PeaceCheckpoint = Global.PeaceCheckpoint2;
-				Global.PeaceCheckpoint2 = Null;
-			End;
-			Call Subroutine(PeaceDecompressData);
-=======
->>>>>>> get rid of taws and peace stuff
 		End;
 		Log To Inspector(Custom String("Decompression ended"));
 		Wait(0.016, Ignore Condition);
@@ -703,7 +661,7 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 			Set Move Speed(Event Player, 100);
 			Set Jump Enabled(Event Player, True);
 		End;
-		Set Primary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.GrappleRetraction || Event Player.FreeMode);
+		Set Primary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.FreeMode);
 		Set Secondary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.SecondaryFire > 0 || Event Player.FreeMode);
 		Call Subroutine(GetEditMenuTempData);
 	}
@@ -1026,21 +984,11 @@ rule("Create Start and Finish Checkpoint rings")
 	{
 		Wait Until(Global.InitDone, 99999);
 
-		"Create starting checkpoint rings.  Use various colors depending on level constraints."
+		"Create starting checkpoint rings."
 		Create Effect(
 			Global.Checkpoints[Event Player.Checkpoint][5] ? Null : Event Player, 
 			Ring, 
-			Event Player.SecondaryFire == True ? 
-				Event Player.FireballFreewalk == True ?  
-					Color(Purple)
-					:
-					Color(White)
-				:
-				Event Player.Crouch == True ?
-					Color(Orange)
-					:
-					Color(Red)
-			, 
+			Event Player.CheckpointColor,
 			Global.Checkpoints[Event Player.Checkpoint][0],
 			Global.Checkpoints[Event Player.Checkpoint][1], 
 			Visible To Position Radius and Color
@@ -1424,40 +1372,6 @@ rule("——————————————————— Parkour Engine r
 	}
 }
 
-rule("Disable grapple retraction after leaving the ground if specified")
-{
-	event
-	{
-		Ongoing - Each Player;
-		All;
-		All;
-	}
-
-	conditions
-	{
-		Is Dummy Bot(Event Player) == False;
-		Event Player.FreeMode == False;
-		
-		// 1. Only enforce this if the current level explicitly bans retraction
-		Event Player.GrappleRetraction == False; 
-	}
-
-	actions
-	{
-		Wait Until(Is Firing Secondary(Event Player) == True && Is On Ground(Event Player) == False, 99999);
-
-		If( Event Player.GrappleRetraction == False );
-			Call Subroutine(DisableRetraction);
-		End;
-
-		Wait Until(Is Firing Secondary(Event Player) == False, 99999);
-		
-		Call Subroutine(EnableRetraction);
-
-		Loop If Condition Is True;
-	}
-}
-
 rule("Detect Leaving Checkpoint")
 {
 	event
@@ -1497,22 +1411,48 @@ rule("Detect Landing Outside")
 		Event Player.FreeMode == False;
 		Event Player.Finished == False;
 		Event Player.LeftCheckpoint == True;
-		Is On Ground(Event Player) == True;
-		( Event Player.FireballFreewalk == False || (Event Player.FireballFreewalk == True && Speed Of(Event Player) < 15) ) == True;
+		( 
+			(
+				Event Player.FireballSetting == 2 && 
+				Speed Of(Event Player) < 15 && 
+				Is On Ground(Event Player)
+			) 
+			|| 
+			(
+				Event Player.FireballSetting == 1 && 
+				Is On Ground(Event Player)
+			) 
+			||
+			(
+				(
+					Event Player.FireballSetting == 0 && 
+					Speed Of(Event Player) >= 15
+				)
+				||
+				Is On Ground(Event Player)
+			)
+		) == True;
 	}
 	actions
 	{
 		"Free walking"
 		Abort If(Global.Checkpoints[Event Player.Checkpoint][5]);
-		Skip If(Hero Of(Event Player) == Hero(Mercy), 2);
-		Abort If(!Is On Ground(Event Player));
 		Log To Inspector(Custom String("{0} - Landed outside the goal", Event Player));
+
 		If(
-			(Event Player.FireballFreewalk == True && 
+			(Event Player.FireballSetting == 2 && 
 			Speed Of(Event Player) < 15) == True &&
-			(Event Player.UnderstandsFireballFreewalk == False)
+			(Event Player.UnderstandsFirewalk == False)
 		);
-			Small Message(Event Player, Custom String("  {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+			Small Message(Event Player, Custom String(" {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+		End;
+
+		If(
+			(Event Player.FireballSetting == 0 && 
+			Speed Of(Event Player) >= 15) == True &&
+			(Event Player.UnderstandsNoFireball == False)
+		);
+			Small Message(Event Player, Custom String("  {0} Don't enter fireball for this level", Icon String(Asterisk)));
 		End;
 
 		Abort If(
@@ -1541,13 +1481,13 @@ rule("Detect Fireball Freewalk Understanding")
 	conditions
 	{
 		Is On Ground(Event Player) == True;
-		Event Player.FireballFreewalk == True;
+		Event Player.FireballSetting == 2;
 		Speed Of(Event Player) > 15 == True;
 	}
 
 	actions
 	{
-		Event Player.UnderstandsFireballFreewalk = True;
+		Event Player.UnderstandsFirewalk = True;
 	}
 }
 
@@ -1649,6 +1589,10 @@ rule("Detect Landing on Goal or Teleport")
 			Teleport(Event Player, Global.Teleports[Event Player.Checkpoint][2]);
 			Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Position Of(Event Player), 100);
 		Else;
+
+			If( Event Player.FireballSetting == 0 );
+				Event Player.UnderstandsNoFireball = True;
+			End;
 
 			Event Player.Checkpoint += 1;
 
@@ -2246,12 +2190,51 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 
 	actions
 	{
-		Global.NewObjectDefaults = Array(Array(Null, Global.EditModeDefaults[0], False, False, Global.EditModeDefaults[5],
-			Global.EditModeDefaults[7], Global.EditModeDefaults[6] ? 1155 : 1154), Array(Null, Global.EditModeDefaults[1]), Array(Null,
-			Global.EditModeDefaults[1], -1, True, False, False), Array(Null, False, Global.EditModeDefaults[4], Global.EditModeDefaults[8],
-			Global.EditModeDefaults[9], Global.EditModeDefaults[10], Global.EditModeDefaults[11]), Array(Null, Global.EditModeDefaults[2]),
-			Array(Null, Global.EditModeDefaults[3], 10), Array(Null, Global.EditModeDefaults[0], Null, Global.EditModeDefaults[0],
-			Global.EditModeDefaults[0]));
+		Global.NewObjectDefaults = Array(
+
+			// 0: Checkpoints
+			Array(
+				Null,                        // 0: position
+				Global.EditModeDefaults[0],  // 1: size
+				False,                       // 2: facing direction
+				False,                       // 3: [reserved]
+				Global.EditModeDefaults[5],  // 4: land on ground
+				Global.EditModeDefaults[7],  // 5: free walking
+				(1*1 + 1*2 + 1*4)                         // 6: abilities
+			), 
+
+			// 1: Orbs
+			Array(Null, Global.EditModeDefaults[1]), 
+
+			// 2: RefreshOrbs
+			Array(Null, Global.EditModeDefaults[1], -1, True, False, False),
+
+			// 3: Bots (unused rn, probably broken)
+			Array(
+				Null, 
+				False, 
+				Global.EditModeDefaults[4],
+				Global.EditModeDefaults[8],
+				Global.EditModeDefaults[9], 
+				Global.EditModeDefaults[10], 
+				Global.EditModeDefaults[11]
+			), 
+
+			// 4: AntiOrbs
+			Array(Null, Global.EditModeDefaults[2]),
+
+			// 5: Clouds
+			Array(Null, Global.EditModeDefaults[3], 10),
+
+			// 6: Teleports
+			Array(
+				Null, 
+				Global.EditModeDefaults[0], 
+				Null, Global.EditModeDefaults[0],
+				Global.EditModeDefaults[0]
+			)
+
+		);
 		"TODO: Make Palette menu for inserting different types of objects"
 		Global.PaletteMenu = Array(Array(Custom String("     {0}\nCheckpoints", Icon String(Flag)), Custom String("   {0}\nCoins",
 			Icon String(Circle)), Custom String("     {0}\nRefresh Orbs", Icon String(Recycle)), Custom String("  {0}\nBots",
@@ -2269,7 +2252,18 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Custom String("  {0}\nNext", Icon String(Arrow: Right))));
 		Global.MenuObjectNames = Array(Custom String("Checkpoint"), Custom String("Orb"), Custom String("Refresh Orb"), Custom String(
 			"Bot"), Custom String("AntiOrb"), Custom String("Cloud"), Custom String("Teleport"));
-		"These codes are used to identify the datatypes of an object data: \n0: Not used/Invalid \n1: Boolean \n2: Position vector\n3: Non-zero Integer \n4: Positive Integer \n5: Non-zero floating point \n6: Positive floating point \n7: Color\n8: LvlAbilities (reserved)\n9: "
+		"
+		These codes are used to identify the datatypes of an object data: 
+		0: Not used/Invalid 
+		1: Boolean 
+		2: Position vector
+		3: Non-zero Integer 
+		4: Positive Integer 
+		5: Non-zero floating point 
+		6: Positive floating point 
+		7: Color
+		8: LvlAbilities (reserved)
+		"
 		Global.MapDataSchema = Array(
 			Array(2, 5, 2, 0, 1, 1, 8), 
 			Array(2, 5),
@@ -2279,7 +2273,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 			Array(2, 5, 3), 
 			Array(2, 5, 2, 5, 5)
 		);
-		Global.MapDataSchema[7] = Array(1, 1, 1, 1, 8);
+		Global.MapDataSchema[7] = Array(1, 1, Array(4, 2), 8);
 		"TESTING"
 		Global.MenuOptions[0] = Custom String(
 			"Position:\nSize:\nFacing Direction:\n--Reserved--\nLand on ground:\nFree Walking:\n"
@@ -2302,7 +2296,7 @@ rule("EditMode: Subroutine InitializeEditModeVariables")
 		"Teleports Screen"
 		Global.MenuOptions[6] = Custom String("Position:\nSize:\nTP Coords:\nLimit Above:\nLimit Below:\n");
 		"Default abilities text"
-		Global.MenuOptions[7] = Custom String("Piledrive:\nGrapple:\nRetraction:\nFireball Freewalk:\nSave changes <<\n");
+		Global.MenuOptions[7] = Custom String("Piledrive:\nGrapple:\nFireball:\nSave changes <<\n");
 		Global.ContextualMenuOptions[0] = Array(Custom String(">>dropdown here\n"));
 
     }
@@ -2469,8 +2463,16 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 1, 100, 1);
 				Else;
 				"4: Edit positive integers (0 to 100, unless max-range specified)"
-				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 1, Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] ? Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] : Event Player.MenuPage == 2 ? Count Of(Global.Bots[Event Player.Checkpoint]) - 1 : 100, 0);
-				Else;
+				Event Player.EditNumber = Array(
+					Event Player.EditTempObject[Event Player.MenuCursor], 
+					1,
+					Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] ? 
+						Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor][1] 
+						: 
+						( Event Player.MenuPage == 2 ? Count Of(Global.Bots[Event Player.Checkpoint]) - 1 : 100), 
+					0
+				);
+			Else;
 				"5: Edit Non-zero decimal values (0.01 to 8)"
 				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 0.1, 8, 0.1);
 				Else;
@@ -2490,8 +2492,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				
 				"Save starting abilities"
 				If(Event Player.MenuPage == 0);
-					Event Player.Temp = Mapped Array(Event Player.EditTempObject, Current Array Element * Global.AbilityEncoding[Current Array Index]);
-					Event Player.Temp = Event Player.Temp[0] + Event Player.Temp[1] + Event Player.Temp[2] + Event Player.Temp[3];
+					Event Player.Temp = Event Player.EditTempObject[0] + Event Player.EditTempObject[1] * 2 + Event Player.EditTempObject[2] * 4;
 					Call Subroutine(GetEditTempObject);
 					Event Player.EditTempObject[6] = Event Player.Temp;
 					Log To Inspector(Custom String("{0} - Compressed abilities: {1}", Event Player, Event Player.EditTempObject[6]));
@@ -2592,10 +2593,12 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		);
 		Log To Inspector(Custom String("Insert Object Tick"));
 		disabled Wait(0.016, Ignore Condition);
-		If(Event Player.ObjectType == 0);
+
+		If(Event Player.ObjectType == 0); // new checkpoint
 			Event Player.EditConfirmationTimer = 0;
 			Event Player.EditTempObject = Global.NewObjectDefaults[0];
 			Event Player.EditTempObject[0] = Position Of(Event Player);
+
 			Global.Checkpoints = Append To Array(
 				Append To Array(
 					Array Slice(Global.Checkpoints, 0, Event Player.Checkpoint + 1), 
@@ -2660,12 +2663,20 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 					Call Subroutine(GetEditMenuTempData);
 					Call Subroutine(SetUpCheckpoint);
 			End;
-		Else;
-			Log To Inspector(Custom String("{0} - Inserted {1} at checkpoint {2}", Event Player, Global.MenuObjectNames[Event Player.ObjectType], Event Player.Checkpoint));
-			
-			Event Player.EditTempObject = Global.NewObjectDefaults[Event Player.ObjectType]; 
-			
-			Event Player.EditTempObject[0] = Array Contains(Array(1,2,4), Event Player.ObjectType) ? Position Of(Event Player) + Vector(0, Event Player.EditTempObject[1], 0) : Position Of(Event Player);
+		Else; // something for a checkpoint; clone from NewObjectDefaults
+			Log To Inspector(
+				Custom String("{0} - Inserted {1} at checkpoint {2}", 
+					Event Player,
+					Global.MenuObjectNames[Event Player.ObjectType], 
+					Event Player.Checkpoint
+				)
+			);
+			Event Player.EditTempObject = Global.NewObjectDefaults[Event Player.ObjectType];
+			Event Player.EditTempObject[0] = Array Contains( Array(1, 2, 4), Event Player.ObjectType) ? // does this object get a y-offset?
+				Position Of(Event Player) + Vector(0, Event Player.EditTempObject[1], 0) 
+				: 
+				Position Of(Event Player)
+			;
 
 			If(True);
 				Skip((Event Player.ObjectType - 1) * 4);
@@ -2694,11 +2705,20 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				Call Subroutine(GetGoalData);
 				Else;
 			End;
+
 			Event Player.ObjectIndex = -1;
 			Call Subroutine(SetEditModeObjectIndex);
-
-			Small Message(Event Player, Custom String("  Created new {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"), Event Player.ObjectIndex));
+			Small Message(
+				Event Player, 
+				Custom String(
+					"  Created new {0} {1} {2}", 
+					Global.MenuObjectNames[Event Player.ObjectType],
+					Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"), 
+					Event Player.ObjectIndex
+				)
+			);
 		End;
+
 		If(Event Player.ObjectType == 3 && Count Of(Global.Bots[Event Player.Checkpoint]) == 1);
 			"Trigger a GetStartingAbilities call"
 			Set Player Variable(Filtered Array(All Players(All Teams), Current Array Element.Checkpoint == Event Player.Checkpoint), CallUpdate, 3);
@@ -3829,7 +3849,6 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 		Global.TempVal = Null;
 		Global.DebugMode = Null;
 		Global.PlayerData = Null;
-		Global.AbilityEncoding = Null;
 		Global.ServerLoad = Null;
 		"Slice off the \"New object\n values, since theyre explicitly set"
 		Global.EditModeDefaults = Array Slice(Global.EditModeDefaults, 0, 5);
@@ -3940,8 +3959,6 @@ rule("Subroutine InitializeGlobalVariables")
 		Global.Scoreboard = Empty Array;
 		Global.EnPadding = Custom String("                                                                                     ");
 		Global.PlayerData = Empty Array;
-		"V4 encoding - piledrive, grapple, grapple retraction, fireball freewalk"
-		Global.AbilityEncoding = Array(1, 2, 4, 8);
 	}
 }
 rule("Subroutine InitializePlayerVariables")
@@ -3955,8 +3972,6 @@ rule("Subroutine InitializePlayerVariables")
 	actions
 	{
 		Event Player.Checkpoint = 0;
-		disabled Event Player.Finished = False;
-		disabled Event Player.FreeMode = False; 
 		Event Player.ThirdPerson = False;
 		Event Player.CurrentRunTime = 0;
 		Event Player.Mistakes = 0;
@@ -3994,6 +4009,7 @@ rule("Subroutine InitializePlayerVariables")
 		Event Player.Temp = First Of(Filtered Array(Global.Scoreboard, Current Array Element[0] == Event Player.Nickname));
 		Event Player.BestRun = Count Of(Event Player.Temp) > 1 ? Array Slice(Event Player.Temp, 1, 2) : False;
 		Event Player.Temp = Null;
+		Event Player.FireballSetting = 1;
 	}
 }
 rule("Subroutine InitializePlayerBot")
@@ -4478,11 +4494,30 @@ rule("Subroutine SetUpCheckpoint")
 		Skip If(Event Player.Collision, 1);
 		Call Subroutine(TogglePlayerCollision);
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
-			Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
-		Skip If(Event Player.GrappleRetraction == False, 1);
-			Small Message(Event Player, Custom String("   This level allows grapple retraction"));
-		Skip If(Event Player.FireballFreewalk == False, 1);
+		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
+
+		If( Event Player.FireballSetting == 0 );
+			Small Message(Event Player, Custom String("  {0} Don't enter fireball for this level", Icon String(Asterisk)));
+		Else If( Event Player.FireballSetting == 2 );
 			Small Message(Event Player, Custom String("  {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+		End;
+
+		"Determine what color to use for the starting ring"
+		If( Event Player.SecondaryFire == False );
+			Event Player.CheckpointColor = Event Player.Crouch == True ?
+				Color(Orange)
+				:
+				Color(Red)
+			;
+		Else If( Event Player.FireballSetting != 1 );
+			Event Player.CheckpointColor = Event Player.FireballSetting == 2 ?
+				Color(Purple)
+				:
+				Color(Aqua)
+			;
+		Else;
+			Event Player.CheckpointColor = Color(White);
+		End;
 	}
 }
 rule("Subroutine ResetWithMistake")
@@ -4543,8 +4578,7 @@ rule("Subroutine ResetCheckpoint")
 		End;
 		Event Player.Crouch            = Event Player.StartingAbilities[0];
 		Event Player.SecondaryFire     = Event Player.StartingAbilities[1];
-		Event Player.GrappleRetraction = Event Player.StartingAbilities[2];
-		Event Player.FireballFreewalk  = Event Player.StartingAbilities[3];
+		Event Player.FireballSetting   = Event Player.StartingAbilities[2];
 		Call Subroutine(UpdateBotPosition);
 		Call Subroutine(SetCurrentAbilities);
 		Skip If(Hero Of(Event Player) == Global.Settings[11] || Event Player.FreeMode, 1);
@@ -4833,10 +4867,12 @@ rule("Subroutine GetStartingAbilities")
 	{
 		Event Player.AbilitiesTemp = Global.Checkpoints[Event Player.Checkpoint][6];
 		Log To Inspector(Custom String("{0} - Started ability decompression", Event Player));
-		Event Player.StartingAbilities = Mapped Array(
-			Array(2, 4, 8, 16),
-			Event Player.AbilitiesTemp % Current Array Element >= Global.AbilityEncoding[Current Array Index]
+		Event Player.StartingAbilities = Array(
+			(Event Player.AbilitiesTemp) % 2 == 1,
+			Round To Integer(Event Player.AbilitiesTemp / 2, Down) % 2 == 1,
+			Round To Integer(Event Player.AbilitiesTemp / 4, Down)
 		);
+
 		Abort If(Event Player.MenuPage == 7);
 		Event Player.StartingAbilities[6] = Event Player.AbilitiesTemp;
 
