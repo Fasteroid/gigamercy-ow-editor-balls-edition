@@ -3888,9 +3888,7 @@ rule("Subroutine InitializeGlobalVariables")
 		"------Gameplay Options------"
 		disabled End;
 		"Player Hero"
-		Global.Settings[11] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Player Hero"), Mercy, 0);
-		"Bot Hero"
-		Global.Settings[10] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Bot Hero"), Mercy, 1);
+		Global.Settings[11] = Workshop Setting Hero(Custom String("Gameplay Options"), Custom String("Player Hero"), Wrecking Ball, 0);
 		Global.PlayerAbilityMode = Workshop Setting Combo(Custom String("Gameplay Options"), Custom String("Player ability restrictions"),
 			0, Array(Custom String("Single use"), Custom String("Multiple uses"), Custom String("Unlimited")), 2);
 		Global.ZeroCooldownMode = Workshop Setting Toggle(Custom String("Gameplay Options"), Custom String("Instant cooldowns"), True, 3);
@@ -3903,7 +3901,7 @@ rule("Subroutine InitializeGlobalVariables")
 		disabled End;
 		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);
 		Global.EditModeDefaults[0] = Workshop Setting Real(Custom String("Giga editor options"), Custom String(
-			"Default - Checkpoint radius"), 1.600, 0.400, 4, 1);
+			"Default - Checkpoint radius"), 1.300, 0.400, 4, 1);
 		Global.EditModeDefaults[1] = Workshop Setting Real(Custom String("Giga editor options"), Custom String("Default - Orb radius"),
 			0.500, 0.100, 2, 2);
 		Global.EditModeDefaults[2] = Workshop Setting Real(Custom String("Giga editor options"), Custom String("Default - AntiOrb radius"),
