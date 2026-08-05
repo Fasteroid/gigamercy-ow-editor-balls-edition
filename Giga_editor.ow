@@ -215,14 +215,18 @@ rule("——————————————— ︾ Giga Parkour Editor BETA
 		disabled End;
 		"If you have questions or have any issues to report you can find me in:\ndiscord.gg\\mercyparkour"
 		disabled End;
-		"Parkour Editor by GigaMercy"
-		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(
-			Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224));
-		"Special Thanks!!"
-		Modify Global Variable(VIPs, Append To Array, Array(Array(Custom String("Aeternalys"), Custom String("{0}Aeternalys",
-			Ability Icon String(Hero(D.Va), Button(Ultimate))), Custom Color(64, 224, 208, 224)), Array(Custom String("maylanix"),
-			Custom String("{0} maylanix", Icon String(Skull)), Custom Color(255, 153, 187, 255)), Array(Custom String("poobie"),
-			Custom String("{0} poobie", Ability Icon String(Hero(Mercy), Button(Jump))), Custom Color(102, 120, 255, 255))));
+		"Contributors"
+		Modify Global Variable(
+			VIPs, 
+			Append To Array, 
+			Array(
+				Array(Custom String("GigaMercy"),  Custom String("{0} GigaMercy",  Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224)),
+				Array(Custom String("Aeternalys"), Custom String("{0} Aeternalys", Ability Icon String(Hero(D.Va), Button(Ultimate))),   Custom Color(64, 224, 208, 224)), 
+				Array(Custom String("maylanix"),   Custom String("{0} maylanix",   Icon String(Skull)),                                  Custom Color(255, 153, 187, 255)), 
+				Array(Custom String("poobie"),     Custom String("{0} poobie",     Ability Icon String(Hero(Mercy), Button(Jump))),      Custom Color(102, 120, 255, 255)),
+				Array(Custom String("Fasteroid"),  Custom String("{0} Fasteroid",  Hero Icon String(Hero(Wrecking Ball)),                Custom Color(102, 0, 204, 255)))
+			)
+		);
 	}
 }
 
