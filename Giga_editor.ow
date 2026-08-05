@@ -588,8 +588,8 @@ rule("Player Initialization")
 		Wait(0.016, Ignore Condition);
 		Call Subroutine(InitializePlayerVariables);
 		Call Subroutine(CreatePlayerHUD);
-		If(Global.EditMode || Is True for Any(Global.Bots, Current Array Element == True));
-			Call Subroutine(InitializePlayerBot);
+		If(Global.EditMode || Is True For Any(Global.Bots, Current Array Element == True));
+			disabled Call Subroutine(InitializePlayerBot);
 		End;
 		Wait(0.100, Ignore Condition);
 		Call Subroutine(TeleportToCurrentCheckpoint);
