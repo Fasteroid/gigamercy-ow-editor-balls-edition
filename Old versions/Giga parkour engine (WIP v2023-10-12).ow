@@ -1,0 +1,2705 @@
+/* Commit message:
+-------------------------------------------------------------------------------
+By this point i had a good understanding of peace and taw's data structure and how their editors work
+
+The parkour engine still had some flaws but as u can see, it was functional at this point :)
+
+Many afternoons were wasted here playing Jazzy's hanamura :3
+-------------------------------------------------------------------------------*/
+
+settings
+{
+	main
+	{
+		Description: "WIP v.20231022\n By GigaMercy"
+		Mode Name: "Giga Parkour Engine"
+	}
+
+	lobby
+	{
+		Allow Players Who Are In Queue: Yes
+		Map Rotation: Paused
+		Match Voice Chat: Enabled
+		Max Spectators: 12
+		Max Team 1 Players: 7
+		Max Team 2 Players: 0
+		Return To Lobby: After A Game
+		Swap Teams After Match: No
+	}
+
+	modes
+	{
+		Capture the Flag
+		{
+			Flag Dropped Lock Time: 5.0
+			Flag Return Time: 4.0
+			Flag Score Respawn Time: 15.0
+
+			
+			enabled maps
+			{
+			}
+		}
+
+		Hybrid
+		{
+			enabled maps
+			{
+			}
+		}
+
+		Practice Range
+		{
+			enabled maps
+			{
+			}
+		}
+
+		Skirmish
+		{
+			enabled maps
+			{
+				Hanamura 0
+			}
+		}
+
+		Team Deathmatch
+		{
+			Game Length In Minutes: 15
+
+			enabled maps
+			{
+			}
+		}
+
+		General
+		{
+			Allow Hero Switching: Off
+			Game Mode Start: Manual
+			Hero Limit: Off
+			Kill Cam: Off
+			Kill Feed: Off
+			Respawn Time Scalar: 0%
+			Spawn Health Packs: Disabled
+		}
+	}
+
+	heroes
+	{
+		General
+		{
+			No Ammunition Requirement: On
+			Ability Cooldown Time: 0%			
+			enabled heroes
+			{
+				Mercy
+			}
+		}
+	}
+
+	workshop
+	{
+		Debug Mode (Inspector Recording): On
+		Edit Mode: Off
+		Server Load Widget: On
+	}
+
+	extensions
+	{
+		Beam Effects
+		Beam Sounds
+		Buff Status Effects
+		Buff and Debuff Sounds
+		Explosion Sounds
+		Play More Effects
+		Spawn More Dummy Bots
+		Projectiles
+	}
+}
+
+variables
+{
+	global:
+		0:  MapData
+		1:  DebugMode
+		2:  Colors
+		3:  HintText
+		4:  Settings
+		5:  WorkshopColorList
+		6:  Checkpoints
+		8:  Orbs
+		9:  AntiOrbs
+		10: RefreshOrbs
+		11: Bots
+		12: Clouds
+		13: Teleports
+		14: CompressedData
+		15: TawsEditorVariables
+		16: DefaultCheckpointRadius
+		17: DefaultOrbRadius
+		18: DefaultRefreshOrbRadius
+		19: i
+		20: j
+		21: TempArray
+		22: WorldTexts
+		23: CheckpointInWorldText
+		24: ShowSidebarControlsPlayers
+		25: EditMode
+		26: RequireGrabAllRefreshOrbs
+		27: BotPenCoords
+		28: Checkpoint
+		29: RGB
+		30: CreatorAndCode
+		31: ServerLoad
+		32: MapTitle
+		33: PeaceEditorVariables
+		34: PlayerData
+		35: Scoreboard
+		36: EnPadding
+		37: Top5Colors
+		38: Top5Prefix
+		39: VIPs
+		40: Config
+
+	player:
+		0:  Checkpoint
+		1:  Finished
+		2:  FreeMode
+		3:  CurrentRunTime
+		4:  OrbEffects
+		5:  OrbIcons
+		6:  AntiOrbEffects
+		7:  RefreshOrbEffects
+		8:  RefreshOrbIcons
+		9:  BotEffects
+		10: BotIcons
+		11: CloudEffects
+		12: CheckpointEffects
+		13: CheckpointIcons
+		14: CheckpointText
+		15: ToggleControls
+		16: Mistakes
+		17: Scale
+		18: GrabbedOrbs
+		19: GrabbedRefreshOrbs
+		20: GoalCoords
+		21: GoalRadius
+		22: GoalThresholds
+		23: DEPRECATEDRunTimerEnabled
+		24: CurrentSectionTime
+		25: BotCondition
+		26: ThirdPerson
+		27: CurrentBotSection
+		28:	Bot
+		29: LeftCheckpoint
+		30: i
+		31: j
+		32: Crouch
+		33: Jump
+		34: Ability1
+		35: Ability2
+		36: Ultimate
+		37: PrimaryFire
+		38: SecondaryFire
+		39: TempFreeMode
+		40: BotUpdate
+		41: Resetting
+		42: MercyRezTimer
+		43: StartingAbilities
+		44: TempCheckpoint
+		45: PlayerName
+		46: BestRun
+		47: SavedCheckpoint
+		48: Cheat
+		49: PlayerNameColor
+		50: Temp
+}
+subroutines
+{
+	0:  InitializeGlobalVariables
+	1:  InitializePlayerVariables
+	2:  DecompressMapData
+	3:  CreateGlobalHUD
+	4:  CreatePlayerHUD
+	5:  SetUpCheckpoint
+	6:  ResetCheckpoint
+	7:  ResetWithMistake
+	8:  TeleportToCurrentCheckpoint
+	9:  TawsDecompressData
+	10: PeaceDecompressData
+	11: CreateCheckpoints
+	12: CreateGlobalEditModeHUD
+	13: CreatePlayerEditModeHUD
+	14: InitializePlayerBot
+	15: UpdateBotPosition
+	16: CancelMomentum
+	17: CancelUltimate
+	18: SetCurrentAbilities
+	19: EnableAllAbilities
+	20: PlayerCompletedRun
+}
+
+
+rule("Put your data here")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+actions
+	{
+		Global.Checkpoint = Array(Array(Vector(61.666, -2.044, 40.309), 1.600, True, Array(Vector(-40.051, 0.250, -108.314), False, True),
+			False, False, Array(), Array(), Array()), Array(Vector(64.082, -2.288, 46.897), 1.600, True, Array(Vector(58.609, -1.401,
+			53.589), False, True), False, False, Array(Array(Vector(61.780, 1.276, 61.776), False, False, True)), Array(), Array()), Array(
+			Vector(66.198, -2.956, 65.812), 1.600, True, Array(Vector(65.800, -3.166, 74.692), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(76.003, -3.375, 78.187), 1.600, True, Array(Vector(75.168, -2.828, 55.816), False, True),
+			False, False, Array(Array(Vector(74.248, 8.549, 50.088), False, False, True)), Array(), Array()), Array(Vector(72.597, 6.497,
+			45.549), 1.600, True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(83.028, -2.930,
+			53.714), 1.600, True, Array(Vector(82.630, -3.541, 70.745), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(97.179, -3.641, 74.593), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(
+			-33.257, 1, -115.117), 1.600, True, Array(Vector(-40.063, 0.250, -108.334), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(-46.936, 1, -101.496), 1.600, True, Array(Vector(-40.064, 0.250, -108.333), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(-32.664, 1, -100.888), 1.600, True, Array(Vector(-46.084, 1, -92.746), False, True),
+			False, False, Array(Array(Vector(-41.642, 2.892, -90.052), False, False, True)), Array(), Array()), Array(Vector(-36.924, 1,
+			-85.442), 1.600, True, Array(Vector(-33.010, 1, -79.672), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			-27.392, 1, -89.017), 1.600, True, Array(Vector(-23.984, 1, -97.874), False, True), False, False, Array(Array(Vector(-21.133,
+			3.550, -94.988), False, False, True)), Array(), Array()), Array(Vector(-13.777, 1, -102.204), 1.600, True, Array(Vector(-3.714,
+			-0.925, -93.171), False, True), False, False, Array(), Array(), Array()), Array(Vector(-2.959, 2.540, -82.504), 1.600, True,
+			Array(False, False, True), False, False, Array(Array(Vector(-6.118, 3.920, -79.355), False, False, True)), Array(), Array()),
+			Array(Vector(-8.600, 2.540, -76.829), 1.600, True, Array(Vector(-17.014, -0.749, -90.577), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(-16.225, 9.186, -90.003), 1.600, True, Array(Vector(-21.201, -0.925, -75.058), False, True),
+			False, False, Array(Array(Vector(-20.437, 9.992, -74.717), False, False, True)), Array(), Array()), Array(Vector(-17.394, 9,
+			-71.832), 1.600, True, Array(Vector(-8.968, 9, -61.287), False, True), False, False, Array(Array(Vector(1.065, 11.459,
+			-72.793), False, False, True)), Array(), Array()), Array(Vector(10.116, 7.010, -81.653), 1.600, True, Array(Vector(3.760,
+			7.010, -97.335), False, True), False, False, Array(Array(Vector(0.157, 8.706, -96.153), False, False, True)), Array(),
+			Array()), Array(Vector(-9.178, 1, -105.623), 1.600, True, Array(Vector(-17.957, 1, -104.218), False, True), False, False,
+			Array(Array(Vector(-15.276, 3.271, -96.200), False, False, True)), Array(), Array()), Array(Vector(-10.844, -0.925, -84.660),
+			1.600, True, Array(Vector(4.891, -1, -69.158), False, True), False, False, Array(), Array(), Array()), Array(Vector(4.987, 5,
+			-69.022), 1.600, True, Array(Vector(13.366, 4, -72.131), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			20.102, 4, -85.009), 1.600, True, Array(Vector(12.216, 7, -94.475), False, True), False, False, Array(Array(Vector(10.965,
+			8.475, -91.287), False, False, True)), Array(), Array()), Array(Vector(6.063, 7.010, -86.543), 1.600, True, Array(Vector(
+			12.822, 7.010, -83.414), False, True), False, False, Array(), Array(), Array()), Array(Vector(13.726, 9.010, -87.369), 1.600,
+			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(-0.673, -1, -97.091), 1.600, True,
+			Array(Vector(7.645, -1, -93.450), False, True), False, False, Array(Array(Vector(-1.744, 2.501, -83.677), False, False, True)),
+			Array(), Array()), Array(Vector(7.755, -1.905, -78.868), 1.600, True, Array(Vector(9.298, -5.102, -91.621), False, True),
+			False, False, Array(Array(Vector(15.063, -3.500, -87.120), False, False, True)), Array(), Array()), Array(Vector(19.436, -5,
+			-91.005), 1.600, True, Array(Vector(8.886, -5, -79.504), False, True), False, False, Array(Array(Vector(-0.375, 3.320,
+			-74.244), Vector(21.014, -5.495, -91.395), False, True)), Array(), Array()), Array(Vector(15.074, -5, -97.335), 1.600, True,
+			Array(Vector(21.397, -3, -81.395), False, True), False, False, Array(), Array(), Array()), Array(Vector(9.395, -0.920,
+			-72.995), 1.600, True, Array(Vector(2.309, 0.982, -64.152), False, True), False, False, Array(Array(Vector(1.681, 2.204,
+			-72.371), False, False, True)), Array(), Array()), Array(Vector(-3.627, -1.905, -67.534), 1.600, True, Array(False, False,
+			True), False, False, Array(Array(Vector(2.994, -0.489, -77.834), False, False, True)), Array(), Array(Array(Vector(-0.604,
+			-5.100, -74.217), 8), Array(Vector(2.491, -5.102, -77.373), 8), Array(Vector(-3.463, -5.100, -71.416), 8), Array(Vector(-6.580,
+			-5.100, -68.342), 8))), Array(Vector(-10.415, -4.920, -61.735), 1.600, True, Array(Vector(-19.477, -1, -50.992), False, True),
+			False, False, Array(Array(Vector(-30.530, 4.294, -53.276), False, False, True)), Array(), Array()), Array(Vector(-38.643, 1,
+			-61.544), 1.600, True, Array(Vector(-28.767, 1, -73.470), False, True), False, False, Array(Array(Vector(-26.206, 6.470,
+			-69.861), False, False, True)), Array(), Array()), Array(Vector(-22.085, 2.996, -66.788), 1.600, True, Array(Vector(-36.886, 1,
+			-65.452), False, True), False, False, Array(Array(Vector(-29.821, 4.073, -61.216), False, False, True)), Array(), Array()),
+			Array(Vector(-20.954, 4, -58.085), 1.600, True, Array(Vector(-16.189, 4, -53.260), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(-16.649, -1.168, -34.377), 1.600, True, Array(Vector(-24.045, -1.029, -20.745), False, True),
+			False, False, Array(Array(Vector(-27.452, 10.010, -19.634), False, False, True)), Array(), Array()), Array(Vector(-22.849,
+			-1.254, -13.731), 1.600, True, Array(Vector(-10.626, -0.693, -10.118), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(-5.760, 7.978, -10.109), 1.600, True, Array(Vector(4.704, 7.978, -10.314), False, True), False, False, Array(
+			Array(Vector(-4.096, 8.493, -19.936), False, False, True)), Array(), Array()), Array(Vector(-9.857, 7, -23.747), 1.600, True,
+			Array(False, False, True), False, False, Array(Array(Vector(-9.967, 8.503, -28.122), False, False, True)), Array(), Array()),
+			Array(Vector(-8.630, 5, -36.147), 1.600, True, Array(Vector(1.222, 5.603, -36.807), False, True), False, False, Array(Array(
+			Vector(-4.029, 6.415, -40.951), False, False, True)), Array(), Array()), Array(Vector(-7.079, 5.611, -45.736), 1.600, True,
+			Array(Vector(-9.272, 5, -39.762), False, True), False, False, Array(Array(Vector(13.087, 6.906, -41.101), False, False, True)),
+			Array(), Array(Array(Vector(1.779, 4.683, -41.045), 12))), Array(Vector(17.587, -1.224, -49.019), 1.600, True, Array(Vector(
+			2.843, -1.800, -48.856), False, True), False, False, Array(Array(Vector(8.350, 0.071, -48.890), False, False, True)), Array(),
+			Array()), Array(Vector(-8.821, 3.960, -47.838), 1.600, True, Array(Vector(0.941, -0.600, -54.759), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(13.066, 7.071, -48.835), 1.600, True, Array(False, False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(19.631, 4.299, -40.781), 1.600, True, Array(False, False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(8.208, 1.109, -42.809), 1.600, True, Array(False, False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(6.471, 2.109, -38.680), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array(Array(Vector(17.630, -0.681, -37.457), 12))), Array(Vector(23.785, 2.272, -34.501), 1.600, True, Array(False, False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(23.656, 2.021, -41.621), 1.600, True, Array(Vector(26.443,
+			-1.660, -46.553), False, True), False, False, Array(), Array(), Array()), Array(Vector(18.659, 0.981, -58.794), 1.600, True,
+			Array(Vector(25.046, -1.875, -71.271), False, True), False, False, Array(Array(Vector(29.673, -0.044, -65.455), False, False,
+			True)), Array(), Array()), Array(Vector(36.125, -1.942, -61.410), 1.600, True, Array(Vector(43.444, -1.144, -68.219), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(42.827, 1.411, -57.077), 1.600, True, Array(False, False, True),
+			False, False, Array(Array(Vector(47.130, -0.537, -52.269), False, False, True)), Array(), Array()), Array(Vector(45.284,
+			-1.191, -45.876), 1.600, True, Array(Vector(47.013, -2.005, -61.067), False, True), False, False, Array(Array(Vector(35.298,
+			7.350, -69.193), False, False, True), Array(Vector(31.541, 7.607, -73.225), False, False, True)), Array(), Array()), Array(
+			Vector(28.245, 3, -82.924), 1.600, True, Array(Vector(23.055, 2.921, -69.652), False, True), False, False, Array(Array(Vector(
+			26.052, 4.762, -75.881), False, False, True)), Array(), Array()), Array(Vector(35.461, 3.676, -65.695), 1.600, True, Array(
+			Vector(18.463, 2.850, -51.312), False, True), False, False, Array(Array(Vector(27.861, 3.858, -60.141), Vector(34.671, 2.314,
+			-51.322), False, True), Array(Vector(31.685, 4.135, -41.447), False, False, True), Array(Vector(28.034, 4.630, -51.450), False,
+			False, True)), Array(), Array()), Array(Vector(31.653, 2.327, -37.754), 1.600, True, Array(Vector(42.980, 2, -32.902), False,
+			True), False, False, Array(Array(Vector(20.518, 4.443, -30.084), False, False, True)), Array(), Array()), Array(Vector(12.953,
+			0, -30.173), 1.600, True, Array(Vector(12.959, 2.754, -42.849), True, True), False, False, Array(), Array(), Array()), Array(
+			Vector(1.692, -1.875, -44.872), 1.600, True, Array(Vector(-9.197, -1, -46.277), False, True), False, False, Array(Array(Vector(
+			-4.768, 0.016, -44.712), False, False, True), Array(Vector(-8.294, 2.805, -40.903), False, False, True)), Array(), Array()),
+			Array(Vector(-7.975, 1.040, -34.875), 1.600, True, Array(Vector(-11.245, 1, -20.755), False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(2.225, 1, -21.913), 1.600, True, Array(False, False, True), False, True, Array(), Array(),
+			Array()), Array(Vector(22.063, 6.607, -9.755), 1.600, True, Array(Vector(26.245, 6, -24.245), False, True), False, False,
+			Array(Array(Vector(18.845, 8.361, -21.142), False, False, True)), Array(), Array()), Array(Vector(13.020, 6.736, -21.579),
+			1.600, True, Array(Vector(0.755, 7, -23.908), False, True), False, False, Array(Array(Vector(-4.179, 8.360, -20.115), False,
+			False, True)), Array(), Array()), Array(Vector(-23.208, 2.352, -11.638), 1.600, True, Array(Vector(-15.387, 1, 1.208), False,
+			True), False, False, Array(Array(Vector(-17.071, -4.572, 1.117), False, False, True), Array(Vector(-17.071, -2.549, 1.117),
+			False, False, True), Array(Vector(-17.071, -0.903, 1.117), False, False, True)), Array(), Array()), Array(Vector(-14.900,
+			3.868, 13.241), 1.600, True, Array(Vector(-17.124, 3.995, 24.259), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(3.305, 2.497, 38.235), 1.600, True, Array(Vector(-12.411, 1, 30.688), False, True), False, False, Array(Array(
+			Vector(2.074, 4.784, 30.198), False, False, True)), Array(), Array()), Array(Vector(9.990, -0.925, 28.293), 1.600, True, Array(
+			False, False, True), False, False, Array(Array(Vector(9.222, -0.547, 25.866), False, False, True)), Array(), Array()), Array(
+			Vector(19.311, -1.158, 35.166), 1.600, True, Array(Vector(21.509, 2.228, 40.573), False, True), False, False, Array(Array(
+			Vector(13.254, -1.326, 51.465), Vector(3.226, 2.501, 39.511), False, True)), Array(), Array()), Array(Vector(15.369, -0.987,
+			27.411), 1.600, True, Array(Vector(23.529, 2.467, 29.967), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(16.707, 0, 8.771), 1.600, True, Array(Vector(5.462, 0, 8.531), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(13.919, 3.998, 16.629), 1.600, True, Array(Vector(14.420, 4.593, 24.021), False, True), False, False, Array(Array(
+			Vector(8.126, 5.506, 23.095), False, False, True)), Array(), Array()), Array(Vector(3.736, 3.966, 23.022), 1.600, True, Array(
+			Vector(-12.709, 1, 29.177), False, True), False, False, Array(), Array(), Array()), Array(Vector(6.573, 10.010, 26.461), 1.600,
+			True, Array(False, False, True), False, False, Array(), Array(), Array()), Array(Vector(8.835, 11.261, 24.251), 1.600, True,
+			Array(Vector(15.622, 11.297, 17.475), False, True), False, False, Array(), Array(), Array()), Array(Vector(-3.909, 7.962,
+			11.912), 1.600, True, Array(Vector(-4.203, 1, 2.652), False, True), False, False, Array(Array(Vector(-4.041, 5.202, 10.697),
+			False, False, True)), Array(), Array()), Array(Vector(-3.797, 1, -8.924), 1.600, True, Array(Vector(28.789, 10.463, -4.107),
+			False, True), False, False, Array(Array(Vector(2.797, 4.710, -6.015), False, False, True)), Array(), Array()), Array(Vector(
+			-3.887, 4, 14.748), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(-14.006,
+			-1.026, 13.674), 1.600, True, Array(Vector(-15.366, -1, 22.270), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(1.940, -1, 23.896), 1.600, True, Array(Vector(2.024, -1.237, 28.264), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(1.797, -0.387, 13.862), 1.600, True, Array(Vector(15.325, -1, 22.270), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(14.044, -0.434, 12.175), 1.600, True, Array(False, False, True), False, True, Array(),
+			Array(), Array()), Array(Vector(14.013, -0.002, 9.554), 1.600, True, Array(Vector(13.263, 0.999, -4.315), False, True), False,
+			False, Array(), Array(), Array()), Array(Vector(29.313, 10.456, -3.627), 1.600, True, Array(Vector(8.515, 0, 8.956), False,
+			True), False, False, Array(Array(Vector(10.473, 4.320, 8.908), False, False, True)), Array(), Array()), Array(Vector(28.555,
+			10.442, 4.336), 1.600, True, Array(Vector(45.224, 6, -7.236), False, True), False, False, Array(Array(Vector(40.020, 7.515,
+			-2.527), False, False, True), Array(Vector(39.911, 7.500, -5.443), False, False, True)), Array(), Array()), Array(Vector(
+			13.500, 0.986, -4.418), 1.600, True, Array(Vector(28.205, 0, -8.016), False, True), False, False, Array(), Array(), Array()),
+			Array(Vector(30.735, 2.524, -13.567), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(41.015, 7.077,
+			-14.445), False, False, True), Array(Vector(45.980, 7.014, -14.396), False, False, True), Array(Vector(47.198, 3.269, -24.817),
+			False, False, True)), Array(), Array(Array(Vector(30.739, 2.332, -13.566), 14))), Array(Vector(40.236, 0.039, -26.196), 1.600,
+			True, Array(Vector(39.582, 0.038, -8.873), False, True), False, False, Array(Array(Vector(43.871, 2.585, -7.802), False, False,
+			True)), Array(), Array()), Array(Vector(56.123, -1, -4.955), 1.600, True, Array(False, False, True), False, False, Array(),
+			Array(), Array()), Array(Vector(57.370, -0.143, 1.693), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(50.620, -0.070, 0.643), 1.600, True, Array(False, False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(54.561, -0.116, -7.187), 1.600, True, Array(Vector(54.884, -1.224, 15.499), False, True), False, False,
+			Array(), Array(), Array()), Array(Vector(47.796, 6, 14.253), 1.600, True, Array(Vector(34.657, 6, 17.988), False, True), False,
+			False, Array(Array(Vector(35.446, 4.505, 17.735), Vector(47.753, 6, 6.200), False, True), Array(Vector(47.340, 4.278, 6.008),
+			False, False, True), Array(Vector(40.989, 3.191, 21.428), False, False, True)), Array(), Array()), Array(Vector(40.784, 0.324,
+			26.567), 1.600, True, Array(Vector(44.207, 0.470, 38.388), False, True), False, False, Array(), Array(), Array()), Array(
+			Vector(27.919, 3, 31.527), 1.600, True, Array(Vector(27.337, 3, 24.672), False, True), False, False, Array(), Array(),
+			Array()), Array(Vector(34.532, 13.953, 22.449), 1.600, True, Array(False, False, True), False, False, Array(Array(Vector(
+			30.932, 18.978, 20.053), False, False, True), Array(Vector(28.490, 12.350, 4.135), False, False, True), Array(Vector(39.824,
+			7.501, -2.429), False, False, True)), Array(), Array(Array(Vector(34.581, 13.458, 22.372), 11))), Array(Vector(41.478, 5.999,
+			2.229), 1.600, True, Array(Vector(49.441, 6, 2.474), False, True), False, False, Array(), Array(), Array()), Array(Vector(
+			63.774, 0.593, 4.736), 1.600, True, Array(Vector(56.613, -1.794, 18.224), False, True), False, False, Array(Array(Vector(
+			66.468, 10.169, 22.502), False, False, True), Array(Vector(65.680, 10.198, 30.173), False, False, True)), Array(), Array()),
+			Array(Vector(61.222, 0.334, 35.752), 1.600, True, Array(Vector(62.301, 6, -2.312), False, True), False, False, Array(Array(
+			Vector(62.982, 4.425, 6.438), False, False, True)), Array(), Array()), Array(Vector(61.551, 6, -12.940), 1.600, True, Array(
+			Vector(51.221, 6, -12.397), False, True), False, False, Array(Array(Vector(56.694, 4.066, -12.766), Vector(27.438, 12.607,
+			-12.185), False, True), Array(Vector(33.195, 10.660, -12.449), False, False, True), Array(Vector(52.989, 13.983, -13.862),
+			False, False, True)), Array(), Array()), Array(Vector(72.676, -1.970, -0.078), 1.600, True, Array(False, False, True), False,
+			True, Array(), Array(), Array()), Array(Vector(76.485, -1.979, 0.044), 1.600, True, Array(Vector(83.789, -2.999, 5.137), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(93.164, -1.897, -6.207), 1.600, True, Array(Vector(99.687,
+			-0.051, 0.125), False, True), True, False, Array(Array(Vector(85.496, 3.481, -7.720), False, False, True), Array(Vector(84.623,
+			9.426, -7.781), False, False, True), Array(Vector(100.248, 14.511, 0.210), False, False, True), Array(Vector(93.414, 11.601,
+			-6.283), False, False, True), Array(Vector(93.417, 6.397, -4.341), False, False, True), Array(Vector(93.355, 1.513, -2.235),
+			False, False, True), Array(Vector(106.438, 3.395, -0.163), False, False, True)), Array(), Array()), Array(Vector(113.057, 1,
+			0.069), 1.600, True, Array(False, False, True), False, True, Array(), Array(), Array()), Array(Vector(99.316, 12, 7.177),
+			1.600, True, Array(Vector(85.167, 12, 9.802), False, True), False, False, Array(Array(Vector(86.334, 14.758, -6.994), False,
+			False, True)), Array(), Array()), Array(Vector(84.868, 7, -3.968), 1.600, True, Array(Vector(84.756, 7, -4.601), False, True),
+			False, False, Array(Array(Vector(84.785, 8.603, -6.551), Vector(102.809, 5.163, 7.550), False, True), Array(Vector(87.946,
+			6.503, -5.759), False, False, True), Array(Vector(91.847, 6.610, -5.461), False, False, True), Array(Vector(94.699, 6.398,
+			-1.111), False, False, True), Array(Vector(94.740, 6.562, 3.788), False, False, True), Array(Vector(99.975, 6.765, 4.007),
+			False, False, True)), Array(), Array()), Array(Vector(91.903, 2, -0.622), 1.600, True, Array(Vector(93.246, 2, 12.243), False,
+			True), False, False, Array(), Array(), Array()), Array(Vector(75.946, 2, 7.196), 1.600, True, Array(Vector(79.805, -1.870,
+			35.959), False, True), False, False, Array(Array(Vector(81.995, -1.422, 15.094), False, False, True), Array(Vector(78.486,
+			0.326, 27.190), False, False, True)), Array(), Array()), Array(Vector(81.916, -3, 10.078), 1.600, True, Array(False, False,
+			True), False, True, Array(), Array(), Array()), Array(Vector(52.946, -3.083, 80.260), 1.600, True, Array(Vector(78.853, -3.023,
+			58), False, True), False, False, Array(Array(Vector(76.181, 11.386, 81.913), False, False, True), Array(Vector(85.198, 11.603,
+			82.931), False, False, True), Array(Vector(94.308, 8.876, 86.019), False, False, True), Array(Vector(88.745, 16.134, 55.849),
+			False, False, True), Array(Vector(87.706, 16.165, 49.759), False, False, True), Array(Vector(88.912, 13.380, 41.231), False,
+			False, True), Array(Vector(88.958, 0.633, 56.154), False, False, True)), Array(), Array(Array(Vector(52.946, -3.083, 80.260),
+			26), Array(Vector(88.794, -3.481, 56.788), 25))), Array(Vector(94.310, -2, 19.419), 1.600, True, Array(False, False, True),
+			False, True, Array(), Array(), Array()), Array(Vector(0.352, 3.528, -58.549), 1.600, True, Array(Vector(13.094, 15.267,
+			-48.771), True, True), False, False, Array(), Array(), Array()), Array(Vector(12.891, 0, -23.966), 2.500, True, Array(False,
+			False, True), False, False, Array(), Array(), Array()));
+	}
+}
+rule("Customization options")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		"------Colors------"
+		disabled End;
+		"Start Checkpoint Ring Color"
+		Global.Settings[0] = Color(Red);
+		"Goal Checkpoint Ring Color"
+		Global.Settings[5] = Color(Red);
+		"Goal Checkpoint text Color"
+		Global.Settings[6] = Color(White);
+		"Teleport pad effect color"
+		Global.Settings[9] = Color(Red);
+		"Orb color"
+		Global.Settings[1] = Color(Red);
+		"Orb Icon Color"
+		Global.Settings[12] = Color(White);
+		"Refresh Orb Color"
+		Global.Settings[4] = Color(Red);
+		"Refresh Orb Icon Color"
+		Global.Settings[13] = Color(White);
+		"Anti-Orb Color"
+		Global.Settings[2] = Color(Black);
+		"Jump Cloud Color"
+		Global.Settings[3] = Color(Red);
+		"Scoreboard Top 5 colors"
+		Global.Top5Colors = Array(Custom Color(255, 215, 0, 255), Custom Color(220, 223, 227, 255), Custom Color(191, 173, 111, 255), Custom Color(192, 192, 192, 255), Custom Color(128, 138, 135, 255), Color(White), Color(White));
+		"Default Player nameplate color"
+		Global.Settings[14] = Color(White);
+		"Scoreboard color"
+		Global.Settings[15] = Color(Red);
+		"Goal effect color. Accepts multiple colors"
+		Global.Settings[16] = Array(Color(Red), Color(Yellow));
+		"Map title color. Disable this rule if you want rainbow effect"
+		disabled Global.Settings[18] = Color(Red);
+		"Crouch disabled bot outline color"
+		disabled Global.Settings[19] = Color(Red);
+		"Crouch enabled bot outline color"
+		Global.Settings[20] = Color(Aqua);
+		"Goal Icon Color"
+		Global.Settings[21] = Color(Green);
+
+
+		"------Texts & Icons------"
+		disabled End;
+		"Goal Checkpoint text"
+		Global.Settings[7] = Custom String("Goal");
+		"Teleport pad Text or Icon"
+		Global.Settings[8] = Icon String(Spiral);
+		"Player leaderboard positions (1st, 2nd, 3rd place)"
+		Global.Top5Prefix = Array(Custom String("1st"), Custom String("2nd"), Custom String("3rd"),Custom String("4th"), Custom String("5th"));
+		"Scoreboard title"
+		Global.Settings[17] = Custom String("Scoreboard:");
+		
+		"------Bot & Player Settings------"
+		disabled End;
+		"Player Hero"
+		Global.Settings[11] = Hero(Mercy);
+		"Bot Hero"
+		Global.Settings[10] = Hero(Mercy);
+		"Where to store unused bots by default"
+		Global.BotPenCoords = Vector(0, 200, 0);
+	}
+}
+rule("Creator and Code")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		"Your author(s) here"
+		Global.CreatorAndCode[0] = Custom String("Author");
+		"Your workshop code here"
+		Global.CreatorAndCode[1] = Custom String("Code");
+		"Only edit this if you want a custom map title"
+		Global.MapTitle = Custom String("{0} Parkour {1} by {2}", Global.Settings[11], Current Map, Custom String("{0}\nCode: {1}", Global.CreatorAndCode[0], Global.CreatorAndCode[1]));
+	}
+}
+rule("VIPs / Custom player tags")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		"BNet name, Nickname, Color"
+		Global.VIPs = Array(
+			Array(Custom String("GigaMercy"), Custom String("{0}GigaMercy", Ability Icon String(Hero(Mercy), Button(Ability 1))), Custom Color(251, 134, 28, 224))
+		);
+		"Add your custom names here"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("cashhole"), Custom String("Holecash"), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Platward"), Custom String("Platanardo"), Color(White));
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Aeternalys"), Custom String("Baguetternalys"), Color(White));
+	}
+}
+rule("——————————————————————————Initialization Settings——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("1. Global Initialization")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	actions
+	{
+		Call Subroutine(InitializeGlobalVariables);
+		If(!Global.DebugMode);
+			Disable Inspector Recording;
+		End;
+		Disable Built-In Game Mode Announcer;
+		Disable Built-In Game Mode Completion;
+		Disable Built-In Game Mode Music;
+		Disable Built-In Game Mode Scoring;
+		Disable Built-In Game Mode Respawning(All Players(All Teams));		
+		"TODO: Figure why match time is setup like this in taws and peace"
+		disabled If(Current Game Mode != Game Mode(Skirmish));
+		disabled 	Set Match Time(1);
+		disabled Else;
+		disabled 	Set Match Time(0);
+				 	disabled Start Game Mode;	
+		disabled End;
+		Pause Match Time;
+		Stop Forcing Spawn Room(All Teams);
+
+	}
+}
+
+rule("2. Player Initialization")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Has Spawned(Event Player) == True;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("Initializing player {0}...", Event Player));
+		Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
+		Disable Game Mode HUD(Event Player);
+		Enable Death Spectate All Players(Event Player);
+		Enable Death Spectate Target HUD(Event Player);
+		"Disable me if you need spawn room walls in your map (Assault/Hybrid/Escort maps only)"
+		disabled Start Forcing Spawn Room(Team 1, Color(Red));
+		disabled Start Forcing Spawn Room(Team 2, Color(Red));
+		Set Status(Event Player, Null, Invincible, 9999);
+		Disable Movement Collision With Players(Event Player);
+		Call Subroutine(InitializePlayerVariables);
+		Call Subroutine(CreatePlayerHUD);
+		If(Global.EditMode);
+			Call Subroutine(CreatePlayerEditModeHUD);
+			Call Subroutine(InitializePlayerBot);
+		Else If(Is True for Any(Global.Bots, Current Array Element == True));
+			Call Subroutine(InitializePlayerBot);
+		End;
+		Enable Messages(Event Player.Bot);
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(SetUpCheckpoint);
+	}
+}
+
+rule("3. Decompress Data")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+
+	actions
+	{
+		"Detect GigaEditor data"
+		If (Global.MapData);
+			Call Subroutine(DecompressMapData);
+		"Detect Taw's Editor data"
+		Else If (Global.CompressedData);
+			Call Subroutine(TawsDecompressData);
+		Else If (Global.Checkpoint);
+			Call Subroutine(PeaceDecompressData);
+		End;
+		Log To Inspector(Custom String("Decompression ended"));
+	}
+}
+
+
+rule("——————————————————————————Controls——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+rule("Press [Interact] twice to view/hide controls")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		"TODO: Disabled because it caused issues when gliding, consider reenabling"
+		disabled Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+	}
+	actions
+	{
+		Wait Until(!Is Button Held(Event Player, Button(Interact)), 99999);
+		Wait Until(Is Button Held(Event Player, Button(Interact)), 0.300);
+		If(Is Button Held(Event Player, Button(Interact)));
+			If(!Array Contains(Global.ShowSidebarControlsPlayers, Event Player));
+				Modify Global Variable(ShowSidebarControlsPlayers, Append To Array, Event Player);
+			Else;
+				Modify Global Variable(ShowSidebarControlsPlayers, Remove From Array By Value, Event Player);
+			End;
+		End;
+	}
+}
+rule("Press [Ability 2] + [Melee] + [Primary/Secondary Fire] to switch checkpoints")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == True;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		(Is Button Held(Event Player, Button(Primary Fire)) ||
+		Is Button Held(Event Player, Button(Secondary Fire))) == True;
+	}
+	actions
+	{
+		Event Player.TempFreeMode = Event Player.FreeMode;
+		Event Player.FreeMode = True;
+		If(Is Button Held(Event Player, Button(Primary Fire)));
+			If(Event Player.Checkpoint < Count Of(Global.Checkpoints) - 1);
+				Event Player.Checkpoint += 1;
+			Else;
+				Event Player.Checkpoint = 0;
+			End;
+		Else If(Is Button Held(Event Player, Button(Secondary Fire)));
+			If(Event Player.Checkpoint > 0);
+				Event Player.Checkpoint -= 1;
+			Else If(Event Player.Checkpoint == 0);
+				Event Player.Checkpoint = Count Of(Global.Checkpoints) - 1;
+			End;
+		End;	
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.FreeMode = Event Player.TempFreeMode;
+		Log To Inspector(Custom String("{0} - Switched manually to CP {1}", Event Player, Event Player.Checkpoint));
+		Call Subroutine(SetUpCheckpoint);
+		"Hold buttons to speed switch"
+		Wait(0.1, Abort When False);
+		Loop If Condition Is True;
+	}
+}
+rule("Press [Reload] to reset current checkpoint")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+	}
+	actions
+	{
+		"Sometimes going into free mode triggered this rule, if the keys were released in a specific order"
+		If(Is Button Held(Event Player, Button(Crouch)) == True || Is Button Held(Event Player, Button(Melee)) == True);
+			Abort;
+		End;
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		If(Event Player.LeftCheckpoint && Event Player.FreeMode == False);
+			Call Subroutine(ResetWithMistake);
+		Else;
+			Call Subroutine(ResetCheckpoint);
+		End;
+	}
+}
+rule("Press [Crouch] + [Interact] + [Ability 2] to restart run")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Button Held(Event Player, Button(Crouch)) == True;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Ability 2)) == True;		
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+	}
+	actions
+	{
+		Play Effect(Event Player, Tracer Recall Disappear Sound, Null, Event Player, 100);
+		"Anti abuse measure"
+		If(Event Player.Checkpoint == 0);
+			Abort;
+		End;
+		Event Player.Checkpoint = 0;
+		Event Player.Mistakes = 0;
+		"TODO: reset player timers, bots, etc."
+		Event Player.FreeMode = True;
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		Event Player.FreeMode = False;
+		Call Subroutine(SetUpCheckpoint);
+	}
+}
+rule("Press [Reload] + [Jump] to toggle 3rd person camera")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Jump)) == True;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+	}
+	actions
+	{
+		"By overclocking"
+		Wait(0.750, Abort When False);
+		Event Player.ThirdPerson = !Event Player.ThirdPerson;
+		Skip If(Event Player.ThirdPerson, 2);
+		Stop Camera(Event Player);
+		Abort;
+		Start Camera(Event Player, Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player)
+			+ 0.500), Ray Cast Hit Position(Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500),
+			Event Player + Up * (Distance Between(Eye Position(Event Player), Event Player) + 0.500) + Facing Direction Of(Event Player)
+			* -3, Null, Event Player, True), Null, Event Player, True), Event Player + Facing Direction Of(Event Player) * 100, 100);
+	}
+}
+rule("Press [Reload] + [Interact] to TP to player")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Interact)) == True;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Event Player.FreeMode == True;
+		Is Dummy Bot(Player Closest To Reticle(Event Player, Team(All))) == False;
+	}
+	actions
+	{
+		Teleport(Event Player, Player Closest To Reticle(Event Player, Team(All)));
+	}
+}
+rule("Press [Ultimate] + [Ability 2] to toggle spectator mode")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{		
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == True;
+		Is Button Held(Event Player, Button(Ability 2)) == True;
+		Is Button Held(Event Player, Button(Reload)) == False;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Melee)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+	}
+	actions
+	{
+		Wait(0.6, Abort When False);
+		Small Message(Event Player, Custom String("Spectator mode not implemented yet"));
+	}
+}
+rule("Press [Crouch] + [Reload] + [Melee] to toggle Free Mode")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Crouch)) == True;
+		Is Button Held(Event Player, Button(Reload)) == True;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+	}
+	actions
+	{
+		If(Event Player.FreeMode);
+			If(Is Using Ultimate(Event Player));
+				Call Subroutine(CancelUltimate);
+			End;
+			Call Subroutine(TeleportToCurrentCheckpoint);
+			Event Player.FreeMode = !Event Player.FreeMode;
+			Call Subroutine(ResetCheckpoint);
+			disabled Set Ultimate Charge(Event Player, 0);
+		Else;
+			"TODO: Move to subroutine setcurrentabilities?"
+			Call Subroutine(EnableAllAbilities);
+			Event Player.FreeMode = !Event Player.FreeMode;
+		End;
+		Stop Chasing Player Variable(Event Player, CurrentRunTime);
+		Small Message(Event Player, Custom String("Free Mode {0}", Event Player.FreeMode ? Custom String("Enabled") : Custom String("Disabled")));
+		Wait(0.600, Ignore Condition);
+	}
+}
+rule("Press [Melee] twice to cancel ultimate")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Button Held(Event Player, Button(Melee)) == True;
+		Is Button Held(Event Player, Button(Interact)) == False;
+		Is Button Held(Event Player, Button(Crouch)) == False;
+		Is Button Held(Event Player, Button(Jump)) == False;
+		Is Button Held(Event Player, Button(Ability 1)) == False;
+		Is Button Held(Event Player, Button(Ability 2)) == False;
+		Is Button Held(Event Player, Button(Ultimate)) == False;
+		Is Button Held(Event Player, Button(Reload)) == False;
+		Is Using Ultimate(Event Player) == True;
+	}
+	actions
+	{
+		Wait Until(!Is Button Held(Event Player, Button(Melee)), 99999);
+		Wait Until(Is Button Held(Event Player, Button(Melee)), 0.300);
+		If(Is Button Held(Event Player, Button(Melee)));
+			Call Subroutine(CancelUltimate);
+		End;
+		"Anti Abuse wait"
+		Wait(1, Ignore Condition);
+	}
+}
+rule("——————————————————————————Effects——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Create/destroy current level Orbs")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Count Of(Event Player.OrbEffects) != Count Of(Global.Orbs[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		If(Count Of(Event Player.OrbEffects) > Count Of(Global.Orbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.OrbEffects));
+			Destroy Icon(Last Of(Event Player.OrbIcons));
+			Modify Player Variable(Event Player, OrbEffects, Remove from Array By Value, Last Of(Event Player.OrbEffects));
+			Modify Player Variable(Event Player, OrbIcons, Remove from Array By Value, Last Of(Event Player.OrbIcons));
+		Else;
+			"Action: Create orb effect"
+			Create Effect(
+			Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbEffects))] ? Null : Event Player, Sphere, Global.Settings[1], 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][0], 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created orb to player variable"		
+			Modify Player Variable(Event Player, OrbEffects, Append To Array, Last Created Entity);
+			
+			"Action: Create orb icon"
+			Create Icon(Event Player.GrabbedOrbs[Evaluate Once(Count Of(Event Player.OrbIcons))] ? Null : Event Player, 
+			Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][0] 
+				+ Vector(0,Global.Orbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.OrbIcons))][1]/2, 0), 
+			Halo, Visible To and Position, Global.Settings[12], True);
+			"Save reference for last created icon to player variable"		
+			Modify Player Variable(Event Player, OrbIcons, Append To Array, Last Created Entity);
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create/destroy current level RefreshOrbs")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Count Of(Event Player.RefreshOrbEffects) != Count Of(Global.RefreshOrbs[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		"TODO: Implement Taw's/Peace editor switch to reuse a single refresh orb or render all"
+		If(Count Of(Event Player.RefreshOrbEffects) > Count Of(Global.RefreshOrbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.RefreshOrbEffects));
+			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
+			Modify Player Variable(Event Player, RefreshOrbEffects, Remove from Array By Value, Last Of(Event Player.RefreshOrbEffects));
+			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Value, Last Of(Event Player.RefreshOrbIcons));
+		Else;
+			"Action: Create RefeshOrb effect"
+			Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
+			Sphere, Global.Settings[4], 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][0], 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created RefeshOrb to player variable"		
+			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
+			
+			"Action: Create RefeshOrb icon"
+			Create Icon(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbIcons))] ? Null : Event Player, 
+			Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][0]
+				+ Vector(0, Global.RefreshOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.RefreshOrbIcons))][1]/2, 0), 
+			Recycle, Visible To and Position, Global.Settings[13], True);
+			"Save reference for last created icon to player variable"		
+			Modify Player Variable(Event Player, RefreshOrbIcons, Append To Array, Last Created Entity);
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create/Destroy current level Antiorbs")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Count Of(Event Player.AntiOrbEffects) != Count Of(Global.AntiOrbs[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		If(Count Of(Event Player.AntiOrbEffects) > Count Of(Global.AntiOrbs[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.AntiOrbEffects));
+			Modify Player Variable(Event Player, AntiOrbEffects, Remove from Array By Value, Last Of(Event Player.AntiOrbEffects));
+		Else;
+			"Action: Create AntiOrb effect"
+			Create Effect(Event Player, Sphere, Global.Settings[2], 
+			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][0], 
+			Global.AntiOrbs[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.AntiOrbEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created AntiOrb to player variable"		
+			Modify Player Variable(Event Player, AntiOrbEffects, Append To Array, Last Created Entity);
+			
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create/Destroy current level Jump Clouds")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Count Of(Event Player.CloudEffects) != Count Of(Global.Clouds[Event Player.Checkpoint]);	
+	}
+	actions
+	{
+		If(Count Of(Event Player.CloudEffects) > Count Of(Global.Clouds[Event Player.Checkpoint]));
+			Destroy Effect(Last Of(Event Player.CloudEffects));
+			Modify Player Variable(Event Player, CloudEffects, Remove from Array By Value, Last Of(Event Player.CloudEffects));
+		Else;
+			"Action: Create Cloud effect"
+			Create Effect(Event Player, Cloud, Global.Settings[3], 
+			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][0], 
+			Global.Clouds[Event Player.Checkpoint][Evaluate Once(Count Of(Event Player.CloudEffects))][1], 
+			Visible To Position Radius and Color);
+			"Save reference for last created Cloud to player variable"		
+			Modify Player Variable(Event Player, CloudEffects, Append To Array, Last Created Entity);
+			
+		End;
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+rule("Create Start and Finish checkpoints")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bot(Event Player) == False;	
+	}
+	actions
+	{
+		"Create start checkpoint Ring"
+		Create Effect(Event Player, Ring, Global.Settings[0], Global.Checkpoints[Event Player.Checkpoint][0], 
+		Global.Checkpoints[Event Player.Checkpoint][1], Visible To Position Radius and Color);
+		"Create Goal checkpoint Ring"
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Ring, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		"Create Goal checkpoint Sparkles"
+		Create Effect(Global.Checkpoints[Event Player.Checkpoint + 1 ] ? Event Player : Null, Sparkles, Global.Settings[5], Event Player.GoalCoords, Event Player.GoalRadius, Visible To Position Radius and Color);
+		"Create Goal checkpoint Icon"
+		Create Icon(Global.Checkpoints[Event Player.Checkpoint + 1 ] && !Global.Teleports[Event Player.Checkpoint] ? Event Player : Null, Event Player.GoalCoords + Vector(0, 2, 0), Flag, Visible To Position and Color, Global.Settings[21], True);
+		"Create Goal checkpoint Text"
+		Create In-World Text(Global.Checkpoints[Event Player.Checkpoint + 1] ? Event Player : Null, Global.Teleports[Event Player.Checkpoint] ? Global.Settings[8] : Global.Settings[7], Event Player.GoalCoords + Vector(0, 1, 0), 1.5, Do Not Clip, Visible To Position and String, Global.Settings[6], Default Visibility);
+	}
+}
+rule("Create Bot Icon")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Bot == True;
+	}
+	actions
+	{
+		"Create Bot Icon"
+		Create Icon(Global.Bots[Event Player.Checkpoint] ? Event Player : Null, 
+		Eye Position(Event Player.Bot) + Vector(0, 0.5, 0), 
+		Arrow: Down, 
+		Visible To Position and Color, 
+		Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), 
+		True);
+		Modify Player Variable(Event Player, BotIcons, Append To Array, Last Created Entity);
+	}
+}
+rule("Create Teleport Effects")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Has Spawned(Event Player) == True;
+		Is Dummy Bot(Event Player) == False;
+	}
+	actions
+	{
+		"For now we assume theres only one teleport pad per level, no need for multiple effect handling"
+		Create Effect(Global.Teleports[Event Player.Checkpoint] ? Event Player : Null,
+		Sparkles,
+		Global.Settings[9],
+		Global.Teleports[Event Player.Checkpoint][0],
+		Global.Teleports[Event Player.Checkpoint][1],
+		Visible To Position Radius and Color);
+	}
+}
+rule("Calculate rainbow")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	conditions
+	{
+		GLobal.DebugMode == False;
+	}
+	actions
+	{
+		While(Global.RGB[1] < 255);
+			Global.RGB[1] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[2] > 0);
+			Global.RGB[2] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[0] < 255);
+			Global.RGB[0] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[1] > 0);
+			Global.RGB[1] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[2] < 255);
+			Global.RGB[2] += 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		While(Global.RGB[0] > 0);
+			Global.RGB[0] -= 3;
+			Wait(0.016, Ignore Condition);
+		End;
+		Loop;
+	}
+}
+rule("——————————————————————————Parkour Engine rules——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Detect Leaving checkpoint")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		> Global.Checkpoints[Event Player.Checkpoint][1];
+	}
+	actions
+	{
+		Event Player.LeftCheckpoint = True;
+		Chase Player Variable At Rate(Event Player, CurrentRunTime, 20000, 1, Destination and Rate);
+	}
+}
+rule("Detect Landing Outside")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Is On Ground(Event Player) == True;
+		Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]) 
+		> Global.Checkpoints[Event Player.Checkpoint][1];
+	}
+	actions
+	{
+		Abort If(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius &&
+		((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True);
+
+		If(Event Player.Checkpoint == 0);
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.CurrentRunTime = 0;
+		End;
+
+		"Too Annoying"
+		disabled Small Message(Event Player, Custom String("You need to land inside the Goal!"));
+		disabled Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+		Call Subroutine(ResetWithMistake);
+	}
+}
+rule("Detect Arriving on Goal or Teleport")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Event Player.LeftCheckpoint == True;
+
+		"TODO: Get OnGround flag from current goal in case the level has a teleport"
+		((Global.Checkpoints[Event Player.Checkpoint + 1][4] && Is On Ground(Event Player)) ||
+		!Global.Checkpoints[Event Player.Checkpoint + 1][4]) == True;
+		Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius;
+		((Y Component Of(Position Of(Event Player)) <= Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0]) &&
+		(Y Component Of(Position Of(Event Player)) >= Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])) == True;
+	}
+	actions
+	{
+		If(Is True For Any(Event Player.GrabbedOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedOrbs) > 0));
+			Small Message(Event Player, Custom String("You need to grab all the orbs!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Call Subroutine(ResetWithMistake);
+		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedRefreshOrbs) > 0) && Global.RequireGrabAllRefreshOrbs);
+			Small Message(Event Player, Custom String("You need to grab all the refresh orbs!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Call Subroutine(ResetWithMistake);
+		Else If(Global.Bots[Event Player.Checkpoint] && !Event Player.BotCondition);
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
+			Call Subroutine(ResetWithMistake);
+		Else;
+			Event Player.Checkpoint += 1;
+			"Player finished all checkpoints"
+			If(Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1);
+				Stop Chasing Player Variable(Event Player, CurrentRunTime);
+				Event Player.FreeMode = True;
+				"TODO: Consider not duplicating this block if possible"
+				If(Global.Teleports[Event Player.Checkpoint - 1]);
+					Call Subroutine(TeleportToCurrentCheckpoint);
+					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
+				End;
+				Call Subroutine(EnableAllAbilities);
+				Play Effect(All Players(All Teams), Ring Explosion Sound, Null, Event Player, 100);
+				"TODO: Set a color for finish explosion in config"
+				Play Effect(All Players(All Teams), Good Pickup Effect, Color(Aqua), Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1]);
+				Wait(0.1, Ignore Condition);
+				Big Message(All Players(All Teams), Custom String("{0} Finished in {1} seconds", Event Player.PlayerName, Event Player.CurrentRunTime));
+				Call Subroutine(PlayerCompletedRun);
+			"Player finished current checkpoint"
+			Else;
+				Small Message(Event Player, Custom String("Reached the goal:D"));
+				If(Global.Teleports[Event Player.Checkpoint - 1]);
+					"TODO: This broke jazzy's hanamura lvl 98 to 99, it cancels momentum so for now we teleport the player manually"
+					disabled Call Subroutine(TeleportToCurrentCheckpoint);
+					Call Subroutine(CancelMomentum);
+					Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
+					Play Effect(Event Player, Sombra Translocator Reappear Sound, Null, Event Player, 100);
+				End;
+					Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
+			End;
+			Call Subroutine(SetUpCheckpoint);
+		End;
+	}
+}
+rule("Detect Grabbing Orb")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Count Of(Event Player.GrabbedOrbs) > 0;
+		
+		Is True For Any(Global.Orbs[Event Player.Checkpoint], 
+		!Event Player.GrabbedOrbs[Current Array Index] && 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
+		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
+		== True;
+	}
+	actions
+	{
+		If(Event Player.BotCondition || True);
+			Event Player.GrabbedOrbs = Mapped Array(Global.Orbs[Event Player.Checkpoint],
+				Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
+				Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700
+				|| Event Player.GrabbedOrbs[Current Array Index] ? True : False);
+			Small Message(Event Player, Custom String("Orb Grab! {0}/{1}",
+			Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)),
+			Count Of(Event Player.GrabbedOrbs)));
+			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+		Else;
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Call Subroutine(ResetWithMistake);
+		End;
+	}
+}
+rule("Detect Grabbing RefreshOrb")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Count Of(Event Player.GrabbedRefreshOrbs) > 0;
+		
+		Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], 
+		!Event Player.GrabbedRefreshOrbs[Current Array Index] && 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
+		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
+		== True;
+	}
+	actions
+	{
+		If(Event Player.BotCondition);
+			For Player Variable(Event Player, i, 0, Count Of(Event Player.GrabbedRefreshOrbs), 1);
+				If(!Event Player.GrabbedRefreshOrbs[Event Player.i] &&
+				(Distance Between(Position Of(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700 ||
+				Distance Between(Eye Position(Event Player), Global.RefreshOrbs[Event Player.i][0]) <= Global.RefreshOrbs[Event Player.i][1] + 0.700));
+
+					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
+					Small Message(Event Player, 
+					Custom String("Orb Grab! {0}/{1}, {2} also refreshed!",
+						Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
+						Count Of(Event Player.GrabbedRefreshOrbs),
+						Custom String("{0}{1}{2}", 
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? Ability Icon String(Hero Of(Event Player), Button(Ability 2)) : Empty Array,
+							Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][5] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate)) : Empty Array
+						)
+					));
+					Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
+					"Trigger Bot Section"
+					If(Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]);
+						Event Player.CurrentBotSection = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2];
+						Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
+						Call Subroutine(UpdateBotPosition);
+					End;
+					Event Player.Ability1 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ability1;
+					Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+					Event Player.Ability2 = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][4] ? True : Event Player.Ability2;					
+					Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+					Event Player.Ultimate = Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][3] ? True : Event Player.Ultimate;					
+					Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+				End;
+		Else;
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
+			Call Subroutine(ResetWithMistake);
+		End;
+	}
+}
+rule("Detect Touching AntiOrb")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Global.AntiOrbs[Event Player.Checkpoint] == True;
+		
+		Is True For Any(Global.AntiOrbs[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700 ||
+		Distance Between(Eye Position(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.700))
+		== True;
+	}
+	actions
+	{
+		Set Status(Event Player, Null, Burning, 0.16);
+		Call Subroutine(ResetWithMistake);
+	}
+}
+rule("Detect Touching Jump Cloud")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.Finished == False;
+		Event Player.FreeMode == False;
+		Global.Clouds[Event Player.Checkpoint] == True;
+		
+		Is True For Any(Global.Clouds[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0])  <= Current Array Element[1] + 0.500 &&
+		Absolute Value(Y Component Of(Current Array Element[0]) - Y Component Of(Position Of(Event Player))) <= Vector(0, 0.030, 0)))
+		== True;
+	}
+	actions
+	{
+		Play Effect(Event Player, Explosion Sound, Null, Event Player, 100);
+
+		Apply Impulse(Event Player, Up, First Of(Filtered Array(Global.Clouds[Event Player.Checkpoint], 
+		(Distance Between(Position Of(Event Player), Current Array Element[0]) <= Current Array Element[1] + 0.500)))[2], To World, Cancel Contrary Motion);
+	}
+}
+disabled rule("TODO: Bot Condition")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == False;
+		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection] == True;
+		Event Player.BotCondition == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Bot condition triggered", Event Player));
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
+			Small Message(Event Player, Custom String("There is a bot here"));
+		End;
+	}
+}
+rule("Update Bot Status")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == True;
+		Event Player.BotUpdate == True;
+	}
+	actions
+	{
+		Event Player.BotUpdate = False;
+		Call Subroutine(CancelMomentum);
+		
+		"TODO: Bots dont use ultimate yet, but killing the bot will break Mercy beam so think it through"
+		If(Is Using Ultimate(Event Player) && False);
+			Call Subroutine(CancelUltimate);
+		End;
+
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3]);
+			Stop Holding Button(Event Player, Button(Jump));
+			disabled Clear Status(Event Player, Rooted);
+			Set Gravity(Event Player, 100);
+			Else;
+				If(Hero Of(Event Player) == Hero(Mercy));
+					Start Holding Button(Event Player, Button(Jump));
+				End;
+				Set Gravity(Event Player, 0);
+				disabled Set Status(Event Player.Bot, Null, Rooted, 9999);
+				"TODO: Refactor this to use the same function as the player, dont copy paste"
+				Call Subroutine(CancelMomentum);
+			End;
+			Teleport(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0]);			
+			Wait(0.016, Ignore Condition);
+		Else;
+			Teleport(Event Player, Global.BotPenCoords);
+		End;
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2]);
+			Start Holding Button(Event Player, Button(Crouch));
+		Else;
+			Stop Holding Button(Event Player, Button(Crouch));
+		End;
+		"TODO: Only used for peace rez levels for now"
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4]);
+			Kill(Event Player, Null);
+		Else;
+			Resurrect(Event Player);
+		End;
+		Loop If Condition Is True;
+	}
+}
+
+rule("Detect Using Ability 1")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Using Ability 1(Event Player) == True;
+		Event Player.Resetting == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Detected using GA", Event Player));
+
+		If(Event Player.FreeMode == False);
+			Event Player.Ability1 = False;
+			Wait Until(Ability Cooldown(Event Player, Button(Ability 1)) != 0, 9999);
+
+			"This was added to be compatible with TAW's bot sections that have no refresh orb, they advance automatically after using your GA"
+			If(Hero Of(Event Player) == Hero(Mercy) && 
+				!Is True For Any(Global.RefreshOrbs[Event Player.Checkpoint], Current Array Element[2] == Event Player.CurrentBotSection + 1) && 
+				Event Player.BotCondition == True &&
+				Event Player.CurrentBotSection < Count Of(Global.Bots[Event Player.Checkpoint]) -1);
+					Log To Inspector(Custom String("{0} - Used GA & no refresh orb. advancing bot now", Event Player));
+					Event Player.CurrentBotSection += 1;
+					Modify Player Variable(Event Player.Bot, CurrentBotSection, Add, 1);
+					Call Subroutine(UpdateBotPosition);
+					Small Message(Event Player, Custom String("GA {0} refreshed", Ability Icon String(Hero Of(Event Player), Button(Ability 1))));
+					Event Player.Ability1 = True;
+			"If lvl does not have unlimited GA, set GA status (racing conditions apply)"
+			Else If(Global.Checkpoints[Event Player.Checkpoint][7] == False);
+				Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+			End;
+		End;
+		"Disable this if you want to set the cooldowns through lobby settings"
+		Set Ability Cooldown(Event Player, Button(Ability 1), 0);
+		Log To Inspector(Custom String("{0} - Finished using GA", Event Player));
+	}
+}
+rule("Detect Using Mercy Resurrect")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		Mercy;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Is Using Ability 2(Event Player) == True;
+		Event Player.FreeMode == False;
+		Event Player.Finished == False;
+		disabled Event Player.Resetting == False;
+	}
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Detected using Mercy Rez", Event Player));
+		Event Player.MercyRezTimer = 0;
+		"Start chasing mercy resurrect time"
+		Chase Player Variable At Rate(Event Player, MercyRezTimer, 9999, 1, None);
+		Wait Until(!Is Using Ability 2(Event Player), 1.750);
+		Stop Chasing Player Variable(Event Player, MercyRezTimer);
+
+
+		If(Absolute Value(Event Player.MercyRezTimer - 1.750) < 0.050);
+			Resurrect(Event Player.Bot);
+			"TODO: Rework this once we allow other bot ability rewards"
+			Small Message(Event Player, 
+				Custom String("{0} Resurrected!{1}",
+					Global.Settings[10],
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? 
+					Custom String(", {0}{1}{2} also refreshed",
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5] ? Ability Icon String(Hero Of(Event Player), Button(Ability 1)) : Empty Array,
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6] ? Ability Icon String(Hero Of(Event Player), Button(Ability 2)) : Empty Array,
+						Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7] ? Ability Icon String(Hero Of(Event Player), Button(Ultimate)) : Empty Array
+					) : Empty Array
+				)
+			);
+			Set Ability 1 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5]);
+			Set Ability 2 Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][6]);
+			Set Ultimate Ability Enabled(Event Player, Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][7]);
+			Event Player.BotCondition = True;
+		Else;
+			Set Ability 2 Enabled(Event Player, False);
+		End;
+	}
+}
+rule("Regen ultimate in FreeMode")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+	conditions
+	{
+		Is Dummy Bot(Event Player) == False;
+		Event Player.FreeMode == True;
+		Ultimate Charge Percent(Event Player) < 100;
+		Is Using Ultimate(Event Player) == False;
+	}
+	actions
+	{
+		Set Ultimate Charge(Event Player, 100);
+	}
+}
+rule("Player left the lobby, save their progress")
+{
+	event
+	{
+		Player Left Match;
+		All;
+		All;
+	}
+	actions
+	{
+		Modify Global Variable(PlayerData, 
+		Append To Array,
+		Array(Array(
+			Custom String("{0}", Event Player), 
+			Event Player.Finished,
+			Event Player.Checkpoint, 
+			Event Player.CurrentRunTime,
+			Event Player.Mistakes)
+		));
+	}
+}
+rule("——————————————————————————Subroutines——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Subroutine InitializeGlobalVariables")
+{
+	event
+	{
+		Subroutine;
+		InitializeGlobalVariables;
+	}
+
+	actions
+	{
+		Global.DebugMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Debug Mode (Inspector Recording)"), False, 0);
+		Global.EditMode = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Edit Mode"), False, 0);		
+		Global.ServerLoad = Workshop Setting Toggle(Custom String("Giga editor options"), Custom String("Server Load Widget"), False, 0);	
+
+		Call Subroutine(CreateGlobalHUD);
+		Global.Checkpoints = Empty Array;
+		Global.Bots = Empty Array;
+		Global.Orbs = Empty Array;
+		Global.AntiOrbs = Empty Array;
+		Global.RefreshOrbs = Empty Array;
+		Global.Teleports = Empty Array;
+		Global.RGB = Array(255,0,0);
+		Global.Scoreboard = Empty Array;
+		Global.EnPadding = Custom String("                                                                                                                                ");
+		Global.PlayerData = Empty Array;
+	}
+}
+rule("Subroutine InitializePlayerVariables")
+{
+	event
+	{
+		Subroutine;
+		InitializePlayerVariables;
+	}
+
+	actions
+	{
+		Event Player.Checkpoint = 0;
+		Event Player.Finished = False;
+		Event Player.FreeMode = False;
+		Event Player.ThirdPerson = False;
+		Event Player.CurrentRunTime = 0;
+		Event Player.Mistakes = 0;
+		Event Player.ToggleControls = False;
+		Event Player.OrbEffects = Empty Array;
+		Event Player.OrbIcons = Empty Array;
+		Event Player.RefreshOrbEffects = Empty Array;
+		Event Player.RefreshOrbIcons = Empty Array;
+		Event Player.CloudEffects = Empty Array;
+		Event Player.AntiOrbEffects = Empty Array;
+		Event Player.BotEffects = Empty Array;
+		Event Player.BotIcons = Empty Array;
+		Event Player.Scale = 1;
+		"TODO: Cleanup, maybe not needed"
+		Event Player.CurrentBotSection = 0;
+		"TODO: Get rid of this temp variable?"
+		Event Player.Temp = First Of(Filtered Array(Global.VIPs, Current Array Element[0] == Custom String("{0}", Event Player)));
+		If(Count Of(Event Player.Temp) > 1);
+			Event Player.PlayerName = Event Player.Temp[1];
+			Event Player.PlayerNameColor = Event Player.Temp[2];
+		Else;
+			Event Player.PlayerName = Custom String("{0}", Event Player);
+			Event Player.PlayerNameColor = Global.Settings[14];
+		End;
+		Event Player.Temp = First Of(Filtered Array(Global.PlayerData, Current Array Element[0] == Custom String("{0}", Event Player)));
+		If(Count Of(Event Player.Temp) > 1);
+			Event Player.Finished = Event Player.Temp[1];
+			Event Player.Checkpoint = Event Player.Temp[2];
+			Event Player.CurrentRunTime = Event Player.Temp[3];
+			Event Player.Mistakes = Event Player.Temp[4];
+			Modify Global Variable(PlayerData, Remove From Array By Index, Index Of Array Value(Global.PlayerData, Event Player.Temp));
+			Small Message(Event Player, Custom String("Welcome Back, {0}", Event Player));
+		End;
+	}
+}
+rule("Subroutine InitializePlayerBot")
+{
+	event
+	{
+		Subroutine;
+		InitializePlayerBot;
+	}
+
+	actions
+	{
+		If(!Event Player.Bot);
+			Create Dummy Bot(Global.Settings[10], 
+			Team Of(Event Player), 
+			Slot Of(Event Player) + Number Of Slots(All Teams),
+			Global.BotPenCoords,
+			Null);
+			Event Player.Bot = Last Created Entity;
+			Disable Built-In Game Mode Respawning(Event Player.Bot);
+			Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
+			Set Player Variable(Event Player.Bot, CurrentBotSection, Event Player.CurrentBotSection);
+			Set Player Variable(Event Player.Bot, Scale, 1);
+
+			Set Gravity(Event Player.Bot, 0);
+			Set Status(Event Player.Bot, Null, Invincible, 9999);
+			Set Status(Event Player.Bot, Null, Phased Out, 9999);
+			Start Forcing Dummy Bot Name(Event Player.Bot, Custom String("{0}'s {1}", Event Player, Global.Settings[10]));
+			"TODO: Temporarily moved here, move back when bot facing direction can be enabled per level"
+			Start Facing(Event Player.Bot, 
+				Direction Towards(
+					Update Every Frame(Eye Position(Event Player.Bot)), 
+					Update Every Frame(Eye Position(Event Player))), 
+				9999, To World, Direction and Turn Rate);
+		End;
+	}
+}
+rule("Subroutine UpdateBotPosition")
+{
+	event
+	{
+		Subroutine;
+		UpdateBotPosition;
+	}
+
+	actions
+	{
+		"Call for a bot update"
+		Set Player Variable(Event Player.Bot, BotUpdate, True);
+		Wait(0.016, Ignore Condition);
+		"TODO: See if we can move this to Update Bot Status rule, so far we cant keep a reference to real player"
+		If(Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection]);
+			Start Forcing Player Outlines(
+				Event Player.Bot,
+				Event Player,
+				True,
+				Global.Checkpoints[Event Player.Checkpoint][3] ? Color(Aqua) : Color(Red), Always);
+		Else;
+			Stop Forcing Player Outlines(Event Player.Bot, All Players(All Teams));
+			"TODO: Possibly deprecated when we added the root effect on teleport, still need to find a way to disable ghost ga tho"
+			disabled If(Hero Of(Event Player) == Hero(Mercy));
+				disabled Cancel Primary Action(Event Player);
+			disabled End;
+		End;
+
+		"TODO: Idk use bot rewards or something, this is bad"	
+		If(Hero Of(Event Player) == Hero(Mercy));
+			Event Player.Ability2 = Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
+			Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		End;
+
+		"Bot Condition checks if we need to rez the current bot. False = Requires rez, True = Alles gut"
+		Event Player.BotCondition = !Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4];
+	}
+}
+rule("Subroutine DecompressMapData")
+{
+	event
+	{
+		Subroutine;
+		DecompressMapData;
+	}
+}
+rule("Subroutine CreateGlobalHUD")
+{
+	event
+	{
+		Subroutine;
+		CreateGlobalHUD;
+	}
+
+	actions
+	{
+		"Map Creator and code"
+		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Global.MapTitle,
+		Left, 0, Null, Null, Global.Settings[18] ? Global.Settings[18] : Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Visible To String and Color, Default Visibility);
+		
+		Create HUD Text(All Players(All Teams), Null, Global.EnPadding, Null, Left, 2, Null, Null, Null, Visible To,
+		Default Visibility);
+			
+		"Scoreboard"
+		Create HUD Text(Count Of(Global.Scoreboard) > 0 ? All Players(All Teams) : Null, 
+		Null, 
+		Global.EnPadding,
+		Global.Settings[17],
+		Left, 2, Null, Null, Global.Settings[15], Visible To and String, Default Visibility);
+		"Create Top 5 scoreboard rows"
+		For Global Variable(i, 0, 5, 1);
+			"Insert scoreboard record"
+			Create HUD Text(Count Of(Global.Scoreboard[Evaluate Once(Global.i)]) > 0 ? All Players(All Teams) : Null,  
+				Hero Icon String(
+					Global.Scoreboard[Evaluate Once(Global.i)][3]), 
+			Custom String("{0} {1}\n{2}", 
+			Global.Top5Prefix[Evaluate Once(Global.i)],
+			Global.Scoreboard[Evaluate Once(Global.i)][0],
+			Custom String("{0} sec - Mistakes: {1}{2}", 
+				Global.Scoreboard[Evaluate Once(Global.i)][1],
+				Global.Scoreboard[Evaluate Once(Global.i)][2],
+				String Slice(
+					Global.EnPadding, 0, 107 - String Length(Custom String("{0}{1}",
+						Global.Scoreboard[Evaluate Once(Global.i)][1],
+						Global.Scoreboard[Evaluate Once(Global.i)][2])
+					)
+				)
+			)
+			),
+			Null,
+			Left, 2 + Global.i, Global.Top5Colors[Evaluate Once(Global.i)], Global.Top5Colors[Evaluate Once(Global.i)], Null, Visible To and String, Default Visibility);
+		End;
+
+		"Instructions"
+		Create HUD Text(All Players(All Teams), Null, Custom String("Double click {0} to show or hide controls", Input Binding String(Button(Interact))), Null,
+			Right, 11, Null, Custom Color(192, 192, 192, 255), Null, Visible To and String, Default Visibility);
+
+		"TODO: Break up into blocks that use no more than 4 input binding string per custom string"
+		disabled End;
+
+		"Controls pt1"
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+			Custom String("--------------------------------------\n{0}\n{1}",
+				Custom String("Reset level: {0}", 
+					Input Binding String(Button(Reload))
+				),
+				Custom String("Start over: {0} + {1} + {2}", 
+					String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
+					Input Binding String(Button(Interact)),
+					Input Binding String(Button(Ability 2))
+				)
+			), Null,
+		Right, 12, Null, Color(White), Null, Visible To and String, Default Visibility);
+		
+		"Controls pt2. Lord forgive me for this hack"
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+			Custom String("Switch Level: {0} + {1} + {2}", 
+				Input Binding String(Button(Ability 2)), 
+				Input Binding String(Button(Melee)), 
+				Custom String("{0}/{1}{2}", 
+					Input Binding String(Button(Primary Fire)), 
+					Input Binding String(Button(Secondary Fire)),
+					 Is True For Any(
+			Array(
+				Button(Ability 1), 
+				Button(Ability 2), 
+				Button(Crouch), 
+				Button(Interact), 
+				Button(Jump), 
+				Button(Melee), 
+				Button(Primary Fire), 
+				Button(Reload), 
+				Button(Secondary Fire), 
+				Button(Ultimate)), 
+			First Of(
+				Input Binding String(Current Array Element)) && 
+				String Contains(
+					Custom String("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&~\"#'{([-|`_\\^@)]=}^$%*,?.;/:>²ÉÈÇÀÙ+¤^ßÜÖÄÑ¡´¿ÒÌСЛП↓←→↑스아좌왼숫우오위空回退大下左暂右上；，向數"),
+					Char In String(Input Binding String(Current Array Element), 0))) ? Custom String("    ") : Custom String(" ")
+				)
+			), Null,
+		Right, 13, Null, Color(White), Null, Visible To and String, Default Visibility);
+		
+		"Controls pt3"
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+			Custom String("Free Mode: {0} + {1} + {2}  ", 
+				String Length(Input Binding String(Button(Crouch))) > 0 ? Input Binding String(Button(Crouch)) : Custom String("[Crouch]"), 
+				Input Binding String(Button(Reload)),
+				Custom String("{0}{1}", Input Binding String(Button(Melee)), String Length(Input Binding String(Button(Crouch))) < 4 ? Custom String("  ") : Empty Array)
+			), Null,
+		Right, 14, Null, Color(White), Null, Visible To and String, Default Visibility);
+		
+		"Controls pt4"
+		Create HUD Text(Global.ShowSidebarControlsPlayers, Null,
+			Custom String("{0}\n{1}",
+				Custom String("3rd Person: {0} + {1}", 
+					Input Binding String(Button(Reload)), 
+					Input Binding String(Button(Jump)) 
+				),
+				Custom String("Spectate: {0} + {1}\n--------------------------------------", 
+					Input Binding String(Button(Ultimate)), 
+					Input Binding String(Button(Ability 2))
+				)
+			),  Null,
+		Right, 15, Null, Color(White), Null, Visible To and String, Default Visibility);
+		
+		"TODO: Move to player init and use preferred language"
+		Create HUD Text(All Players(All Teams), Null, 
+		Custom String("Elapsed time: {0} minutes {1} seconds",
+		Round To Integer(Total Time Elapsed / 60, Down), Round To Integer(Total Time Elapsed % 60, Down)),
+		Null,
+		Top,
+		0, Null, Color(White), Null, Visible To and String, Default Visibility);
+	}
+}
+rule("Subroutine CreatePlayerHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerHUD;
+	}
+
+	actions
+	{
+		"Top HUD Elements"
+		Create HUD Text(Event Player, Null, Custom String("Level: {0}/{1}", Event Player.Checkpoint, Count Of(Global.Checkpoints) - 1), Null, 
+			Top, 10, Null, Color(White), Null, Visible To and String, Default Visibility);
+		Create HUD Text(
+			Count Of(Event Player.GrabbedOrbs) > 0 || Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Event Player : Null, 
+			Null,
+			Custom String("Collected Orbs:\n{0}{1}", 
+				Count Of(Event Player.GrabbedOrbs) > 0 ? Custom String("{0}: {1}/{2}  ", Icon String(Halo), Count Of(Filtered Array(Event Player.GrabbedOrbs, Current Array Element == True)), Count Of(Event Player.GrabbedOrbs)) : Empty Array,
+				Count Of(Event Player.GrabbedRefreshOrbs) > 0 ? Custom String("  {0}: {1}/{2}", Icon String(Recycle), Count Of(Filtered Array(Event Player.GrabbedRefreshOrbs, Current Array Element == True)),
+		Count Of(Event Player.GrabbedRefreshOrbs)) : Empty Array),
+			Null,
+			Top, 10, Null, Custom Color(Global.RGB[0], Global.RGB[1], Global.RGB[2], 255), Null, Visible To String and Color, Default Visibility);
+		"Right HUD Elements"
+		Create HUD Text(Event Player, Null, Null, Custom String("Time: {0} sec\nMistakes: {1}\n", Event Player.CurrentRunTime, Event Player.Mistakes), 
+			Right, 0, Null, Null, Color(White),  Visible To and String, Default Visibility);
+		
+		"Create player name tag"
+			Create In-World Text(All Players(All Teams), Custom String("{0} {1}{2}", Event Player.PlayerName, Event Player.Checkpoint, Event Player.Cheat ? Custom String("({0})", Event Player.SavedCheckpoint) : Empty Array), Event Player, 1.300, Do Not Clip, Visible To Position String And Color, Event Player.PlayerNameColor, Default Visibility);
+	}
+}
+rule("Subroutine SetUpCheckpoint")
+{
+	event
+	{
+		Subroutine;
+		SetUpCheckpoint;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - SetUpCheckpoint", Event Player));
+		Event Player.Finished = Event Player.Checkpoint == Count Of(Global.Checkpoints) - 1;
+
+		Event Player.GoalCoords = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][0] : Global.Checkpoints[Event Player.Checkpoint + 1][0];
+		Event Player.GoalRadius = Global.Teleports[Event Player.Checkpoint] ? Global.Teleports[Event Player.Checkpoint][1] : Global.Checkpoints[Event Player.Checkpoint + 1][1];
+		Event Player.GoalThresholds = Array(Global.Checkpoints[Event Player.Checkpoint + 1][5], Global.Checkpoints[Event Player.Checkpoint + 1][6]);
+		
+		"Set facing direction"
+		If(Global.Checkpoints[Event Player.Checkpoint][2]);
+			"FIXME: Added this to see if face direction bug is fixed or not"
+			Wait(0.016, Ignore Condition);
+			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
+			"DEBUG"
+			Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+		End;
+		If(Event Player.Checkpoint == 0);
+			Stop Chasing Player Variable(Event Player, CurrentRunTime);
+			Event Player.CurrentRunTime = 0;
+		End;
+		"TODO: Refactor to use compressed abilities"
+		Event Player.StartingAbilities = 
+			Array(
+				Global.Checkpoints[Event Player.Checkpoint][3],
+				True,
+				Global.Bots[Event Player.Checkpoint] ? True : False,
+				False,
+				False,
+				True,
+				True,
+				True
+			);
+		
+		"TODO: Enable abilities for non mercy heroes"
+		If(Hero Of(Event Player) != Hero(Mercy));
+			Event Player.StartingAbilities[2] = True;
+		End;
+
+		"Set Bot checkpoint too"
+		Set Player Variable(Event Player.Bot, Checkpoint, Event Player.Checkpoint);
+		Call Subroutine(ResetCheckpoint);
+	}
+}
+rule("Subroutine ResetWithMistake")
+{
+	event
+	{
+		Subroutine;
+		ResetWithMistake;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Reset with mistake", Event Player));
+		"TODO: Toggle this if you want glitch levels like in taws or peace"
+		Cancel Primary Action(Event Player);
+		Event Player.Mistakes = Event Player.Checkpoint == 0 ? 0 : Event Player.Mistakes + 1;
+		Call Subroutine(TeleportToCurrentCheckpoint);
+		Call Subroutine(ResetCheckpoint);
+	}
+}
+rule("Subroutine ResetCheckpoint")
+{
+	event
+	{
+		Subroutine;
+		ResetCheckpoint;
+	}
+
+	actions
+	{
+		Event Player.Resetting = True;
+		Log To Inspector(Custom String("{0} - Reset Checkpoint", Event Player));
+		"Reset all orbs to not grabbed"
+		Event Player.GrabbedOrbs = Global.Orbs[Event Player.Checkpoint] ? Mapped Array(Global.Orbs[Event Player.Checkpoint], False) : Empty Array;
+		Event Player.GrabbedRefreshOrbs = Global.RefreshOrbs[Event Player.Checkpoint] ? Mapped Array(Global.RefreshOrbs[Event Player.Checkpoint], False) : Empty Array;
+		Event Player.LeftCheckpoint = False;	
+		Event Player.CurrentBotSection = 0;
+		Set Player Variable(Event Player.Bot, CurrentBotSection, 0);
+
+		Event Player.Crouch = Event Player.StartingAbilities[0];
+		Event Player.Jump = Event Player.StartingAbilities[1];
+		Event Player.Ability1 = Event Player.StartingAbilities[2];
+		Event Player.Ability2 = Event Player.StartingAbilities[3];
+		Event Player.Ultimate = Event Player.StartingAbilities[4];
+		"TODO: Temporarily enabled here, should come from cp flags"
+		Call Subroutine(SetCurrentAbilities);
+		Call Subroutine(UpdateBotPosition);
+		Event Player.Resetting = False;
+	}
+}
+rule("Subroutine TeleportToCurrentCheckpoint")
+{
+	event
+	{
+		Subroutine;
+		TeleportToCurrentCheckpoint;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Teleport Player", Event Player));
+		"TODO: Check if its better to move this to TeleportToCurrentCheckpoint subroutine"
+		Set Status(Event Player, Null, Rooted, 0.2);
+		Call Subroutine(CancelMomentum);
+		Teleport(Event Player, Global.Checkpoints[Event Player.Checkpoint][0]);
+	}
+}
+rule("Subroutine CreateGlobalEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreateGlobalEditModeHUD;
+	}
+
+	actions
+	{
+		
+	}
+}
+rule("Subroutine CreatePlayerEditModeHUD")
+{
+	event
+	{
+		Subroutine;
+		CreatePlayerEditModeHUD;
+	}
+
+	actions
+	{
+		Create In-World Text(Event Player,
+		Custom String("Coordinates: {0}\nRadius: {1}\n{2}", Global.Checkpoints[Event Player.Checkpoint][0], Global.Checkpoints[Event Player.Checkpoint][1], 
+			Custom String("Facing Direction: {0}\nCrouch: {1}\n{2}", 
+				Global.Checkpoints[Event Player.Checkpoint][2], 
+				Global.Checkpoints[Event Player.Checkpoint][3], 
+				Custom String("Require Ground: {0}\n{1}\nUnlimited GA: {2}", 
+					Global.Checkpoints[Event Player.Checkpoint][4],
+					Custom String("Threshold Above/Below: {0}/{1}\nDistance: {2}",
+						Global.Checkpoints[Event Player.Checkpoint][5], 
+						Global.Checkpoints[Event Player.Checkpoint][6], 
+						Distance Between(Event Player, Global.Checkpoints[Event Player.Checkpoint][0])
+					),
+					Global.Checkpoints[Event Player.Checkpoint][7]
+				)
+			)
+		),
+		Global.Checkpoints[Event Player.Checkpoint][0],
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Green),
+		Default Visibility
+		);
+		"Create Bot text"
+		Create In-World Text(Global.Bots[Event Player.Checkpoint] ? Event Player : Null,
+		Custom String("{0}\nFacing: {1}\n{2}", 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0], 
+			Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1] ? Custom String("Player") : Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][1], 
+			Custom String("Crouch: {0}\nGravity: {1}\n{2}", 
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][2],
+				Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][3], 
+				Custom String("Resurrect: {0}\nRefresh GA after Rez: {1}\nCurrentPos: {2}", 
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][4],
+					Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][5],
+					Position Of(Event Player.Bot)
+				)
+			)
+		),
+		Global.Bots[Event Player.Checkpoint][Event Player.CurrentBotSection][0] + Vector(0,1,0),
+		1, 
+		Do Not Clip,
+		Visible To Position and String,
+		Color(Aqua),
+		Default Visibility
+		);
+		"Debug landing threshold and goal condition"
+		Create Hud Text(Event Player, Null, Null, Custom String("X: {0}, Y: {1}, Z: {2}",
+		X Component Of(Position Of(Event Player)),
+		Y Component Of(Position Of(Event Player)),
+		Z Component Of(Position Of(Event Player))),
+		Top, 0, Null, Null, Color(White), String, Default Visibility);
+
+		Create HUD Text(Event Player, Null, Null, Custom String("Distance to Goal: {0}\nPlayer Y: {1}\nGoal Y: {2}", 
+		Distance Between(Event Player, Event Player.GoalCoords), 
+		Y Component Of(Position Of(Event Player)), 
+		Y Component Of(Event Player.GoalCoords)), 
+		Right, 99, Null, Null, 
+		(Distance Between(Event Player, Event Player.GoalCoords) <= Event Player.GoalRadius && 
+			((Y Component Of(Position Of(Event Player)) <= (Y Component Of(Event Player.GoalCoords) + Event Player.GoalThresholds[0])) &&
+			(Y Component Of(Position Of(Event Player)) >= (Y Component Of(Event Player.GoalCoords) - Event Player.GoalThresholds[1])))) 
+		? Color(Green) : Color(Red), Visible To String and Color, Default Visibility);
+
+		"TODO: Create debug HUD and move this there"
+		Create HUD Text(Event Player, Null, Null, Custom String("------------------------\nVar Ability1: {0}\nAbility 1 CD: {1}\nIsUsingAbility1: {2}", 
+		Event Player.Ability1, 
+		Ability Cooldown(Event Player, Button(Ability 1)), 
+		Custom String("{0}\nAbility Charge:{1}", 
+			Is Using Ability 1(Event Player),
+			Ability Charge(Event Player, Button(Ability 1)))
+		), 
+		Right, 99, Null, Null, 
+		Color(Orange), Visible To String and Color, Default Visibility);
+	}
+}
+rule("Subroutine CancelMomentum")
+{
+	event
+	{
+		Subroutine;
+		CancelMomentum;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Cancelled Momentum", Event Player));
+		Apply Impulse(Event Player, Up, 0, To World, Cancel Contrary Motion XYZ);
+		Wait(0.016, Restart When True);
+		Apply Impulse(Event Player, Normalize(Velocity Of(Event Player)) * -1 * 1, Speed Of(Event Player), To World,
+			Incorporate Contrary Motion);
+	}
+}
+rule("Subroutine CancelUltimate")
+{
+	event
+	{
+		Subroutine;
+		CancelUltimate;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - Cancelled Ultimate", Event Player));
+		Event Player.TempFreeMode = Event Player.FreeMode;
+		Event Player.FreeMode = True;
+		Kill(Event Player, Null);
+		disabled Start Forcing Player To Be Hero(Event Player, Hero Of(Event Player) == Hero(Reaper) ? Hero(Tracer) : Hero(Reaper));
+		Resurrect(Event Player);
+		disabled Start Forcing Player To Be Hero(Event Player, Global.Settings[11]);
+		Event Player.FreeMode = Event Player.TempFreeMode;
+		disabled Set Status(Event Player, Null, Stunned, 0.008);
+	}
+}
+rule("Subroutine SetCurrentAbilities")
+{
+	event
+	{
+		Subroutine;
+		SetCurrentAbilities;
+	}
+
+	actions
+	{
+		Log To Inspector(Custom String("{0} - SetCurrentAbilities", Event Player));
+		If(Event Player.FreeMode || Event Player.Finished);
+			Abort;
+		End;
+
+		Set Ability 1 Enabled(Event Player, Event Player.Ability1);
+		Set Ability 2 Enabled(Event Player, Event Player.Ability2);
+		Set Ultimate Ability Enabled(Event Player, Event Player.Ultimate);
+		Set Ultimate Charge(Event Player, Event Player.Ultimate ? 100 : 0);
+		Set Crouch Enabled(Event Player, Event Player.Crouch);
+		Set Jump Enabled(Event Player, Event Player.Jump);
+		"TODO: Add option to select wether disable crouch also disables mercy ow2 superjumps"
+		If(Event Player.Crouch);
+			Allow Button(Event Player, Button(Crouch));
+		Else;
+			Disallow Button(Event Player, Button(Crouch));
+		End;
+	}
+}
+rule("Subroutine EnableAllAbilities")
+{
+	event
+	{
+		Subroutine;
+		EnableAllAbilities;
+	}
+
+	actions
+	{
+		Set Ability 1 Enabled(Event Player, True);
+		Set Ability 2 Enabled(Event Player, True);
+		Set Ultimate Ability Enabled(Event Player, True);
+		Set Crouch Enabled(Event Player, True);
+		Set Jump Enabled(Event Player, True);
+		Allow Button(Event Player, Button(Crouch));
+		Allow Button(Event Player, Button(Jump));
+	}
+}
+rule("Subroutine PlayerCompletedRun")
+{
+	event
+	{
+		Subroutine;
+		PlayerCompletedRun;
+	}
+
+	actions
+	{
+		If(Event Player.BestRun == False || (Event Player.BestRun[0] > Event Player.CurrentRunTime || (Event Player.BestRun[0] == Event Player.CurrentRunTime && Event Player.BestRun[1] > Event Player.Mistakes)));
+			Event Player.BestRun = Array(Event Player.CurrentRunTime, Event Player.Mistakes);
+			If(Is True For Any(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName));
+				"TODO: Fix this bs"
+				Set Global Variable At Index(Scoreboard, Index Of Array Value(Global.Scoreboard, Filtered Array(Global.Scoreboard, Current Array Element[0] == Event Player.PlayerName)), 
+					Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player)));
+				Log To Inspector(Custom String("{0} - Modified scoreboard", Event Player));
+			Else;
+				Modify Global Variable(Scoreboard, Append To Array, Array(Array(Event Player.PlayerName, Event Player.BestRun[0], Event Player.BestRun[1], Hero Of(Event Player))));
+				Log To Inspector(Custom String("{0} - Added best run to scoreboard", Event Player));
+			End;
+			Global.Scoreboard = Sorted Array(Global.Scoreboard, Current Array Element[1]);
+		End;
+	}
+}
+rule("Subroutine Taw'sDecompressData")
+{
+	event
+	{
+		Subroutine;
+		TawsDecompressData;
+	}
+
+	actions
+	{
+		"Workshop Setting: Single Use Shift/Unlimited GA (Affects all checkpoints)"
+		Global.TawsEditorVariables[0] = False;
+		"Workshop Setting: Default Checkpoint Radius"
+		Global.TawsEditorVariables[1] = 2;
+		"Taw's editor rules don't require player to grab all refresh orbs"
+		Global.RequireGrabAllRefreshOrbs = False;
+
+		"Give credits to the original editor maker"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Taw"), Custom String("Taw"), Color(Purple));
+
+		Log To Inspector(Custom String("Decompressing Taw's Data..."));
+		"CheckpointFlags"
+		Global.TawsEditorVariables[2] = Empty Array;		
+		"ctemp"
+		Global.i = 0;
+		"Orb/Refresh Orb index"
+		Global.j = 0;
+		"Compression V2"
+		If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 2);
+			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+			"Extract Teleport pads"
+			Global.Teleports = Mapped Array(Global.CompressedData, Current Array Element[0][3][0]!= 0 ? Array(Current Array Element[0][3][0],
+			Current Array Element[0][3][1], False, Current Array Element[0][3][2],Current Array Element[0][3][3]) : False);
+
+			Global.TawsEditorVariables[2] = 
+			Mapped Array(
+				Mapped Array(
+					Global.CompressedData, 
+					Array(
+						(Current Array Element[4] - Round To Integer(Current Array Element[4] / 10, Down) * 10) % 8, 
+						Round To Integer((Current Array Element[4] - Round To Integer(Current Array Element[4] / 1000, Down) * 1000) / 10, Down) / 10, 
+						Round To Integer(Current Array Element[4] / 1000, Down) / 10)
+					), 
+				Array(
+					Current Array Element[0] % 2 != 0, 
+					0, 
+					(Current Array Element[0] - Current Array Element[0] % 2) % 4 != 0,
+					(Current Array Element[0] - Current Array Element[0] % 4) % 8 != 0, 
+					0, 
+					Current Array Element[2], 
+					Current Array Element[1]
+				)
+			);
+		
+		"Compression V1"
+		Else If(Global.CompressedData[Count Of(Global.CompressedData) - 1] == 1);
+			Global.CompressedData = Array Slice(Global.CompressedData, 0, Count Of(Global.CompressedData) - 1);
+			"Extract Teleport pads"
+			Global.Teleports = Mapped Array(Global.CompressedData, 
+				Array(Current Array Element[0][2],
+				Global.TawsEditorVariables[1], 
+				False, 
+				Global.TawsEditorVariables[1], 
+				Global.TawsEditorVariables[1]));
+
+			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
+		"Compression V0"
+		Else;	
+			"Extract Teleports"
+			Global.Teleports = Mapped Array(Global.CompressedData, Array(Current Array Element[0][1], Global.TawsEditorVariables[1],
+				Global.TawsEditorVariables[1], Global.TawsEditorVariables[1], False));
+			Global.TawsEditorVariables[2] = Mapped Array(Global.CompressedData, Array(Current Array Element[4] % 2 != 0, 0, (
+				Current Array Element[4] - Current Array Element[4] % 2) % 4 != 0, (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0, 0, Global.TawsEditorVariables[1], (Current Array Element[4] - Current Array Element[4] % 4)
+				% 8 != 0 ? 0.200 : Global.TawsEditorVariables[1]));
+		End;
+
+		"Extract Checkpoint coordinates, radius and facing direction"
+			Global.Checkpoints = Mapped Array(
+				Global.CompressedData, 
+				Array(
+					Current Array Element[0][0],
+					Current Array Element[0][1] == 0 ? Global.TawsEditorVariables[1] : Current Array Element[0][1],
+					Current Array Element[0][2] == 0 ? False : Current Array Element[0][2])
+				);                                       
+
+		"Extract Bots, Orbs, Flags"
+		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
+			Global.TempArray = Empty Array;
+			"If first bot in array has 0 instead of vector, assume there are no bots in this level"
+			If(Global.CompressedData[Global.i][1][0] == 0);
+				Global.TempArray = False;
+			Else;
+				For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][1]), 2);
+					"Translate bot data and flags -> Array(Coords, CrouchEnabled, GravityEnabled)"
+					Global.TempArray[Global.j / 2] =
+						Array(
+							Global.CompressedData[Global.i][1][Global.j],
+							False,
+							((Global.CompressedData[Global.i][1][Global.j + 1] - Global.CompressedData[Global.i][1][Global.j + 1] % 2) % 4 == 0),
+							(Global.CompressedData[Global.i][1][Global.j + 1] % 2 != 0),
+							False,
+							False
+						);
+				End;
+			End;
+			"Store Bot array to global data"
+			Global.Bots[Global.i] = Count Of(Global.TempArray) > 0 ? Global.TempArray : False;
+			Global.TempArray = Empty Array;			
+
+			"Extract Orbs/Antiorbs for this level"
+			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][2]), 2);
+				"Transform orb data"
+				Global.TempArray[Global.j / 2] =  Array(
+					Global.CompressedData[Global.i][2][Global.j],
+					Global.CompressedData[Global.i][2][Global.j + 1]);
+				
+			End;
+			"Store Orb Array to global data"
+			Global.Orbs[Global.i] = Filtered Array(Global.TempArray, Current Array Element[1] > 0);
+			"TODO: Search for more efficient cleanup operation"
+			If(Count Of(Global.Orbs[Global.i]) == 0);
+				Global.Orbs[Global.i] = False;
+			End;
+			"Antiorbs are encoded with a negative Radius"
+			Global.AntiOrbs[Global.i] = Mapped Array(
+				Filtered Array(Global.TempArray, Current Array Element[1] < 0), 
+				Array(Current Array Element[0], Current Array Element[1] * -1));
+			"TODO: Search for more efficient cleanup operation"
+			If(Count Of(Global.AntiOrbs[Global.i]) == 0);
+				Global.AntiOrbs[Global.i] = False;
+			End;
+			Global.TempArray = Empty Array;		
+
+			"Extract Refresh Orbs"
+			For Global Variable(j, 0, Count Of(Global.CompressedData[Global.i][3]), 2);
+				"Assume Refresh orbs with coordinates of 0 are not valid"
+				If(Global.CompressedData[Global.i][3][Global.j] != 0);
+				"Transform Refresh Orb data"
+				Global.TempArray[Count Of(Global.TempArray)] = Array(
+					Global.CompressedData[Global.i][3][Global.j],
+					Global.CompressedData[Global.i][3][Global.j + 1],
+					Count Of(Global.TempArray),
+					True,
+					False,
+					False);
+				End;
+			End;
+			Global.RefreshOrbs[Global.i] = Count Of(Global.TempArray) > 0 ? Global.TempArray : False;
+			Global.TempArray = Empty Array;		
+			"Save Checkpoint flags"
+			Modify Global Variable At Index(Checkpoints, Global.i, Append To Array, 
+			Array(Global.TawsEditorVariables[2][Global.i][2], 
+			Global.TawsEditorVariables[2][Global.i][3], 
+			Global.TawsEditorVariables[2][Global.i][5], 
+			Global.TawsEditorVariables[2][Global.i][6],
+			Global.TawsEditorVariables[0]));
+
+			Wait(0.016, Ignore Condition);
+		End;
+		Global.CompressedData = Null;
+		Global.TawsEditorVariables = Null;
+		Global.TempArray = Null;
+		Global.i = 0;
+		Global.j = 0;
+	}
+}
+rule("Subroutine PeaceDecompressData")
+{
+	event
+	{
+		Subroutine;
+		PeaceDecompressData;
+	}
+
+	actions
+	{
+		"Workshop setting: Bot Floating?"
+		Global.PeaceEditorVariables[0] = False;
+		"Workshop setting: Land On Arrival Point?"
+		Global.PeaceEditorVariables[1] = True;
+		"Default orb radius. If some orbs are impossible to grab increase this number in 0.1 increments"
+		Global.PeaceEditorVariables[4] = 0.7;
+		"Peace Jump cloud radius. If some your jump clouds act weird move in small increments"
+		Global.PeaceEditorVariables[7] = 1;
+		"Peace editor rules require player to grab all refresh orbs"
+		Global.RequireGrabAllRefreshOrbs = True;
+
+		"Give credits to the original editor maker"
+		Global.VIPs[Count Of(Global.VIPs)] = Array(Custom String("Peace"), Custom String("{0} Peace", Ability Icon String(Hero(Mercy), Button(Ability 2))), Color(White));
+
+		Log To Inspector(Custom String("Peace Decompress Data start"));
+
+		"Filter all checkpoints that are not teleport levels"
+		Global.PeaceEditorVariables[2] = Filtered Array(Global.Checkpoint, Current Array Element[5] == False);
+
+		"Extract all non-teleport checkpoints. Assume facingdirection=false, Landing thresholds = 1"
+		Global.Checkpoints = Mapped Array(Global.PeaceEditorVariables[2], 
+		Array(
+			Current Array Element[0],
+			Current Array Element[1],
+			False,
+			Current Array Element[2],
+			Global.PeaceEditorVariables[1],
+			Current Array Element[1],
+			Current Array Element[1],
+			Current Array Element[4])
+		);
+
+		"Extract initial bots. TODO: We dont have compatibility for bot floating using jump yet, crouch is not a 1:1 replacement for this"
+		Global.Bots = 
+			Mapped Array(Global.PeaceEditorVariables[2],
+			Count Of(Current Array Element[3]) > 0 ? Array(Array(
+				Current Array Element[3][0],
+				False,
+				False,
+				!Global.PeaceEditorVariables[0],
+				Current Array Element[3][1],
+				Current Array Element[3][2])) : Array(False)
+		);
+		"Teleport CP counter, do not modify"
+		Global.PeaceEditorVariables[6] = 0;
+		"Extract and translate level effects"
+		For Global Variable(i, 0, Count Of(Global.Checkpoints), 1);
+			Log To Inspector(Custom String("Extracting CP. {0}", Global.i));
+			
+			"Extract level Normal Orbs"
+			Global.Orbs[Global.i] = 
+				Mapped Array(
+					Filtered Array(
+						Global.PeaceEditorVariables[2][Global.i][6],
+						Current Array Element[1] == False), 
+					Count Of(Current Array Element) > 0 ? 
+						Array(Current Array Element[0], Global.PeaceEditorVariables[4]) : False
+				);
+			"Cleanup empty orb array"
+			If(Global.Orbs[Global.i][0] == False);
+				Global.Orbs[Global.i] = False;
+			End;
+			
+			"Extract level Antiorbs"
+			Global.AntiOrbs[Global.i] = 
+				Count Of(Global.PeaceEditorVariables[2][Global.i][7]) > 0 ? 
+				Global.PeaceEditorVariables[2][Global.i][7] : False;
+
+			"Extract level Clouds, assume Radius of 1"
+			Global.Clouds[Global.i] = 
+				Count Of(Global.PeaceEditorVariables[2][Global.i][8]) > 0 ? 
+				Mapped Array(
+					Global.PeaceEditorVariables[2][Global.i][8], 
+					Array(
+						Current Array Element[0], 
+						Global.PeaceEditorVariables[7], 
+						Current Array Element[1])
+				) : False;
+
+			
+			"Create a teleport pad in levels where the next cp has the teleport flag enabled"
+			If(Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][5] == True);
+				Global.Teleports[Global.i] = Array(
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][0],
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						False,
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1],
+						Global.Checkpoint[Global.i + Global.PeaceEditorVariables[6] + 1][1]
+					);
+				Global.PeaceEditorVariables[6] += 1;
+			Else;
+				Global.Teleports[Global.i] = False;
+			End;
+			
+			"Temporarily extract level Multi-GA orbs"
+			Global.PeaceEditorVariables[3] = Filtered Array(Global.PeaceEditorVariables[2][Global.i][6], Current Array Element[1] != False);
+
+			"If no Multi-GA orbs, level extraction is complete"
+			If(Count Of(Global.PeaceEditorVariables[3]) == 0);
+				Global.RefreshOrbs[Global.i] = False;
+
+				"Clean up empty bot array"
+				If(Global.Bots[Global.i][0] == False);
+					Global.Bots[Global.i] = False;
+				End;
+			Else;
+				Global.RefreshOrbs[Global.i] = Empty Array;
+				
+				"Blzz: Oh, you want easy access to multidimensional arrays?... XDDD"
+				For Global Variable(j, 0, Count Of(Global.PeaceEditorVariables[3]), 1);
+					"Extract Multi-GA level bots"
+					Modify Global Variable At Index(Bots, Global.i, Append To Array,
+						Array(Array(
+							Global.PeaceEditorVariables[3][Global.j][1],
+							False,	
+							False,
+							!Global.PeaceEditorVariables[0],
+							Global.PeaceEditorVariables[3][Global.j][2],
+							Global.PeaceEditorVariables[3][Global.j][3]
+						))
+					);
+
+					"Extract level Refresh orbs, leave out the bot section # for now"
+					Modify Global Variable At Index(RefreshOrbs, Global.i, Append To Array,
+						Array(Array(
+							Global.PeaceEditorVariables[3][Global.j][0],
+							Global.PeaceEditorVariables[4],
+							Global.j + 1,
+							True,
+							False,
+							False
+						))
+					); 
+				End;
+			End;
+			Wait(0.004, Ignore Condition);
+		End;
+		
+		"Cleanup"
+		Global.Checkpoint = Null;
+		Global.PeaceEditorVariables = Null;
+		Log To Inspector(Custom String("Peace Decompress Data End"));
+	}
+}
+rule("——————————————————————————Add-ons——————————————————————————")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+rule("Server load widget by GigaMercy")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+	conditions
+	{
+		Global.ServerLoad == True;
+	}
+	actions
+	{
+		Create HUD Text(All Players(All Teams), Null, Custom String("Server Load: {0}%, Avg: {1}%, Peak: {2}%",Server Load, Server Load Average, Server Load Peak),
+		Null, Right, 0, Null, Server Load Average > 120 ? Color(Red) : Server Load Average > 80 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+		Create HUD Text(All Players(All Teams), Null, Custom String("Effect count {0}/256", Entity Count),
+		Null, Right, 0, Null, Entity Count > 240 ? Color(Red) : Entity Count > 200 ? Color(Orange) : Color(Green), Null, Visible To String and Color, Default Visibility);
+	
+	}
+} 
