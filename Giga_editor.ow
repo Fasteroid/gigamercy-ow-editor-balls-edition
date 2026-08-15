@@ -167,7 +167,7 @@ subroutines
 	34: SavePlayerProgress
 }
 
-rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.2, \"fasteroid's balls\" fork ︾ ————————————————")
+rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.2, \"fasteroid's balls\"fork ︾ ————————————————")
 {
 	event
 	{
@@ -186,7 +186,7 @@ rule("——————————————— ︾ Giga Parkour Editor BETA
 		disabled True == True;
 		"Beta Rev 5 (2024-Sep-07):\n- Implemented final compression algorithm\n- Added clash gamemode\n- Added Free Walking\n- Fixed Scoreboard duplication issue\n- Added more orange options"
 		disabled True == True;
-		"Beta Rev 4 (2024-May-04):\n- Added palette wheel \"Options\" & \"Tools\" menus\n- Reworked controls for controller accesibility"
+		"Beta Rev 4 (2024-May-04):\n- Added palette wheel \"Options\"& \"Tools\"menus\n- Reworked controls for controller accesibility"
 		disabled True == True;
 		"Beta Rev 3 (2024-Apr-06):\n- Added Palette wheel menu\n- Added debugging options to orange settings"
 		disabled True == True;
@@ -206,7 +206,7 @@ rule("——————————————— ︾ Giga Parkour Editor BETA
 		disabled End;
 		"== TAW's ONLY ==\n3. Copy these 6 rules at the top:\n \"Checkpoint Definitions...\"\n \"Configuration\"\n \"Checkpoint Hint Text\"\n \"Checkpoint Instruction Text\"\n \"Checkpoint Floating In-World Text\"\n \"VIPs\"\n\n DONT COPY \"Workshop Setting Definitions\""
 		disabled End;
-		"4. Open Giga Editor and navigate to the workshop\n5. Select all rules with \"SELECT ALL\" button\n6. With all rules selected, click the \"PASTE RULE\" button, then click on \"MOVE UP\" once\n7. Your original map's rules should now be at the top"
+		"4. Open Giga Editor and navigate to the workshop\n5. Select all rules with \"SELECT ALL\"button\n6. With all rules selected, click the \"PASTE RULE\"button, then click on \"MOVE UP\"once\n7. Your original map's rules should now be at the top"
 		disabled End;
 		"8. Enable your map\n9. Configure these options in orange settings:\n- CP Radius (Taws)\n- Orb Radius (Both editors. Peace radius is between 0.5 and 1)\n- Land on ground (Peace)\n- Bot Gravity (Peace)\n- P.Ability restrictions (Taws)"
 		disabled End;
@@ -591,7 +591,7 @@ rule("Press [Interact] + [Melee] + [Primary/Secondary Fire] to switch checkpoint
 		If(Event Player.Cheat && Event Player.SavedCheckpoint == Event Player.Checkpoint);
 			Event Player.SavedCheckpoint = Null;
 			Event Player.Cheat = False;
-			Small Message(Event Player, Custom String("  Exit the checkpoint to continue your time"));
+			Small Message(Event Player, Custom String("Exit the checkpoint to continue your time"));
 		End;
 			
 		Call Subroutine(TeleportToCurrentCheckpoint);
@@ -825,7 +825,7 @@ rule("Press [Interact] + [Reload] to toggle Free Mode")
 			Call Subroutine(ResetCheckpoint);
 			Stop Chasing Player Variable(Event Player, CurrentRunTime);
 		End;
-		Small Message(Event Player, Event Player.FreeMode ? Custom String("  Free mode enabled") : Custom String("  Free mode disabled"));
+		Small Message(Event Player, Event Player.FreeMode ? Custom String("Free mode enabled") : Custom String("Free mode disabled"));
 		Wait(0.600, Ignore Condition);
 	}
 }
@@ -1013,7 +1013,7 @@ rule("Create/Destroy current level RefreshOrbs")
 			Destroy Icon(Last Of(Event Player.RefreshOrbIcons));
 			Modify Player Variable(Event Player, RefreshOrbIcons, Remove from Array By Index, Count Of(Event Player.RefreshOrbIcons) - 1);
 		Else;
-			"Option refresh orb with \"Orb\" effect"
+			"Option refresh orb with \"Orb\"effect"
 			If(Global.RefreshOrbStyle == 1);
 				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
 				Orb, Global.Settings[4], 
@@ -1022,7 +1022,7 @@ rule("Create/Destroy current level RefreshOrbs")
 				Visible To Position Radius and Color);
 			"Save reference for last created RefeshOrb to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
-			"Create refresh orb with \"Sphere\" effect"
+			"Create refresh orb with \"Sphere\"effect"
 			Else If(Global.RefreshOrbStyle == 2);
 				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
 				Sphere, Global.Settings[4], 
@@ -1031,7 +1031,7 @@ rule("Create/Destroy current level RefreshOrbs")
 				Visible To Position Radius and Color);
 			"Save reference for last created RefeshOrb to player variable"		
 			Modify Player Variable(Event Player, RefreshOrbEffects, Append To Array, Last Created Entity);
-			"Create refresh orb with \"Cloud & Sparkles\" effect"
+			"Create refresh orb with \"Cloud & Sparkles\"effect"
 			Else;
 				Create Effect(Event Player.GrabbedRefreshOrbs[Evaluate Once(Count Of(Event Player.RefreshOrbEffects))] ? Null : Event Player, 
 				Cloud, Global.Settings[4], 
@@ -1252,7 +1252,7 @@ rule("Create HUD Instruction Text")
 		Create HUD Text(All Players(All Teams), Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"), Top, 20, Null, Null, Null, Visible To And String, Default Visibility);
 
 		"Option 1: Large size Hint text with border"
-		Create HUD Text(Global.HintTexts[Local Player.Checkpoint] != Null && String Length(Global.HintTexts[Local Player.Checkpoint]) > 0 ? Local Player : Null, Custom String(" {0} : {1} ", Hero Icon String(Hero Of(Local Player.Bot)), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 23,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To String And Color, Default Visibility);
+		Create HUD Text(Global.HintTexts[Local Player.Checkpoint] != Null && String Length(Global.HintTexts[Local Player.Checkpoint]) > 0 ? Local Player : Null, Custom String("{0} : {1} ", Hero Icon String(Hero Of(Local Player.Bot)), Global.HintTexts[Local Player.Checkpoint]), Null, Null, Top, 23,  Color(Turquoise), Color(Turquoise), Color(Turquoise), Visible To String And Color, Default Visibility);
 		"Option 2: Medium size Hint text without border"
 		disabled Create HUD Text(Global.HintTexts[Local Player.Checkpoint] ? Local Player : Null, Null, Null, Custom String("{0} : {1}", Hero Icon String(Hero Of(Local Player.Bot)), Global.HintTexts[Local Player.Checkpoint]), Top, 23,  Null, Null, Global.Settings[23], Visible To String And Color, Default Visibility);
 	}
@@ -1338,7 +1338,7 @@ rule("Detect Landing Outside")
 			Speed Of(Event Player) < 15) == True &&
 			(Event Player.UnderstandsFirewalk == False)
 		);
-			Small Message(Event Player, Custom String(" {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+			Small Message(Event Player, Custom String("{0} You may touch the ground in fireball state for this level", Icon String(Fire)));
 		End;
 
 		If(
@@ -1346,7 +1346,7 @@ rule("Detect Landing Outside")
 			Speed Of(Event Player) >= 15) == True &&
 			(Event Player.UnderstandsNoFireball == False)
 		);
-			Small Message(Event Player, Custom String("  {0} Don't enter fireball for this level", Icon String(Asterisk)));
+			Small Message(Event Player, Custom String("{0} Don't enter fireball for this level", Icon String(Asterisk)));
 		End;
 
 		Abort If(
@@ -1464,15 +1464,15 @@ rule("Detect Landing on Goal or Teleport")
 	actions
 	{
 		If(Is True For Any(Event Player.GrabbedOrbs, Current Array Element == False) && Count Of(Event Player.GrabbedOrbs) > 0);
-			Small Message(Event Player, Custom String("  The Junker Queen demands riches. Collect all the coins!"));
+			Small Message(Event Player, Custom String("The Junker Queen demands riches. Collect all the coins!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		Else If(Is True For Any(Event Player.GrabbedRefreshOrbs, Current Array Element == False) && (Count Of(Event Player.GrabbedRefreshOrbs) > 0) && Global.RequireGrabAllRefreshOrbs);
-			Small Message(Event Player, Custom String("  You need to grab all refresh orbs!"));
+			Small Message(Event Player, Custom String("You need to grab all refresh orbs!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		Else If(Global.Bots[Event Player.Checkpoint] && !Event Player.BotCondition);
-			Small Message(Event Player, Custom String("  You need to rez the bot!"));
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		"TODO: Support multiple teleports and custom TP position. We assume teleports only get us to the next level for now"
@@ -1555,7 +1555,7 @@ rule("Detect Grabbing Orb v2")
 			);
 			Play Effect(Event Player, Brigitte Repair Pack Armor Sound, Null, Event Player, 100);
 		Else;
-			Small Message(Event Player, Custom String("  You need to rez the bot!"));
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		End;
@@ -1595,7 +1595,7 @@ rule("Detect Grabbing RefreshOrb v2")
 						Global.RefreshOrbs[Event Player.Checkpoint][Event Player.i][2]));
 					Event Player.GrabbedRefreshOrbs[Event Player.i] = True;
 					Small Message(Event Player, Custom String("{0}Abilities refreshed: {1}", 
-						Global.RequireGrabAllRefreshOrbs ? Custom String("  Orb Grab! {0}/{1}. ", 
+						Global.RequireGrabAllRefreshOrbs ? Custom String("Orb Grab! {0}/{1}. ", 
 							Count Of(Filtered Array(Append To Array(Event Player.GrabbedOrbs, Global.RequireGrabAllRefreshOrbs ? Event Player.GrabbedRefreshOrbs : Empty Array), Current Array Element == True)),
 							Count Of(Event Player.GrabbedOrbs) + (Global.RequireGrabAllRefreshOrbs ? Count Of(Event Player.GrabbedRefreshOrbs) : 0)):
 						Empty Array, 
@@ -1626,7 +1626,7 @@ rule("Detect Grabbing RefreshOrb v2")
 				End;
 			End;
 		Else;
-			Small Message(Event Player, Custom String("  You need to rez the bot!"));
+			Small Message(Event Player, Custom String("You need to rez the bot!"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Call Subroutine(ResetWithMistake);
 		End;
@@ -2269,7 +2269,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 		If(Is Button Held(Event Player, Button(Crouch)));
 			"Resetting dropdown menus not allowed"
 			Abort If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] >= 100);
-			disabled Small Message(Event Player, Custom String("  Hold [Crouch] + {0} to reset to default", Input Binding String(Button(Jump))));
+			disabled Small Message(Event Player, Custom String("Hold [Crouch] + {0} to reset to default", Input Binding String(Button(Jump))));
 			Wait(0.6, Abort When False);
 			"StartingAbilities page exception"
 			If(Event Player.MenuPage == 7);
@@ -2281,7 +2281,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Abort;
 			End;
 			If(Event Player.MenuCursor == 0);
-				Small Message(Event Player, Custom String("  Resetting position is not supported"));
+				Small Message(Event Player, Custom String("Resetting position is not supported"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			End;
@@ -2295,16 +2295,16 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 		End;
 		
 		If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] == Null || Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] > 8);
-			Small Message(Event Player, Custom String("  ERROR: Unexpected value/type at MenuPage: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.MenuPage, Event Player.ObjectIndex, Event Player.MenuCursor));
+			Small Message(Event Player, Custom String("ERROR: Unexpected value/type at MenuPage: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.MenuPage, Event Player.ObjectIndex, Event Player.MenuCursor));
 			Log to Inspector(Custom String("ERROR: Unexpected value/type at MenuPage: {0} ObjectIndex: {1} MenuCursor: {2}", Event Player.MenuPage, Event Player.ObjectIndex, Event Player.MenuCursor));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		Else If(Event Player.MenuPage == 3 && Event Player.MenuCursor == 1);
-			Small Message(Event Player, Custom String("  Changing bot size not supported yet"));
+			Small Message(Event Player, Custom String("Changing bot size not supported yet"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		Else If(((Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2)) && Event Player.MenuCursor == 1);
-			Small Message(Event Player, Custom String("  This Orb effect does not support changing the size. Change the orb style in the orange settings"));
+			Small Message(Event Player, Custom String("This Orb effect does not support changing the size. Change the orb style in the orange settings"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		End;
@@ -2324,26 +2324,26 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 		"2: Edit Vectors"
 		Else If(Global.MapDataSchema[Event Player.MenuPage][Event Player.MenuCursor] == 2);
 			If(Event Player.MenuCursor == 0);
-				Small Message(Event Player, Custom String("  Hold {0} to move to your position", Input Binding String(Button(Jump))));
+				Small Message(Event Player, Custom String("Hold {0} to move to your position", Input Binding String(Button(Jump))));
 				Wait(1, Abort When False);
 				Event Player.EditTempObject[0] = Position Of(Event Player);
 			Else If(True);
 				Skip(Value In Array(Array(1,0,0,5,0,0,9), Event Player.MenuPage));
 				Abort;
 				"Checkpoint Facing Direction"
-				Small Message(Event Player, Custom String("  Hold {0} to set your current facing direction as default for this level", Input Binding String(Button(Jump))));
+				Small Message(Event Player, Custom String("Hold {0} to set your current facing direction as default for this level", Input Binding String(Button(Jump))));
 				Wait(1, Abort When False);
 				Event Player.EditTempObject[2] = Facing Direction Of(Event Player);
 				Else;
 				"Bot Facing Direction"
-				Small Message(Event Player, Custom String("  Hold {0} to set bot facing to your current position", Input Binding String(Button(Jump))));
+				Small Message(Event Player, Custom String("Hold {0} to set bot facing to your current position", Input Binding String(Button(Jump))));
 				Wait Until(Is Button Held(Event Player, Button(Jump)) == False, 1);
 				Event Player.EditTempObject[2] = Is Button Held(Event Player, Button(Jump)) ? Position Of(Event Player) : Event Player.EditTempObject[2] > 1 ?(Event Player.EditTempObject[2] + 1) % 2 : Event Player.EditTempObject[2];
 				Else;
 				"Teleport target coordinates"
-				Small Message(Event Player, Custom String("  Hold {0} to use your current position as the teleport destination", Input Binding String(Button(Jump))));
+				Small Message(Event Player, Custom String("Hold {0} to use your current position as the teleport destination", Input Binding String(Button(Jump))));
 				Wait(1, Abort When False);
-				Small Message(Event Player, Custom String("  Custom teleports not implemented yet"));
+				Small Message(Event Player, Custom String("Custom teleports not implemented yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 				Else;
@@ -2374,7 +2374,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Event Player.EditNumber = Array(Event Player.EditTempObject[Event Player.MenuCursor], 0.1, 100, 0);
 				Else;
 				"7: Edit Colors"
-				Small Message(Event Player, Custom String("  Editing colors not supported yet"));
+				Small Message(Event Player, Custom String("Editing colors not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Else;
 				"8: Edit/Save starting abilities"
@@ -2391,13 +2391,13 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 					Event Player.EditTempObject[6] = Event Player.Temp;
 					Log To Inspector(Custom String("{0} - Compressed abilities: {1}", Event Player, Event Player.EditTempObject[6]));
 					Skip If(Global.DebugMode < 2, 1);
-					Small Message(Event Player, Custom String("  {0} - Compressed abilities. Value {1}", Event Player, Event Player.EditTempObject[6]));
+					Small Message(Event Player, Custom String("{0} - Compressed abilities. Value {1}", Event Player, Event Player.EditTempObject[6]));
 				End;
 				Else;
 				Else;
 			End;
 			Skip If(!Event Player.EditNumber, 2);
-				Small Message(Event Player, Custom String("  Editing number: Press {0} again to save", Input Binding String(Button(Jump))));
+				Small Message(Event Player, Custom String("Editing number: Press {0} again to save", Input Binding String(Button(Jump))));
 				Abort;
 		End;
 		Skip If(Event Player.MenuPage == 7, 1);
@@ -2436,7 +2436,7 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 		Event Player.ObjectIndex += (Is Button Held(Event Player, Button(Primary Fire)) ? 1 : -1);
 		Call Subroutine(SetEditModeObjectIndex);
 		If(Event Player.ObjectSelectAura == Null);
-			Small Message(Event Player, Custom String("  No {0} to select on this level", Global.MenuObjectNames[Event Player.ObjectType]));
+			Small Message(Event Player, Custom String("No {0} to select on this level", Global.MenuObjectNames[Event Player.ObjectType]));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
 		Else If(Event Player.MenuOpen);
@@ -2445,7 +2445,7 @@ rule("EditMode: Press [Melee] + [Primary/Secondary Fire] to select next/previous
 		End;
 		Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
 		Wait(0.2, Restart When True);
-		Small Message(Event Player, Custom String("  Selected {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+		Small Message(Event Player, Custom String("Selected {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 	}
 }
 rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
@@ -2542,7 +2542,7 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 				),
 				Array Slice(Global.Teleports, Event Player.Checkpoint + 1, 1000000000)
 			);
-			Small Message(All Players(All Teams), Custom String("  {0} created a checkpoint at index {1}", Event Player, Event Player.Checkpoint));
+			Small Message(All Players(All Teams), Custom String("{0} created a checkpoint at index {1}", Event Player, Event Player.Checkpoint));
 			Log To Inspector(Custom String("{0} - Created checkpoint {1}", Event Player, Event Player.Checkpoint));
 
 			If(Count Of(Global.Checkpoints) == 1);
@@ -2605,7 +2605,7 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 			Small Message(
 				Event Player, 
 				Custom String(
-					"  Created new {0} {1} {2}", 
+					"Created new {0} {1} {2}", 
 					Global.MenuObjectNames[Event Player.ObjectType],
 					Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"), 
 					Event Player.ObjectIndex
@@ -2717,7 +2717,7 @@ rule("EditMode: Press [Interact] + [Secondary Fire] to delete the selected objec
 			Event Player.ObjectIndex = Event Player.ObjectIndex > 0 ? Event Player.ObjectIndex - 1 : 0;
 			Call Subroutine(SetEditModeObjectIndex);
 			Play Effect(Event Player, Buff Impact Sound, Null, Event Player, 100);
-			Small Message(Event Player, Custom String("  Deleted {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
+			Small Message(Event Player, Custom String("Deleted {0} {1} {2}", Global.MenuObjectNames[Event Player.ObjectType], Event Player.ObjectType == 3 ? Custom String("section") : Custom String("index"),Event Player.ObjectIndex));
 		If(Event Player.MenuOpen);
 			Call Subroutine(GetEditMenuTempData);
 		End;
@@ -2753,12 +2753,12 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 	{
 		Abort If(Is True For Any(Remove From Array(Global.ButtonList, Array(Button(Reload), Button(Ability 2), Button(Jump), Button(Crouch))), Is Button Held(Event Player, Current Array Element)));
 		If(Event Player.ObjectSelectAura == Null);
-			Small Message(Event Player, Custom String("  No object selected"));
+			Small Message(Event Player, Custom String("No object selected"));
 			Abort;
 		End;
 		If(Event Player.ObjectMoveGhost == Null);
 			If(Distance Between(Position Of(Event Player), Event Player.ObjectSelectAura) > 24);
-				Small Message(Event Player, Custom String("  Selected object is too far to move"));
+				Small Message(Event Player, Custom String("Selected object is too far to move"));
 				Abort;
 			End;
 			If(True);
@@ -2805,8 +2805,8 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 
 			Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 			Play Effect(Event Player, Brigitte Repair Pack Impact Sound, Null, Position Of(Event Player), 100);
-			Small Message(Event Player, Custom String("  Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuObjectNames[Event Player.ObjectType], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
-			Small Message(Event Player, Custom String("  Press {0} to cancel move", Input Binding String(Button(Melee))));
+			Small Message(Event Player, Custom String("Holding {0}. Use {1}/{2} to move it farther/closer", Global.MenuObjectNames[Event Player.ObjectType], Input Binding String(Button(Primary Fire)), Input Binding String(Button(Secondary Fire))));
+			Small Message(Event Player, Custom String("Press {0} to cancel move", Input Binding String(Button(Melee))));
 		Else;
 			disabled Event Player.MenuCursor = 0;
 			Event Player.ObjectMoveGhost[0] = (Eye Position(Event Player) + 
@@ -2818,7 +2818,7 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 			Call Subroutine(SetEditTempObject);
 			Event Player.ObjectSelectAura = Array Slice(Event Player.ObjectMoveGhost, 0, 2);
 			Event Player.ObjectMoveGhost = Null;
-			Small Message(Event Player, Custom String("  Moved object!"));
+			Small Message(Event Player, Custom String("Moved object!"));
 			Play Effect(Event Player, Buff Explosion Sound, Null, Event Player, 100);
 			
 			If(Event Player.MenuOpen);
@@ -2846,7 +2846,7 @@ rule("EditMode: Press [Melee] to cancel an object move action")
 	}
 	actions
 	{
-		Small Message(Event Player, Custom String("  Cancelled move object"));
+		Small Message(Event Player, Custom String("Cancelled move object"));
 		Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 		Destroy Effect(Event Player.ObjectMoveGhost[2]);
 		Event Player.ObjectMoveGhost = Null;
@@ -2875,11 +2875,11 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 		"TODO: Refactor for performance"
 		If(Is Button Held(Event Player, Button(Jump)));
 			If(Event Player.ObjectType == 3);
-				Small Message(Event Player, Custom String("  Changing bot size not supported yet"));
+				Small Message(Event Player, Custom String("Changing bot size not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			Else If((Event Player.ObjectType == 1) || (Event Player.ObjectType == 2 && Global.RefreshOrbStyle == 1 ));
-				Small Message(Event Player, Custom String("  The current Orb style does not support changing the size"));
+				Small Message(Event Player, Custom String("The current Orb style does not support changing the size"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			End;
@@ -2978,7 +2978,7 @@ rule("Palette Wheel click")
 				Destroy Effect(Event Player.ObjectMoveGhost[2]);
 				Wait(0.016, Ignore Condition);
 				Event Player.ObjectMoveGhost = Null;
-				Small Message(Event Player, Custom String("  The object you were moving was released"));
+				Small Message(Event Player, Custom String("The object you were moving was released"));
 			End;
 			Event Player.ObjectType = Event Player.PaletteSelection;
 			Event Player.ObjectIndex = Event Player.ObjectType == 0 ? Event Player.Checkpoint : 0;
@@ -3007,19 +3007,19 @@ rule("Palette Wheel click")
 				Call Subroutine(TogglePlayerCollision);
 				Else;
 				Event Player.Preferences[1] = !Event Player.Preferences[1];
-				Small Message(Event Player, Event Player.Preferences[1] ? Custom String("  Slow crouch enabled. Crouching slows you to 15% speed") : Custom String("  Slow crouch disabled"));
+				Small Message(Event Player, Event Player.Preferences[1] ? Custom String("Slow crouch enabled. Crouching slows you to 15% speed") : Custom String("Slow crouch disabled"));
 				Else;
-				Small Message(Event Player, Custom String("  Focus mode not implemented yet"));
+				Small Message(Event Player, Custom String("Focus mode not implemented yet"));
 				Else;
 			End;
 		Else If(Event Player.PalettePage == 2);
 			If(True);
 				Skip(Value in Array(Array(0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), Event Player.PaletteSelection));
 				Abort;
-				Small Message(Event Player, Custom String("  Setting Player edit permissions not implemented yet"));
+				Small Message(Event Player, Custom String("Setting Player edit permissions not implemented yet"));
 				Else;
 				Event Player.Preferences[0] = !Event Player.Preferences[0];
-				Small Message(Event Player, Event Player.Preferences[0] ? Custom String("  In-world object details hidden") : Custom String("  In-world object details shown"));
+				Small Message(Event Player, Event Player.Preferences[0] ? Custom String("In-world object details hidden") : Custom String("In-world object details shown"));
 				Else;
 			End;
 		Else If(Event Player.PalettePage == 3);
@@ -3574,7 +3574,7 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 	}
 	actions
 	{
-		Small Message(Host Player, Custom String("  Hold {0} + {1} + {2} to export",
+		Small Message(Host Player, Custom String("Hold {0} + {1} + {2} to export",
 					Input Binding String(Button(Ability 1)),
 					Input Binding String(Button(Ability 2)),
 					Input Binding String(Button(Ultimate))
@@ -3748,7 +3748,7 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 		Global.EditModeDefaults = Array Slice(Global.EditModeDefaults, 0, 5);
 		Global.RGB = Null;
 		Enable Inspector Recording;
-		"Instructions:\n1. Select \"Global\" as the variable target (Bottom-Right corner)\n2. If multiple variables dont have a 0 under them, move the slider back & forward\n3. Click the [(X)] button to copy (Bottom-Center).\n4. Exit the inspector with [Esc] or [Start]"
+		"Instructions:\n1. Select \"Global\"as the variable target (Bottom-Right corner)\n2. If multiple variables dont have a 0 under them, move the slider back & forward\n3. Click the [(X)] button to copy (Bottom-Center).\n4. Exit the inspector with [Esc] or [Start]"
 		Disable Inspector Recording;
 		Disable Hero HUD(All Players(All Teams));
 		Big Message(All Players(All Teams), Custom String("Data Exported!"));
@@ -3765,15 +3765,15 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 
 		"Instructions pt.2: Content"
 		Create HUD Text(All Players(All Teams), Null, 
-			Custom String("1. Select \"Global\" as the variable target (Bottom-Right corner)\n2. Move the slider back & forward if variables dont have a 0 {0}", 
+			Custom String("1. Select \"Global\"as the variable target (Bottom-Right corner)\n2. Move the slider back & forward if variables dont have a 0 {0}", 
 				Custom String("under them\n3. Click the [(X)] button to copy (Bottom-Center).\n4. Exit the inspector with [Esc] or [Start]\n")), Null, Top, 21, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
 		
 		"Instructions pt.3: Title"
 		Create HUD Text(All Players(All Teams), Custom String("           Step 3. Saving your map           "), Null, Null, Top, 30, Color(Orange), Null, Null, Visible To And String, Default Visibility);
 		"Instructions pt.3: Content"
 		Create HUD Text(All Players(All Teams), Null, 
-			Custom String("1. Open the game menu, click on \"Open Workshop Editor\"\n2. Open the rule  \"Paste your map data here\" (top of the list)\n{0}",
-			Custom String("3. Delete any existing data before continuing\n4. Click on the \"Paste\" button (Orange [+] sign)\n{0}", 	
+			Custom String("1. Open the game menu, click on \"Open Workshop Editor\"\n2. Open the rule  \"Paste your map data here\"(top of the list)\n{0}",
+			Custom String("3. Delete any existing data before continuing\n4. Click on the \"Paste\"button (Orange [+] sign)\n{0}", 	
 					Custom String("5. You should see a big action like: Global.MapData = Array(Array(...\n          {0} Don't continue if your data is missing {0}\n", 
 						Icon String(Warning)))), Null, Top, 31, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
 		
@@ -3782,8 +3782,8 @@ rule("EditMode: Export map data (compression v1, omitting defaults from orange o
 		"Instructions pt.4: Content"
 		Create HUD Text(All Players(All Teams), Null, 
 			Custom String("1. Navigate to Lobby > Settings > Workshop settings (orange button)\n2. Disable Edit mode (under Editor Options)\n{0}", 
-				Custom String("3. Go back to lobby settings & create a new code with the \"Share\" button\n4. Edit the marked rules to customize map title,{0}",
-				Custom String(" VIPs, colors & texts\n5. Restart the lobby"))), Null, Top, 41, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
+				Custom String("3. Go back to lobby settings & create a new code with the \"Share\"button\n4. Edit the marked rules to customize map title,{0}",
+				Custom String("VIPs, colors & texts\n5. Restart the lobby"))), Null, Top, 41, Null, Color(Turquoise), Null, Visible To And String, Default Visibility);
 
 	}
 }
@@ -4350,7 +4350,7 @@ rule("Subroutine SetUpCheckpoint")
 				Destroy Effect(Event Player.ObjectMoveGhost[2]);
 				Wait(0.016, Ignore Condition);
 				Event Player.ObjectMoveGhost = Null;
-				Small Message(Event Player, Custom String("  The object you were moving was released"));
+				Small Message(Event Player, Custom String("The object you were moving was released"));
 			End;
 			Event Player.ObjectIndex = Event Player.ObjectType == 0 ? Event Player.Checkpoint : 0;
 			"Cleanup edit number"
@@ -4361,7 +4361,7 @@ rule("Subroutine SetUpCheckpoint")
 		If(Global.Checkpoints[Event Player.Checkpoint][2]);
 			Set Facing(Event Player, Global.Checkpoints[Event Player.Checkpoint][2], To World);
 			Skip If(Global.DebugMode < 2, 1);
-				Small Message(Event Player, Custom String("  Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
+				Small Message(Event Player, Custom String("Set facing to {0}", Global.Checkpoints[Event Player.Checkpoint][2]));
 		End;
 		Call Subroutine(GetStartingAbilities);
 
@@ -4380,12 +4380,12 @@ rule("Subroutine SetUpCheckpoint")
 		Skip If(Event Player.Collision, 1);
 		Call Subroutine(TogglePlayerCollision);
 		Skip If(!Global.Checkpoints[Event Player.Checkpoint][5], 1);
-		Small Message(Event Player, Custom String("  This level allows free walking", Hero Of(Event Player.Bot)));
+		Small Message(Event Player, Custom String("This level allows free walking", Hero Of(Event Player.Bot)));
 
 		If( Event Player.FireballSetting == 0 );
-			Small Message(Event Player, Custom String("  {0} Don't enter fireball for this level", Icon String(Asterisk)));
+			Small Message(Event Player, Custom String("{0} Don't enter fireball for this level", Icon String(Asterisk)));
 		Else If( Event Player.FireballSetting == 2 );
-			Small Message(Event Player, Custom String("  {0} You may touch the ground in fireball state for this level", Icon String(Fire)));
+			Small Message(Event Player, Custom String("{0} You may touch the ground in fireball state for this level", Icon String(Fire)));
 		End;
 
 		"Determine what color to use for the starting ring"
@@ -4692,7 +4692,7 @@ rule("Subroutine TogglePlayerCollision")
 	actions
 	{
 		If(Event Player.Collision && !Event Player.FreeMode);
-			Small Message(Event Player, Custom String("  Cant disable collision outside of free mode"));
+			Small Message(Event Player, Custom String("Cant disable collision outside of free mode"));
 			Abort;
 		End;
 		Event Player.Collision = !Event Player.Collision;
@@ -4701,7 +4701,7 @@ rule("Subroutine TogglePlayerCollision")
 		Else;
 			Disable Movement Collision with Environment(Event Player, False);
 		End;
-		Small Message(Event Player, Custom String("  Collision with environment {0}", Event Player.Collision ? Custom String("Enabled") : Custom String("Disabled")));
+		Small Message(Event Player, Custom String("Collision with environment {0}", Event Player.Collision ? Custom String("Enabled") : Custom String("Disabled")));
 	}
 }
 rule("Subroutine GetStartingAbilities")
