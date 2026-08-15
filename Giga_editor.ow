@@ -2287,7 +2287,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
 			End;
-
+			"BOOKMARK"
 			Call Subroutine(GetEditTempObject);
 			Event Player.EditTempObject[Event Player.MenuCursor] = Global.NewObjectDefaults[Event Player.MenuPage][Event Player.MenuCursor];
 			Call Subroutine(SetEditTempObject);
@@ -2305,7 +2305,7 @@ rule("EditMode: Press [Jump] in menu to edit the attribute, Add [Crouch] to rese
 			Small Message(Event Player, Custom String("  Changing bot size not supported yet"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
-		Else If(((Global.OrbStyle == 1 && Event Player.MenuPage == 1 ) || (Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2)) && Event Player.MenuCursor == 1);
+		Else If(((Global.RefreshOrbStyle == 1 && Event Player.MenuPage == 2)) && Event Player.MenuCursor == 1);
 			Small Message(Event Player, Custom String("  This Orb effect does not support changing the size. Change the orb style in the orange settings"));
 			Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 			Abort;
@@ -2767,7 +2767,7 @@ rule("EditMode: Press [Reload] + [Ability 2] to grab and move the selected objec
 				Event Player.ObjectMoveGhost[0] = Distance Between(Eye Position(Event Player), Event Player.ObjectSelectAura[0]);
 				Event Player.ObjectMoveGhost[1] = Event Player.ObjectSelectAura[1];
 
-				Skip(Value In Array(Array(0, (Global.OrbStyle == 1 ? 3 : 6), (Global.RefreshOrbStyle == 1 ? 3 : 6), 12, 6, 8, 0), Event Player.ObjectType));
+				Skip(Value In Array(Array(0, 3, (Global.RefreshOrbStyle == 1 ? 3 : 6), 12, 6, 8, 0), Event Player.ObjectType));
 				Create Effect(All Players(All Teams), Ring, Color(Turquoise), Update Every Frame(Eye Position(Event Player) + Event Player.ObjectMoveGhost[0] * Facing Direction Of(Event Player)), Event Player.ObjectMoveGhost[1], Visible To Position Radius and Color);
 				Event Player.ObjectMoveGhost[2] = Append To Array(Event Player.ObjectMoveGhost[2], Last Created Entity);
 				Skip(9);
@@ -2880,7 +2880,7 @@ rule("EditMode: Press [Primary/Secondary fire] to move grabbed object closer/far
 				Small Message(Event Player, Custom String("  Changing bot size not supported yet"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
-			Else If((Event Player.ObjectType == 1 && Global.OrbStyle == 1 ) || (Event Player.ObjectType == 2 && Global.RefreshOrbStyle == 1 ));
+			Else If((Event Player.ObjectType == 1) || (Event Player.ObjectType == 2 && Global.RefreshOrbStyle == 1 ));
 				Small Message(Event Player, Custom String("  The current Orb style does not support changing the size"));
 				Play Effect(Event Player, Debuff Impact Sound, Null, Event Player, 100);
 				Abort;
@@ -3808,7 +3808,6 @@ rule("Subroutine InitializeGlobalVariables")
 	{
 		"------Effects Options------"
 		disabled End;
-		Global.OrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere")), 0);	
 		Global.RefreshOrbStyle = Workshop Setting Combo(Custom String("Effects Options"), Custom String("Refresh Orb Style"), 0, Array(Custom String("Auto"), Custom String("Orb"), Custom String("Sphere"), Custom String("Cloud & Sparkles")), 1);
 
 		"------Gameplay Options------"
@@ -4830,7 +4829,6 @@ rule("Subroutine ClearGlobalVariables")
 		Global.BigMessages = Null;
 		Global.SmallMessages = Null;
 		Global.Scoreboard = Null;
-		Global.OrbStyle = Null;
 		Global.Top5Colors = Null;
 		Global.Top5Prefix  = Null;
 		Global.EnPadding = Null;
