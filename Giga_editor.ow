@@ -165,8 +165,6 @@ subroutines
 	32: TogglePlayerCollision
 	33: GetEditMenuText
 	34: SavePlayerProgress
-	35: DisableRetraction
-	36: EnableRetraction
 }
 
 rule("——————————————— ︾ Giga Parkour Editor BETA rev 8.2, \"fasteroid's balls\" fork ︾ ————————————————")
@@ -4598,7 +4596,6 @@ rule("Subroutine SetCurrentAbilities")
 		Else;
 			Disallow Button(Event Player, Button(Crouch));
 		End;
-		Call Subroutine(EnableRetraction);
 	}
 }
 rule("Subroutine EnableAllAbilities")
@@ -4615,45 +4612,9 @@ rule("Subroutine EnableAllAbilities")
 		Set Crouch Enabled(Event Player, True);
 		Allow Button(Event Player, Button(Crouch));
 		Set Secondary Fire Enabled(Event Player, True);
-		Call Subroutine(EnableRetraction);
 	}
 }
 
-rule("Subroutine DisableRetraction")
-{
-	event
-	{
-		Subroutine;
-		DisableRetraction;
-	}
-
-	actions
-	{
-		Set Ability 1 Enabled(Event Player, False);
-		Set Primary Fire Enabled(Event Player, False);
-		Set Jump Enabled(Event Player, False);
-		Set Melee Enabled(Event Player, False);
-		Disallow Button(Event Player, Button(Interact));
-	}
-}
-
-rule("Subroutine EnableRetraction")
-{
-	event
-	{
-		Subroutine;
-		EnableRetraction;
-	}
-
-	actions
-	{
-		Set Ability 1 Enabled(Event Player, True);
-		Set Primary Fire Enabled(Event Player, True);
-		Set Jump Enabled(Event Player, True);
-		Set Melee Enabled(Event Player, True);
-		Allow Button(Event Player, Button(Interact));
-	}
-}
 rule("Subroutine PlayerCompletedRun")
 {
 	event
