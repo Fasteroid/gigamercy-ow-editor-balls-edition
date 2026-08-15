@@ -235,7 +235,6 @@ rule("◈ Paste your map data here")
 
 	actions 
 	{
-
 	}
 }
 rule("◈ Customize colors and texts")
@@ -2460,9 +2459,13 @@ rule("EditMode: Press [Interact]  + [Primary Fire] to insert object")
 		Is Dummy Bot(Event Player) == False;
 		Global.EditMode == True;
 		(
-			( Is Button Held(Event Player, Button(Interact)) && Is Button Held(Event Player, Button(Primary Fire)) ) ||
 			( 
-				Is Button Held(Event Player, Button(Primary Fire)) && 
+				Is Button Held(Event Player, Button(Interact)) && 
+				Is Button Held(Event Player, Button(Primary Fire)) 
+			) 
+			||
+			( 
+				Is Button Held(Event Player, Button(Melee)) && 
 				Event Player.ObjectType == 1 &&
 				Event Player.Maneuvering
 			)
