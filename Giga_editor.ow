@@ -554,7 +554,6 @@ rule("Press [Interact] twice to view/hide controls | EditMode: Open menu")
 			Set Move Speed(Event Player, 100);
 			Set Jump Enabled(Event Player, True);
 		End;
-		Set Primary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.FreeMode);
 		Set Secondary Fire Enabled(Event Player, Event Player.MenuOpen ? False : Event Player.SecondaryFire > 0 || Event Player.FreeMode);
 		Call Subroutine(GetEditMenuTempData);
 	}
