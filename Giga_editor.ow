@@ -1,3 +1,69 @@
+settings
+{
+	main
+	{
+		Mode Name: "Unknown Ball Parkour"
+	}
+
+	lobby
+	{
+		Allow Players Who Are In Queue: Yes
+		Map Rotation: Paused
+		Match Voice Chat: Enabled
+		Max Spectators: 12
+		Max Team 1 Players: 10
+		Max Team 2 Players: 0
+		Return To Lobby: After A Game
+		Swap Teams After Match: No
+	}
+
+	modes
+	{
+		Skirmish
+		{
+
+		}
+	}
+
+	heroes
+	{
+		General
+		{
+			Ability Cooldown Time: 100%
+			No Ammunition Requirement: On
+
+			Wrecking Ball
+			{
+
+			}
+
+			enabled heroes
+			{
+				Wrecking Ball
+			}
+		}
+	}
+
+	workshop
+	{
+		Default - AntiOrb radius: 2.000
+		Default - Checkpoint radius: 1.300
+		Default - Cloud radius: 1.500
+		Default - Orb radius: 0.500
+		Edit Mode: On
+		Player Hero: Wrecking Ball
+		Server Load Widget: On
+	}
+
+	extensions
+	{
+		Beam Effects
+		Buff Status Effects
+		Buff and Debuff Sounds
+		Explosion Sounds
+	}
+}
+
 variables
 {
 	global:
